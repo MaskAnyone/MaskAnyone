@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  track-anything:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile
+    volumes:
+      - ./data/checkpoints:/app/checkpoints
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities:
+                - gpu
+                - utility
+                - compute
+                - video
+    command: "python app.py --device cuda:0"
+    ports:
+      - "6080:6080"
