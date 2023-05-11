@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  track-and-segment-anything:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile
+    volumes:
+      - ./data:/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+    command: "jupyter notebook --allow-root --ip 0.0.0.0 --NotebookApp.token='' --no-browser"
+    ports:
+      - "8888:8888"
