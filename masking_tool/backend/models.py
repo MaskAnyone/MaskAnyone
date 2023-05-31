@@ -1,14 +1,16 @@
 from pydantic import BaseModel
+from enum import IntEnum
 
-class RemovalStrategy:
-    BBOX = 0 # Blacks-out the boundingbox
-    SILHOUTTE = 1 # Blacks-out the silhoutte
-    ESTIMATE = 2 # Estimates the background for the silhoutte
+class RemovalStrategy(IntEnum):
+    NONE = 0 # keeps original video
+    BBOX = 1 # Blacks-out the boundingbox
+    SILHOUTTE = 2 # Blacks-out the silhoutte
+    ESTIMATE = 3 # Estimates the background for the silhoutte
 
-class MaskingStrategy:
+class MaskingStrategy(IntEnum):
     NONE = 0
     BLUR = 1
-    MEDIAPIPE_SKELETON = 2
+    MEDIAPIPE = 2
     CHARACTER_3D = 3
 
 class RunParams(BaseModel):

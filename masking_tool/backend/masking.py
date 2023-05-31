@@ -1,15 +1,98 @@
-from masking_tool.backend.helpers import merge_videos, save_video
-from masking_tool.backend.models import MaskingStrategy, RunParams
+import cv2
+import os
+from typing import Literal
+
+import mediapipe as mp
+import numpy as np
+
+from mediapipe import solutions
+from mediapipe.framework.formats import landmark_pb2
+from ultralytics import YOLO
+
+from helpers import draw_landmarks_on_image
 
 
-def remove_person(video_path: str):
-    pass
+def blur(video_path: str, background_video_path: str, part_to_blur: Literal["body", "face"], confidence_treshold: float) -> str:
+    if part_to_blur == "body":
+        model = YOLO(os.path.join("models", "yolov8n.pt"))
+    elif part_to_blur == "face":
+        model = YOLO(os.path.join("models","yolov8n-face.pt"))
 
-def mask_person(video_path: str):
-    pass
+    video_cap = cv2.VideoCapture(video_path)
+    frameWidth = video_cap.get(cv2.CAP_PROP_FRAME_WIDTH) #check frame width
+    frameHeight = video_cap.get(cv2.CAP_PROP_FRAME_HEIGHT) #check frame height
+    samplerate = video_cap.get(cv2.CAP_PROP_FPS)   #fps = frames per second
+    fourcc = cv2.VideoWriter_fourcc(*'MP4V')
+    vid_out_path = os.path.join("results", os.path.split(video_path)[1])
+    out = cv2.VideoWriter(vid_out_path, fourcc, 
+                          fps = samplerate, frameSize = (int(frameWidth), int(frameHeight)))
+    while True:
+        ret, frame = video_cap.read()
+        if not ret:
+            break
+        if part_to_blur == "body":
+            results = model.predict(frame, classes=[0], conf=confidence_treshold)
+        else:
+            results = model.predict(frame, conf=confidence_treshold)
+        for result in results:
+            for box in result.boxes:
+                x1, y1, x2, y2 = [int(val) for val in box.xyxy[0].tolist()]
+                frame[y1:y2, x1:x2] = cv2.GaussianBlur(frame[y1:y2, x1:x2], (23, 23), 30)
+        out.write(frame)
 
-def run_masking(run_params: RunParams):
-    video_person_removed = remove_person(run_params.video)
-    video_person_masked = mask_person(virun_params.videodeo)
-    out_video = merge_videos(video_person_removed, video_person_masked)
-    save_video(out_video)
+    out.release()
+    video_cap.release()
+
+def extract_skeleton(video_path: str, background_video_path: str, framework: Literal["mediapipe"]):
+    model_path = os.path.join("models", "pose_landmarker_lite.task")
+
+    BaseOptions = mp.tasks.BaseOptions
+    PoseLandmarker = mp.tasks.vision.PoseLandmarker
+    PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
+    VisionRunningMode = mp.tasks.vision.RunningMode
+
+    # Create a pose landmarker instance with the video mode:
+    options = PoseLandmarkerOptions(
+        base_options=BaseOptions(model_asset_path=model_path),
+        running_mode=VisionRunningMode.VIDEO,
+        output_segmentation_masks=True,
+        num_poses=2)
+
+
+    with PoseLandmarker.create_from_options(options) as landmarker:
+        output_path = os.path.join("results", os.path.split(video_path)[1])
+        capture = cv2.VideoCapture(video_path)
+
+        frameWidth = capture.get(cv2.CAP_PROP_FRAME_WIDTH)  # check frame width
+        frameHeight = capture.get(cv2.CAP_PROP_FRAME_HEIGHT)  # check frame height
+        samplerate = capture.get(cv2.CAP_PROP_FPS)
+        capture = cv2.VideoCapture(video_path)
+
+        fourcc = cv2.VideoWriter_fourcc(*'MP4V')
+        out = cv2.VideoWriter(output_path, fourcc, fps = samplerate, frameSize = (int(frameWidth), int(frameHeight)))
+
+        while capture.isOpened():
+            ret, frame = capture.read()
+
+            if ret:
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame_timestamp_ms = capture.get(cv2.CAP_PROP_POS_MSEC)
+
+                mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
+
+                print(int(frame_timestamp_ms))
+                pose_landmarker_result = landmarker.detect_for_video(mp_image, int(frame_timestamp_ms))
+
+                output_image = cv2.cvtColor(mp_image.numpy_view(), cv2.COLOR_RGB2BGR)
+                output_image = draw_landmarks_on_image(output_image, pose_landmarker_result)
+
+                out.write(output_image)
+
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+            else:
+                break
+
+        out.release()
+        capture.release()
+        cv2.destroyAllWindows()
