@@ -1,26 +1,19 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import {CssBaseline} from "@mui/material";
+import {Navigate, Route, Routes} from "react-router";
+import PageLayout from "./layout/PageLayout";
+import VideosPage from "./components/videos/VideosPage";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+const App = () => {
+    return (<>
+        <CssBaseline />
+        <Routes>
+            <Route path={'/'} element={<PageLayout />}>
+                <Route path={'/videos'} element={<VideosPage />} />
+                <Route index={true} element={<Navigate to={'/videos'} replace={true} />} />
+            </Route>
+        </Routes>
+    </>);
+};
 
 export default App;
