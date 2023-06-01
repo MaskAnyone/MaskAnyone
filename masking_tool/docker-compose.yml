@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  nginx:
+    build: ./docker/nginx
+    ports:
+      - 443:443
+    restart: "on-failure"
+    #volumes:
+    #  - .:/var/www
+
+  python:
+    build:
+      context: ./docker/python
+    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+    volumes:
+      - ./backend:/app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [ gpu ]
+
+  yarn:
+    build:
+      context: ./docker/yarn
+    command: "yarn start"
+    volumes:
+      - ./frontend:/app
