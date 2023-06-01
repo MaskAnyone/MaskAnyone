@@ -1,5 +1,6 @@
 from helpers import create_black_bg
 from masking import blur, extract_skeleton
+from person_removal import remove_person_bbox, remove_person_silhoutte
 from models import MaskingStrategy, RemovalStrategy, RunParams
 
 
@@ -30,6 +31,10 @@ def mask_face(video_path: str, background_video_path: str, masking_strategy: Mas
 def remove_person(video_path: str, removal_strategy: RemovalStrategy):
     if removal_strategy == RemovalStrategy.NONE:
         return video_path
+    elif removal_strategy == RemovalStrategy.BBOX:
+        return remove_person_bbox(video_path, 0.25)
+    elif removal_strategy == RemovalStrategy.SILHOUTTE:
+        return remove_person_silhoutte(video_path)
 
 def mask_person(video_path: str, body_strategy: MaskingStrategy, face_strategy: MaskingStrategy, background_video_path: str):
     ignore_head = body_strategy != MaskingStrategy.NONE and face_strategy != MaskingStrategy.NONE
