@@ -1,4 +1,4 @@
-from helpers import merge_videos, save_video
+from helpers import create_black_bg
 from masking import blur, extract_skeleton
 from models import MaskingStrategy, RemovalStrategy, RunParams
 
@@ -44,5 +44,7 @@ def run_masking(run_params: RunParams):
     background_video = None
     if not run_params.extract_person_only:
         background_video = remove_person(run_params.video, run_params.person_removal_strategy)
+    else:
+        background_video = create_black_bg(run_params.video)
     video_person_masked_path = mask_person(run_params.video, run_params.body_masking_strategy, run_params.face_masking_strategy, background_video)
     return video_person_masked_path

@@ -1,13 +1,10 @@
+import os
+
 import numpy as np
+import cv2
 
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
-
-def save_video(video):
-    pass
-
-def merge_videos(*videos):
-    pass
 
 def draw_landmarks_on_image(rgb_image, detection_result):
     pose_landmarks_list = detection_result.pose_landmarks
@@ -28,3 +25,22 @@ def draw_landmarks_on_image(rgb_image, detection_result):
         solutions.pose.POSE_CONNECTIONS,
         solutions.drawing_styles.get_default_pose_landmarks_style())
     return annotated_image
+
+def create_black_bg(video_path: str):
+    cap = cv2.VideoCapture(video_path)
+    vid_out_path = os.path.join("results", "temp.mp4")
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(vid_out_path, fourcc, fps, (width, height), isColor=False)
+
+    for _ in range(frame_count):
+        frame = np.zeros((height, width), dtype=np.uint8)
+        out.write(frame)
+
+    cap.release()
+    out.release()
+    return vid_out_path
+        
