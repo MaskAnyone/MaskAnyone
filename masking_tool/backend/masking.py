@@ -77,7 +77,14 @@ def extract_skeleton(video_path: str, background_video_path: str, framework: Lit
         if int(capture.get(cv2.CAP_PROP_FRAME_COUNT)) != int(capture_bg.get(cv2.CAP_PROP_FRAME_COUNT)):
             raise Exception("Background Video not same length as Video to mask")
 
-        fourcc = cv2.VideoWriter_fourcc(*'MP4V')
+        """
+        vp09 seems to be a reasonable compromise that doesn't require a custom build, works in most modern browsers
+        and is comparably efficient
+        
+        H264 and avc1 aren't supported without a custom build of ffmpeg and python-opencv; See: https://www.swiftlane.com/blog/generating-mp4s-using-opencv-python-with-the-avc1-codec/
+        mp4v is not supported by browsers
+        """
+        fourcc = cv2.VideoWriter_fourcc(*'vp09')
         out = cv2.VideoWriter(output_path, fourcc, fps = samplerate, frameSize = (int(frameWidth), int(frameHeight)))
 
         first = True

@@ -6,6 +6,7 @@ import {useParams} from "react-router";
 import {Box, Button} from "@mui/material";
 import Config from "../../config";
 import MasksIcon from '@mui/icons-material/Masks';
+import DoubleVideo from "./DoubleVideo";
 
 const VideosPage = () => {
     const dispatch = useDispatch();
@@ -17,15 +18,26 @@ const VideosPage = () => {
         });
     }, []);
 
+    const maskVideo = () => {
+        if (!videoName) {
+            return;
+        }
+
+        Api.maskVideo(videoName);
+    };
+
     return (
         <Box>
             <Box sx={{ marginBottom: 2 }}>
-                <Button variant={'contained'} startIcon={<MasksIcon />}>Mask Video</Button>
+                <Button
+                    variant={'contained'}
+                    startIcon={<MasksIcon />}
+                    children={'Mask Video'}
+                    onClick={maskVideo}
+                />
             </Box>
             {videoName && (
-                <video controls={true} key={videoName} style={{ maxWidth: '100%' }}>
-                    <source src={Config.api.baseUrl + '/videos/' + videoName} type={'video/mp4'} key={videoName} />
-                </video>
+                <DoubleVideo videoName={videoName} />
             )}
         </Box>
     );

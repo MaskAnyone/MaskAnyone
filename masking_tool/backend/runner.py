@@ -5,7 +5,7 @@ from masking import blur, extract_skeleton, extract_face
 from person_removal import remove_person_bbox, remove_person_silhoutte
 from models import MaskingStrategy, RemovalStrategy, RunParams
 
-video_base_path = "/videos"
+video_base_path = "videos"
 
 
 def mask_body(video_path: str, background_video_path: str, masking_strategy: MaskingStrategy, ignore_head: bool) -> str:
