@@ -2,7 +2,6 @@ import os
 import cv2
 
 from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
 
 from runner import run_masking
 from models import RunParams
@@ -34,19 +33,6 @@ def get_videos():
     return {
         "videos": videos,
     }
-
-
-@app.get('/videos/{video_name}')
-def get_video_stream(video_name):
-    video_path = 'videos/' + video_name
-
-    def iterate_video_bytes():
-        with open(video_path, mode="rb") as video_file:
-            yield from video_file
-
-    return StreamingResponse(iterate_video_bytes(), media_type="video/mp4")
-
-
 
 
 @app.get("/results")

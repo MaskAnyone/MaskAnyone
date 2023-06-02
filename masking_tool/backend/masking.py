@@ -112,3 +112,6 @@ def extract_skeleton(video_path: str, background_video_path: str, framework: Lit
         capture.release()
         capture_bg.release()
         cv2.destroyAllWindows()
+
+def extract_face(video_path: str, background_video_path: str, framework: Literal["mediapipe"]) -> str:
+    pass

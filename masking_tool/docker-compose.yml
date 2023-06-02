@@ -15,12 +15,12 @@ services:
     command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
     volumes:
       - ./backend:/app
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              capabilities: [ gpu ]
+    #deploy:
+    #  resources:
+    #    reservations:
+    #      devices:
+    #        - driver: nvidia
+    #          capabilities: [ gpu ]
 
   yarn:
     build:

@@ -1,7 +1,11 @@
+import os
+
 from helpers import create_black_bg
-from masking import blur, extract_skeleton
+from masking import blur, extract_skeleton, extract_face
 from person_removal import remove_person_bbox, remove_person_silhoutte
 from models import MaskingStrategy, RemovalStrategy, RunParams
+
+video_base_path = "/videos"
 
 
 def mask_body(video_path: str, background_video_path: str, masking_strategy: MaskingStrategy, ignore_head: bool) -> str:
@@ -22,7 +26,7 @@ def mask_face(video_path: str, background_video_path: str, masking_strategy: Mas
     if masking_strategy == MaskingStrategy.BLUR:
         masked_video_path = blur(video_path, background_video_path, "face", 0.25)
     elif masking_strategy == MaskingStrategy.MEDIAPIPE:
-        pass
+        masked_video_path = extract_face(video_path, background_video_path, "mediapipe")
     elif masking_strategy == MaskingStrategy.CHARACTER_3D:
         raise NotImplemented()
 
@@ -47,9 +51,10 @@ def mask_person(video_path: str, body_strategy: MaskingStrategy, face_strategy: 
 
 def run_masking(run_params: RunParams):
     background_video = None
+    video_path = os.path.join(video_base_path, run_params.video)
     if not run_params.extract_person_only:
-        background_video = remove_person(run_params.video, run_params.person_removal_strategy)
+        background_video = remove_person(video_path, run_params.person_removal_strategy)
     else:
-        background_video = create_black_bg(run_params.video)
-    video_person_masked_path = mask_person(run_params.video, run_params.body_masking_strategy, run_params.face_masking_strategy, background_video)
+        background_video = create_black_bg(video_path)
+    video_person_masked_path = mask_person(video_path, run_params.body_masking_strategy, run_params.face_masking_strategy, background_video)
     return video_person_masked_path

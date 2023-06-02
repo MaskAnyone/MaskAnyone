@@ -13,5 +13,6 @@ RUN apt-get update \
 RUN pip install \
     fastapi \
     mediapipe \
-    uvicorn[standard] \
-    ultralytics
+    uvicorn[standard]
+
+RUN pip install ultralytics
