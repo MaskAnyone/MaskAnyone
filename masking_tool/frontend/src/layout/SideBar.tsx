@@ -43,7 +43,8 @@ const SideBar = (props: SideBarProps) => {
                 <Box sx={styles.container}>
                     {videoList.map(video => (
                         <SideBarItem
-                            url={'/videos'}
+                            key={video.name}
+                            url={`/videos/${encodeURIComponent(video.name)}`}
                             label={`${video.name} (${video.frameWidth}x${video.frameHeight})`}
                             icon={<VideocamIcon />}
                         />

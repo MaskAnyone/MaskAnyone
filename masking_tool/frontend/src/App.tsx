@@ -10,6 +10,7 @@ const App = () => {
         <Routes>
             <Route path={'/'} element={<PageLayout />}>
                 <Route path={'/videos'} element={<VideosPage />} />
+                <Route path={'/videos/:videoName'} element={<VideosPage />} />
                 <Route index={true} element={<Navigate to={'/videos'} replace={true} />} />
             </Route>
         </Routes>
