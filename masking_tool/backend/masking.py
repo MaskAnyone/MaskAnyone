@@ -93,7 +93,6 @@ def extract_skeleton(video_path: str, background_video_path: str, framework: Lit
             _, frame_bg = capture_bg.read()
 
             if ret:
-                
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frame_timestamp_ms = capture.get(cv2.CAP_PROP_POS_MSEC)
 
@@ -136,7 +135,6 @@ def extract_face(video_path: str, background_video_path: str, framework: Literal
         output_face_blendshapes=True,
         output_facial_transformation_matrixes=True,
         num_faces=1)
-
 
     with FaceLandmarker.create_from_options(options) as landmarker:
         output_path = os.path.join("results", os.path.split(video_path)[1])

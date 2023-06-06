@@ -114,3 +114,18 @@ def overlay(image, mask, color, alpha, resize=None):
     image_combined = cv2.addWeighted(image, 1 - alpha, image_overlay, alpha, 0)
 
     return image_combined
+
+def draw_segment_mask(image, mask):
+    h, w, c = image.shape
+    original_image = np.concatenate([image, np.full((h, w, 1), 255, dtype=np.uint8)], axis=-1)
+    mask_img = np.zeros_like(image, dtype=np.uint8) #set up basic mask image
+    mask_img[:, :] = (255,255,255) #set up basic mask image
+    segm_2class = 0.2 + 0.8 * mask #set up a segmentation of the results of mediapipe
+    segm_2class = np.repeat(segm_2class[..., np.newaxis], 3, axis=2) #set up a segmentation of the results of mediapipe
+    annotated_image = mask_img * segm_2class * (1 - segm_2class) #take the basic mask image and make a sillhouette mask
+    # append Alpha channel to sillhouetted mask so that we can overlay it to the original image
+    mask = np.concatenate([annotated_image, np.full((h, w, 1), 255, dtype=np.uint8)], axis=-1)
+    # Zero background where we want to overlay
+    original_image[mask==0]=0 #for the original image we are going to set everything at zero for places where the mask has to go
+    original_image = cv2.cvtColor(original_image, cv2.COLOR_RGB2BGR)
+    return original_image

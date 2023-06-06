@@ -2,8 +2,8 @@ import os
 
 from helpers import create_black_bg
 from masking import blur, extract_skeleton, extract_face
-from person_removal import remove_person_bbox, remove_person_silhoutte
-from models import MaskingStrategy, RemovalStrategy, RunParams
+from person_removal import remove_person_bbox, remove_person_estimate_bg, remove_person_silhoutte, remove_person_silhoutte_mp
+from models import MaskingStrategy, HidingStrategy, RunParams
 
 video_base_path = "videos"
 
@@ -32,15 +32,20 @@ def mask_face(video_path: str, background_video_path: str, masking_strategy: Mas
 
     return masked_video_path
 
-def remove_person(video_path: str, removal_strategy: RemovalStrategy):
-    if removal_strategy == RemovalStrategy.NONE:
+def hide_person(video_path: str, removal_strategy: HidingStrategy, removal_model: str = "mediapipe"):
+    if removal_strategy == HidingStrategy.NONE:
         return video_path
-    elif removal_strategy == RemovalStrategy.BBOX:
+    elif removal_strategy == HidingStrategy.BBOX:
         return remove_person_bbox(video_path, 0.25)
-    elif removal_strategy == RemovalStrategy.SILHOUTTE:
-        return remove_person_silhoutte(video_path)
+    elif removal_strategy == HidingStrategy.SILHOUTTE:
+        if removal_model == "yolo":
+            return remove_person_silhoutte(video_path)
+        else:
+            return remove_person_silhoutte_mp(video_path)
+    elif removal_strategy == HidingStrategy.ESTIMATE:
+        return remove_person_estimate_bg(video_path)
 
-def mask_person(video_path: str, body_strategy: MaskingStrategy, face_strategy: MaskingStrategy, background_video_path: str):
+def create_person_mask(video_path: str, body_strategy: MaskingStrategy, face_strategy: MaskingStrategy, background_video_path: str):
     ignore_head = body_strategy != MaskingStrategy.NONE and face_strategy != MaskingStrategy.NONE
     masked_video_path = background_video_path
     if body_strategy != MaskingStrategy.NONE:
@@ -52,9 +57,11 @@ def mask_person(video_path: str, body_strategy: MaskingStrategy, face_strategy: 
 def run_masking(run_params: RunParams):
     background_video = None
     video_path = os.path.join(video_base_path, run_params.video)
-    if not run_params.extract_person_only:
-        background_video = remove_person(video_path, run_params.person_removal_strategy)
-    else:
+    if run_params.extract_person_only:
         background_video = create_black_bg(video_path)
-    video_person_masked_path = mask_person(video_path, run_params.body_masking_strategy, run_params.face_masking_strategy, background_video)
+    else:
+        background_video = hide_person(video_path,
+                                       run_params.body_hiding_strategy,
+                                       run_params.body_hiding_model)      
+    video_person_masked_path = create_person_mask(video_path, run_params.body_masking_strategy, run_params.face_masking_strategy, background_video)
     return video_person_masked_path
