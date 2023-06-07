@@ -8,19 +8,22 @@ from masking.maskers import maskers
 
 video_base_path = "videos"
 
-def hide_person(video_path: str, removal_strategy: HidingStrategy, face_only: bool, removal_model: str = "mediapipe"):
-    if removal_strategy == HidingStrategy.NONE:
+def hide_person(video_path: str, hiding_strategy: HidingStrategy, face_only: bool):
+    supports_face_only = [HidingStrategy.BLUR, HidingStrategy.BBOX]
+    if face_only and hiding_strategy not in supports_face_only:
+        raise Exception("The hiding strategy you selected does not support face only hiding")
+    
+    if hiding_strategy == HidingStrategy.NONE:
         return video_path
-    elif removal_strategy == HidingStrategy.BBOX:
+    elif hiding_strategy == HidingStrategy.BBOX:
         return remove_person_bbox(video_path, face_only, 0.25 )
-    elif removal_strategy == HidingStrategy.SILHOUTTE:
-        if removal_model == "yolo":
+    elif hiding_strategy == HidingStrategy.SILHOUTTE_YOLO:
             return remove_person_silhoutte(video_path)
-        else:
+    elif hiding_strategy == HidingStrategy.SILHOUTTE_MP:
             return remove_person_silhoutte_mp(video_path)
-    elif removal_strategy == HidingStrategy.ESTIMATE:
+    elif hiding_strategy == HidingStrategy.ESTIMATE:
         return remove_person_estimate_bg(video_path)
-    elif removal_strategy == HidingStrategy.BLUR:
+    elif hiding_strategy == HidingStrategy.BLUR:
         return blur(video_path, face_only, 0.25)
 
 def create_person_mask(video_path: str, masking_strategy: MaskingStrategy, head_only: bool, detailed_facemesh: bool,
