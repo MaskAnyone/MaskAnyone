@@ -7,8 +7,12 @@ from helpers import draw_segment_mask, overlay
 
 from ultralytics import YOLO
 
-def remove_person_bbox(video_path: str, confidence_treshold: float):
-    model = YOLO(os.path.join("models", "yolov8n.pt"))
+def remove_person_bbox(video_path: str, face_only: bool, confidence_treshold: float):
+    if face_only:
+        model = YOLO(os.path.join("models","yolov8n-face.pt"))
+    else:
+        model = YOLO(os.path.join("models", "yolov8n.pt"))
+
     video_cap = cv2.VideoCapture(video_path)
     frameWidth = video_cap.get(cv2.CAP_PROP_FRAME_WIDTH)
     frameHeight = video_cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
@@ -21,7 +25,10 @@ def remove_person_bbox(video_path: str, confidence_treshold: float):
         ret, frame = video_cap.read()
         if not ret:
             break
-        results = model.predict(frame, classes=[0], conf=confidence_treshold)
+        if not face_only:
+            results = model.predict(frame, classes=[0], conf=confidence_treshold)
+        else:
+            results = model.predict(frame, conf=confidence_treshold)
         for result in results:
             for box in result.boxes:
                 x1, y1, x2, y2 = [int(val) for val in box.xyxy[0].tolist()]
@@ -118,6 +125,38 @@ def remove_person_estimate_bg(video_path: str, hiding_model: str):
                 seg = cv2.resize(seg, (w, h))
                 frame = overlay(frame, seg, (0,0,0), 1)
 
+        out.write(frame)
+
+    out.release()
+    video_cap.release()
+    return vid_out_path
+
+def blur(video_path: str, face_only: bool, confidence_treshold: float) -> str:
+    if face_only:
+        model = YOLO(os.path.join("models","yolov8n-face.pt"))
+    else:
+        model = YOLO(os.path.join("models", "yolov8n.pt"))
+
+    video_cap = cv2.VideoCapture(video_path)
+    frameWidth = video_cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+    frameHeight = video_cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    samplerate = video_cap.get(cv2.CAP_PROP_FPS)
+    fourcc = cv2.VideoWriter_fourcc(*'MP4V')
+    vid_out_path = os.path.join("results", os.path.split(video_path)[1])
+    out = cv2.VideoWriter(vid_out_path, fourcc, fps = samplerate, frameSize = (int(frameWidth), int(frameHeight)))
+
+    while True:
+        ret, frame = video_cap.read()
+        if not ret:
+            break     
+        if not face_only:
+            results = model.predict(frame, classes=[0], conf=confidence_treshold)
+        else:
+            results = model.predict(frame, conf=confidence_treshold)
+        for result in results:
+            for box in result.boxes:
+                x1, y1, x2, y2 = [int(val) for val in box.xyxy[0].tolist()]
+                frame[y1:y2, x1:x2] = cv2.GaussianBlur(frame[y1:y2, x1:x2], (23, 23), 30)
         out.write(frame)
 
     out.release()
