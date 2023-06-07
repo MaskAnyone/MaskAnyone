@@ -1,30 +1,12 @@
 import os
 
-from helpers import create_black_bg
-from masking import extract_skeleton, extract_face
+from utils.drawing_utils import create_black_bg
+from masking.MPMasker import MPMasker
 from person_removal import blur, remove_person_bbox, remove_person_estimate_bg, remove_person_silhoutte, remove_person_silhoutte_mp
 from models import MaskingStrategy, HidingStrategy, RunParams
+from masking.maskers import maskers
 
 video_base_path = "videos"
-
-
-def mask_body(video_path: str, background_video_path: str, masking_strategy: MaskingStrategy,
-              detailed_facemesh: bool, detailed_fingers: bool) -> str:
-    masked_video_path = None
-    if masking_strategy == MaskingStrategy.SKELETON:
-        masked_video_path = extract_skeleton(video_path, background_video_path, "mediapipe")
-    elif masking_strategy == MaskingStrategy.CHARACTER_3D:
-        raise NotImplemented()
-    return masked_video_path
-
-def mask_face(video_path: str, background_video_path: str, masking_strategy: MaskingStrategy):
-    masked_video_path = None
-    if masking_strategy == MaskingStrategy.SKELETON:
-        masked_video_path = extract_face(video_path, background_video_path, "mediapipe")
-    elif masking_strategy == MaskingStrategy.CHARACTER_3D:
-        raise NotImplemented()
-
-    return masked_video_path
 
 def hide_person(video_path: str, removal_strategy: HidingStrategy, face_only: bool, removal_model: str = "mediapipe"):
     if removal_strategy == HidingStrategy.NONE:
@@ -43,10 +25,11 @@ def hide_person(video_path: str, removal_strategy: HidingStrategy, face_only: bo
 
 def create_person_mask(video_path: str, masking_strategy: MaskingStrategy, head_only: bool, detailed_facemesh: bool,
                        detailed_fingers: bool, background_video_path: str) -> str:
+    masker = maskers[masking_strategy]()
     if head_only:
-        return mask_face(video_path, background_video_path, masking_strategy)
+        return masker.mask(video_path, background_video_path, True, False, False)
     else:
-        return mask_body(video_path, background_video_path, masking_strategy, detailed_facemesh, detailed_fingers)
+        return masker.mask(video_path, background_video_path, detailed_facemesh, True, detailed_fingers)
 
 def run_masking(run_params: RunParams) -> str:
     background_video = None

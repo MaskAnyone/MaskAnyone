@@ -3,7 +3,7 @@ import os
 import cv2
 import numpy as np
 import mediapipe as mp
-from helpers import draw_segment_mask, overlay
+from utils.drawing_utils import draw_segment_mask, overlay
 
 from ultralytics import YOLO
 

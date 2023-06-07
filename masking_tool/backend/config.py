@@ -1,0 +1,1 @@
+RESULT_BASE_PATH = "results"

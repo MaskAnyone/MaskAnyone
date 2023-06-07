@@ -10,8 +10,9 @@ class HidingStrategy(IntEnum):
 
 class MaskingStrategy(IntEnum):
     NONE = 0
-    SKELETON = 1
-    CHARACTER_3D = 2
+    MEDIAPIPE = 1
+    OPENPOSE = 2
+    CHARACTER_3D = 3
 
 class RunParams(BaseModel):
     video: str
