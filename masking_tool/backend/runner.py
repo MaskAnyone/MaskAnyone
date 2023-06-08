@@ -1,6 +1,7 @@
 import os
 
 from utils.drawing_utils import create_black_bg
+from utils.app_utils import save_preview_image
 from masking.MPMasker import MPMasker
 from person_removal import blur, remove_person_bbox, remove_person_estimate_bg, remove_person_silhoutte, remove_person_silhoutte_mp
 from models import MaskingStrategy, HidingStrategy, RunParams
@@ -49,4 +50,5 @@ def run_masking(run_params: RunParams) -> str:
                                                   run_params.detailed_facemesh,
                                                   run_params.detailed_fingers,
                                                   background_video)
+    save_preview_image(video_person_masked_path)
     return video_person_masked_path

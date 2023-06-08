@@ -18,6 +18,23 @@ const Api = {
 
         return result.data.videos;
     },
+    fetchVideoResults: async (original_video_name: string): Promise<string[]> => {
+        const result = await sendApiRequest({
+            url: `results/${original_video_name}`,
+            method: 'get'
+        })
+        return result.data.results
+    },
+    fetchResultPreview: async (
+        original_video_name: string,
+        result_video_name: string
+    ): Promise<any[]> => {
+        const result = await sendApiRequest({
+            url: `results/preview/${original_video_name}/${result_video_name}`,
+            method: 'get'
+        })
+        return result.data.image
+    },
     maskVideo: async (
         videoName: string,
         extractPersonOnly: boolean,
