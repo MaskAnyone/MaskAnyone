@@ -18,16 +18,28 @@ const Api = {
 
         return result.data.videos;
     },
-    maskVideo: async (videoName: string): Promise<void> => {
+    maskVideo: async (
+        videoName: string,
+        extractPersonOnly: boolean,
+        headOnlyHiding: boolean,
+        hidingStrategy: number,
+        headOnlyMasking: boolean,
+        maskCreationStrategy: number,
+        detailedFingers: boolean,
+        detailedFaceMesh: boolean
+    ): Promise<void> => {
         await sendApiRequest({
             url: 'run',
             method: 'post',
             data: {
                 video: videoName,
-                extract_person_only: true,
-                person_removal_strategy: 0,
-                body_masking_strategy: 2,
-                face_masking_strategy: 0,
+                extract_person_only: extractPersonOnly,
+                head_only_hiding: headOnlyHiding,
+                hiding_strategy: hidingStrategy,
+                head_only_masking: headOnlyMasking,
+                mask_creation_strategy: maskCreationStrategy,
+                detailed_fingers: detailedFingers,
+                detailed_facemesh: detailedFaceMesh
             }
         });
     },
