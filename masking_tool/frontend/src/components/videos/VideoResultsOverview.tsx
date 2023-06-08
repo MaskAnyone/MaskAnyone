@@ -72,7 +72,7 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
                             return (
                                 <Grid item xs={4} key={idx}>
                                     <Item elevation={3} onClick={() => setSelectedResultIdx(idx)} style={isSelected(idx) ? {background: "#3498db"} : {}}>
-                                        <img src={`data:image/jpeg;base64, ${preview_image}`} style={{maxHeight: '200px' }}/>
+                                        <img src={`data:image/jpeg;base64, ${preview_image}`} style={{maxHeight: '200px', maxWidth: "100%" }}/>
                                         <h4>{results[idx]}</h4>
                                     </Item>
                                 </Grid>

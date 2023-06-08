@@ -1,7 +1,7 @@
 import { Grid, FormGroup, FormControlLabel, Switch, Button, MenuItem, Select, Box, SelectChangeEvent, InputLabel, FormControl } from "@mui/material"
 import MasksIcon from '@mui/icons-material/Masks';
 import Api from "../../api";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface VideoRunParamsProps {
     videoName: string;
@@ -13,17 +13,16 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
     const [headOnlyHiding, setHeadOnlyHiding] = useState(false)
     const [hidingStrategy, setHidingStrategy] = useState<number|undefined>()
 
-    const [headOnlyMasking, setHeadOnlyMasking] = useState(false)
+    const [headOnlyMasking, setHeadOnlyMasking] = useState<boolean>(false)
     const [maskCreationStrategy, setMaskCreationStrategy] = useState<number|undefined>()
     const [detailedFaceMesh, setDetailedFaceMesh] = useState(false)
     const [detailedFingers, setDetailedFingers] = useState(false)
 
-    const handleHeadOnlyHidingChange = (checked: boolean) => {
-        setHeadOnlyHiding(checked)
-        if (checked) {
+    useEffect(() => {
+        if(headOnlyHiding) {
             setHeadOnlyMasking(true)
         }
-    }
+    }, [headOnlyHiding])
 
     const maskVideo = () => {
         if (!props.videoName || !hidingStrategy || ! maskCreationStrategy) {
@@ -48,10 +47,10 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
                 <Grid item xs={6} style={{padding: "15px"}}>
                     <h4>1. Person Removal Options</h4>
                     <FormGroup>
-                        <FormControlLabel control={<Switch value={extractPersonOnly} onChange={(e,c) => {setExtractPersonOnly(c)}}/>} label="Remove complete background" />
+                        <FormControlLabel control={<Switch checked={extractPersonOnly} onChange={(e,c) => {setExtractPersonOnly(c)}}/>} label="Remove complete background" />
                         {extractPersonOnly ? <></> : 
                             <>
-                                <FormControlLabel control={<Switch value={headOnlyHiding} onChange={(e, c) => {handleHeadOnlyHidingChange(c)}}/>} label="Hide head only" />
+                                <FormControlLabel control={<Switch value={headOnlyHiding} onChange={(e, c) => {setHeadOnlyHiding(c)}}/>} label="Hide head only" />
                                 <FormControl>
                                     <InputLabel id="select-hiding-strategy-label">Person Hiding Strategy</InputLabel>
                                     <Select
@@ -75,7 +74,7 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
                 <Grid item xs={6} style={{padding: "15px"}}>
                     <h4>2. Mask Creation Options</h4>
                     <FormGroup>
-                        <FormControlLabel control={<Switch value={headOnlyMasking} onChange={(e,c) => {setHeadOnlyMasking(c)}}/>} label="Create mask for head only" />
+                        <FormControlLabel control={<Switch checked={headOnlyMasking} onChange={(e,c) => {setHeadOnlyMasking(c)}}/>} label="Create mask for head only" />
                         <FormControl style={{marginTop: "10px"}}>
                             <InputLabel id="select-maskcreation-strategy-label">Mask Creation Strategy</InputLabel>
                             <Select
@@ -91,8 +90,8 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
                         </FormControl>
                         {maskCreationStrategy == 1 ?
                             <>
-                                <FormControlLabel control={<Switch value={detailedFaceMesh} onChange={(e,c) => {setHeadOnlyMasking(c)}}/>} label="Detailed Face Mesh" />
-                                <FormControlLabel control={<Switch value={detailedFingers} onChange={(e,c) => {setHeadOnlyMasking(c)}}/>} label="Detailed Fingers" />
+                                <FormControlLabel control={<Switch checked={detailedFaceMesh} onChange={(e,c) => {setHeadOnlyMasking(c)}}/>} label="Detailed Face Mesh" />
+                                <FormControlLabel control={<Switch checked={detailedFingers} onChange={(e,c) => {setHeadOnlyMasking(c)}}/>} label="Detailed Fingers" />
                             </> : <></> }
                         <Button
                             variant={'contained'}
