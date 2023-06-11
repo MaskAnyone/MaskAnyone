@@ -45,11 +45,9 @@ const DoubleVideo = (props: DoubleVideoProps) => {
             <video controls={true} key={originalPath} style={{ width: '49%' }} ref={video1Ref}>
                 <source src={originalPath} type={'video/mp4'} key={originalPath} />
             </video>
-            {props.selectedResult != undefined ?
-                <video controls={true} key={resultPath} style={{ width: '49%' }} ref={video2Ref}>
-                    <source src={resultPath} type={'video/mp4'} key={resultPath} />
-                </video> : <></>
-            }
+            <video controls={true} key={resultPath} style={props.selectedResult == undefined ? {display: 'none', width: '49%'} : {width: '49%'}} ref={video2Ref}>
+                <source src={resultPath} type={'video/mp4'} key={resultPath} />
+            </video>
         </Box>
     );
 };
