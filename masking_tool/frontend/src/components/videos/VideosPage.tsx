@@ -30,7 +30,7 @@ const VideosPage = () => {
             {videoName && (<VideoRunParams videoName={videoName} />)}
             <Divider style={{marginBottom: "15px"}}/>
             {videoName && (<DoubleVideo videoName={videoName} selectedResult={selectedResult}/>)}
-            {videoName && (<VideoResultsOverview videoName={videoName} updateSelectedResult={updateSelectedResult} />)}
+            {videoName && (<VideoResultsOverview key={videoName} videoName={videoName} updateSelectedResult={updateSelectedResult} />)}
         </Box>
     );
 };

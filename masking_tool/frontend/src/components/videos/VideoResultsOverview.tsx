@@ -16,6 +16,7 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
     const [selectedResultIdx, setSelectedResultIdx] = useState<number|undefined>()
 
     useEffect(() => {
+        console.log(props.videoName)
         Api.fetchVideoResults(props.videoName.split('.')[0]).then(results => {
             setResults(results)
         });

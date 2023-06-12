@@ -57,6 +57,8 @@ def get_video_stream(video_name, request: Request):
 @app.get('/results/result/{original_video_name}/{result_video_name}')
 def get_result_video_stream(original_video_name: str, result_video_name: str, request: Request):
     video_path = os.path.join(RESULT_BASE_PATH, original_video_name, result_video_name)
+    if not os.path.exists(video_path):
+        raise HTTPException(status_code=404, detail="Requested result video not found.") 
 
     return range_requests_response(
         request, file_path=video_path, content_type="video/mp4"
@@ -65,7 +67,10 @@ def get_result_video_stream(original_video_name: str, result_video_name: str, re
 @app.get('/results/{original_video_name}')
 def get_results_for_video(original_video_name: str):
     results_path = os.path.join(RESULT_BASE_PATH, original_video_name)
-    result_videos = [p for p in os.listdir(results_path) if os.path.splitext(p)[1] != ".png"]
+    if not os.path.exists(results_path):
+        result_videos = []
+    else:
+        result_videos = [p for p in os.listdir(results_path) if os.path.splitext(p)[1] != ".png"]
     return {"results": result_videos}
 
 @app.get('/results/preview/{original_video_name}/{result_video_name}')
