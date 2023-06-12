@@ -1,13 +1,10 @@
 import {useLocation} from "react-router";
-import {Box, Button, ListItem} from "@mui/material";
+import {Box, Button, ListItem, ListItemText} from "@mui/material";
 import {Link} from "react-router-dom";
 
 const styles = {
     item: {
         display: 'flex',
-        paddingTop: 1,
-        paddingBottom: 1,
-        margin: '0 12px',
         width: 'calc(100% - 20px)',
     },
     icon: {
@@ -20,7 +17,7 @@ const styles = {
     },
     button: (theme: any) => ({
         color: '#66788A',
-        padding: '10px 8px',
+        padding: '4px 0',
         justifyContent: 'flex-start',
         textTransform: 'none',
         letterSpacing: 0,
@@ -38,7 +35,8 @@ const styles = {
 
 interface SideBarItemProps {
     url: string;
-    label: string;
+    title: string;
+    subtitle: string;
     icon: any;
 }
 
@@ -46,20 +44,18 @@ const SideBarItem = (props: SideBarItemProps) => {
     const location = useLocation();
 
     return (
-        <Box>
-            <ListItem disableGutters={true} sx={styles.item}>
-                <Button
-                    sx={styles.button}
-                    className={location.pathname.startsWith(props.url) ? 'active' : ''}
-                    children={(<>
-                        <Box sx={styles.icon}>{props.icon}</Box>
-                        {props.label}
-                    </>)}
-                    component={Link}
-                    to={props.url}
-                />
-            </ListItem>
-        </Box>
+        <ListItem disableGutters={true} disablePadding={true} sx={styles.item}>
+            <Button
+                sx={styles.button}
+                className={location.pathname.startsWith(props.url) ? 'active' : ''}
+                children={(<>
+                    <Box sx={styles.icon}>{props.icon}</Box>
+                    <ListItemText primary={props.title} secondary={props.subtitle} />
+                </>)}
+                component={Link}
+                to={props.url}
+            />
+        </ListItem>
     );
 };
 

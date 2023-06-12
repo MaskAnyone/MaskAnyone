@@ -1,8 +1,9 @@
-import {Box, Drawer} from "@mui/material";
+import {Box, Drawer, Fab, List} from "@mui/material";
 import SideBarItem from "./SideBarItem";
 import VideocamIcon from '@mui/icons-material/Videocam';
 import {useSelector} from "react-redux";
 import Selector from "../state/selector";
+import UploadIcon from '@mui/icons-material/Upload';
 
 const styles = {
     drawer: (theme: any) => ({
@@ -16,7 +17,6 @@ const styles = {
     }),
     container: {
         padding: 1.5,
-        paddingTop: 2.5,
         boxSizing: 'border-box',
         flex: 1,
         display: 'flex',
@@ -41,14 +41,21 @@ const SideBar = (props: SideBarProps) => {
             variant={props.isLargeScreen ? 'persistent' : 'temporary'}
             children={(
                 <Box sx={styles.container}>
-                    {videoList.map(video => (
-                        <SideBarItem
-                            key={video.name}
-                            url={`/videos/${encodeURIComponent(video.name)}`}
-                            label={`${video.name} (${video.frameWidth}x${video.frameHeight})`}
-                            icon={<VideocamIcon />}
-                        />
-                    ))}
+                    <List sx={{ display: 'flex', flexDirection: 'column', flex: 1, paddingBottom: 1 }} disablePadding={true}>
+                        {videoList.map(video => (
+                            <SideBarItem
+                                key={video.name}
+                                url={`/videos/${encodeURIComponent(video.name)}`}
+                                title={`${video.name} (${Math.round(video.duration)}s)`}
+                                subtitle={`${video.frameWidth}x${video.frameHeight}, ${video.fps} FPS`}
+                                icon={<VideocamIcon />}
+                            />
+                        ))}
+                    </List>
+                    <Fab variant={'extended'} color={'primary'}>
+                        <UploadIcon sx={{ mr: 1 }} />
+                        Upload
+                    </Fab>
                 </Box>
             )}
         />

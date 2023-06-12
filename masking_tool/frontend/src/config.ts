@@ -7,6 +7,10 @@ interface ConfigType {
     api: {
         baseUrl: string;
     };
+    upload: {
+        maxSize: number;
+        concurrency: number;
+    };
 }
 
 const Config: ConfigType = {
@@ -17,6 +21,10 @@ const Config: ConfigType = {
     },
     api: {
         baseUrl: window.location.origin + '/api',
+    },
+    upload: {
+        maxSize: 200_000_000, /* 200 MB */
+        concurrency: 3,
     },
 };
 
