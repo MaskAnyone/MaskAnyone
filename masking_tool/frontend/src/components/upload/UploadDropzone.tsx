@@ -44,7 +44,7 @@ const UploadDropzone = (props: UploadDropzoneProps) => {
     };
 
     return (
-        <Dropzone onDrop={props.onSelectFiles} maxSize={Config.upload.maxSize}>
+        <Dropzone onDrop={props.onSelectFiles} maxSize={Config.upload.maxSize} accept={Config.upload.accept}>
             {({getRootProps, getInputProps}) => (
                 <Paper variant={'outlined'} square={true} sx={styles.dropzoneRoot}>
                     <div {...getRootProps()} style={styles.dropzoneWrapper}>

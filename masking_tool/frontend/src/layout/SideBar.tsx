@@ -1,9 +1,11 @@
 import {Box, Drawer, Fab, List} from "@mui/material";
 import SideBarItem from "./SideBarItem";
 import VideocamIcon from '@mui/icons-material/Videocam';
-import {useSelector} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import Selector from "../state/selector";
 import UploadIcon from '@mui/icons-material/Upload';
+import UploadDialog from "../components/upload/UploadDialog";
+import Event from "../state/actions/event";
 
 const styles = {
     drawer: (theme: any) => ({
@@ -31,7 +33,17 @@ interface SideBarProps {
 }
 
 const SideBar = (props: SideBarProps) => {
+    const dispatch = useDispatch();
     const videoList = useSelector(Selector.Video.videoList);
+    const uploadDialogOpen = useSelector(Selector.Upload.dialogOpen);
+
+    const openUploadDialog = () => {
+        dispatch(Event.Upload.uploadDialogOpened({}));
+    };
+
+    const closeUploadDialog = () => {
+        dispatch(Event.Upload.uploadDialogClosed({}));
+    };
 
     return (
         <Drawer
@@ -52,10 +64,11 @@ const SideBar = (props: SideBarProps) => {
                             />
                         ))}
                     </List>
-                    <Fab variant={'extended'} color={'primary'}>
+                    <Fab variant={'extended'} color={'primary'} onClick={openUploadDialog}>
                         <UploadIcon sx={{ mr: 1 }} />
                         Upload
                     </Fab>
+                    <UploadDialog open={uploadDialogOpen} onClose={closeUploadDialog} />
                 </Box>
             )}
         />

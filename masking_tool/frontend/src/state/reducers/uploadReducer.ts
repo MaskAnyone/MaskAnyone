@@ -1,7 +1,6 @@
 import {Action, handleActions} from 'redux-actions';
 import Event from "../actions/event";
-import {VideoListFetchedPayload} from "../actions/videoEvent";
-import {Video} from "../types/Video";
+import {UploadDialogClosedPayload, UploadDialogOpenedPayload} from "../actions/uploadEvent";
 
 export interface UploadState {
     dialogOpen: boolean;
@@ -16,9 +15,16 @@ export const uploadInitialState: UploadState = {
 /* eslint-disable max-len */
 export const uploadReducer = handleActions<UploadState, any>(
     {
-        [Event.Video.videoListFetched.toString()]: (state, action: Action<VideoListFetchedPayload>): UploadState => {
+        [Event.Upload.uploadDialogOpened.toString()]: (state, action: Action<UploadDialogOpenedPayload>): UploadState => {
             return {
                 ...state,
+                dialogOpen: true,
+            };
+        },
+        [Event.Upload.uploadDialogClosed.toString()]: (state, action: Action<UploadDialogClosedPayload>): UploadState => {
+            return {
+                ...state,
+                dialogOpen: false,
             };
         },
     },
