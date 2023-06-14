@@ -24,3 +24,6 @@ class RunParams(BaseModel):
     mask_creation_strategy: MaskingStrategy
     detailed_fingers: bool
     detailed_facemesh: bool
+
+class RequestVideoUploadParams(BaseModel):
+    video_name: str

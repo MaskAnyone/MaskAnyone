@@ -10,7 +10,7 @@ from utils.request_utils import range_requests_response
 from utils.app_utils import clear_temp_dir, init_directories
 
 from runner import run_masking
-from models import RunParams
+from models import RunParams, RequestVideoUploadParams
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -87,3 +87,27 @@ def get_result_preview_for_video(original_video_name: str, result_video_name: st
 def run(run_params: RunParams):
     result_path = run_masking(run_params)
     return {"result_video_path": result_path}
+
+@app.post("/videos/upload/request")
+def request_video_upload(params: RequestVideoUploadParams):
+    video_path = os.path.join(VIDEOS_BASE_PATH, params.video_name)
+
+    if os.path.exists(video_path):
+        raise HTTPException(status_code=400, detail="A video with this name exists already")
+
+    return {}
+
+@app.post("/videos/upload/{video_name}")
+async def upload_video(video_name, request: Request):
+    video_path = os.path.join(VIDEOS_BASE_PATH, video_name)
+
+    if os.path.exists(video_path):
+        raise HTTPException(status_code=400, detail="A video with this name exists already")
+
+    video_content = await request.body()
+
+    file = open(video_path, 'wb')
+    file.write(video_content)
+    file.close()
+
+    return {}

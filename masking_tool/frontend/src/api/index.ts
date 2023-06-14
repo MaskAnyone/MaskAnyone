@@ -60,6 +60,32 @@ const Api = {
             }
         });
     },
+    requestVideoUpload: async (videoName: string): Promise<void> => {
+        await sendApiRequest({
+            url: 'videos/upload/request',
+            method: 'post',
+            data: {
+                video_name: videoName,
+            },
+        });
+    },
+    uploadVideo: async (
+        videoName: string,
+        fileContent: ArrayBuffer,
+        onUploadProgress: (percentage: number) => void,
+    ): Promise<void> => {
+        await sendApiRequest({
+            url: `/videos/upload/${encodeURIComponent(videoName)}`,
+            method: 'post',
+            data: fileContent,
+            headers: { 'Content-Type': 'application/octet-stream' },
+            onUploadProgress: progressEvent => {
+                const percentComplete = Math.round((progressEvent.loaded * 100) / progressEvent.total!);
+                onUploadProgress(percentComplete);
+            },
+        });
+    },
+    finalizeVideoUpload: async (videoName: string): Promise<void> => {},
 };
 
 export default Api;

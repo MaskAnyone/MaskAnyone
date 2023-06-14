@@ -8,6 +8,7 @@ import TagBar from './TagBar';
 import Selector from "../../state/selector";
 import LoaderButton from "./LoaderButton";
 import {usePrevious} from "../../util/usePrevious";
+import Command from "../../state/actions/command";
 
 const styles = {
     tagBarWrapper: {
@@ -59,7 +60,9 @@ const UploadDialog = (props: UploadDialogProps) => {
         }
 
         setUploadRunning(true);
-        // Trigger with stagedFiles.map(stagedFile => ({ ...stagedFile, tags: [] }))
+        dispatch(Command.Upload.uploadVideos({
+            videos: stagedFiles.map(stagedFile => ({ ...stagedFile, tags: [] })),
+        }));
     };
 
     useEffect(() => {

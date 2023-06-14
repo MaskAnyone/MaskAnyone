@@ -1,4 +1,5 @@
 import { all, call, delay, spawn } from 'redux-saga/effects';
+import {uploadFilesFlow, uploadProgressWatcherFlow} from "./sagas/upload/uploadFilesFlow";
 
 /**
  * Prevents the root saga from terminating entirely due to some error in another saga
@@ -28,6 +29,8 @@ const makeRestartable = (saga: any) => {
 };
 
 const sagas: any[] = [
+    uploadFilesFlow,
+    uploadProgressWatcherFlow,
 ].map(makeRestartable);
 
 export default function* rootSaga() {
