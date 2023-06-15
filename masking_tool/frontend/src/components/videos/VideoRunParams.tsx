@@ -1,14 +1,17 @@
 import { Grid, FormGroup, FormControlLabel, Switch, Button, MenuItem, Select, Box, SelectChangeEvent, InputLabel, FormControl } from "@mui/material"
 import MasksIcon from '@mui/icons-material/Masks';
-import Api from "../../api";
 import { useEffect, useState } from "react";
+import {useDispatch, useSelector} from "react-redux";
+import Command from "../../state/actions/command";
+import Selector from "../../state/selector";
 
 interface VideoRunParamsProps {
     videoName: string;
 }
 
 const VideoRunParams = (props: VideoRunParamsProps) => {
-
+    const dispatch = useDispatch();
+    const videoMaskingJobs = useSelector(Selector.Video.videoMaskingJobs);
     const [extractPersonOnly, setExtractPersonOnly] = useState(false)
     const [headOnlyHiding, setHeadOnlyHiding] = useState(false)
     const [hidingStrategy, setHidingStrategy] = useState<number|undefined>()
@@ -29,8 +32,8 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
             return;
         }
 
-        Api.maskVideo(
-            props.videoName, 
+        dispatch(Command.Video.maskVideo({
+            videoName: props.videoName,
             extractPersonOnly,
             headOnlyHiding,
             hidingStrategy,
@@ -38,7 +41,7 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
             maskCreationStrategy,
             detailedFingers,
             detailedFaceMesh
-        );
+        }));
     };
 
     return (
@@ -48,7 +51,7 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
                     <h4>1. Person Removal Options</h4>
                     <FormGroup>
                         <FormControlLabel control={<Switch checked={extractPersonOnly} onChange={(e,c) => {setExtractPersonOnly(c)}}/>} label="Remove complete background" />
-                        {extractPersonOnly ? <></> : 
+                        {extractPersonOnly ? <></> :
                             <>
                                 <FormControlLabel control={<Switch value={headOnlyHiding} onChange={(e, c) => {setHeadOnlyHiding(c)}}/>} label="Hide head only" />
                                 <FormControl>
@@ -99,6 +102,7 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
                             children={'Mask Video'}
                             onClick={maskVideo}
                             style={{marginTop: "10px"}}
+                            disabled={videoMaskingJobs[props.videoName]}
                         />
                     </FormGroup>
                 </Grid>
