@@ -13,6 +13,8 @@ services:
     build:
       context: ./docker/python
     command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+    environment:
+      - TIMEOUT=600
     volumes:
       - ./backend:/app
     #deploy:

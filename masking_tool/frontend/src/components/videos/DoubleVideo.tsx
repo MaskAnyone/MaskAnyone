@@ -38,16 +38,18 @@ const DoubleVideo = (props: DoubleVideoProps) => {
         video1Ref.current.addEventListener('seeking', updateCurrentVideoTime);
 
         video1Ref.current.addEventListener('seeked', updateCurrentVideoTime);
-    }, []);
+    }, [originalPath, resultPath]);
 
     return (
         <Box>
-            <video controls={true} key={originalPath} style={{ width: '49%' }} ref={video1Ref}>
+            <video controls={true} key={originalPath} style={{ width: 'calc(50% - 4px)' }} ref={video1Ref}>
                 <source src={originalPath} type={'video/mp4'} key={originalPath} />
             </video>
-            <video controls={true} key={resultPath} style={props.selectedResult == undefined ? {display: 'none', width: '49%'} : {width: '49%'}} ref={video2Ref}>
-                <source src={resultPath} type={'video/mp4'} key={resultPath} />
-            </video>
+            {props.selectedResult && (
+                <video controls={false} key={resultPath} style={{width: 'calc(50% - 4px)', marginLeft: '8px'}} ref={video2Ref}>
+                    <source src={resultPath} type={'video/mp4'} key={resultPath} />
+                </video>
+            )}
         </Box>
     );
 };
