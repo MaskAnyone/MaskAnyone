@@ -1,8 +1,11 @@
-import {Box, Drawer} from "@mui/material";
+import {Box, Drawer, Fab, List} from "@mui/material";
 import SideBarItem from "./SideBarItem";
 import VideocamIcon from '@mui/icons-material/Videocam';
-import {useSelector} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import Selector from "../state/selector";
+import UploadIcon from '@mui/icons-material/Upload';
+import UploadDialog from "../components/upload/UploadDialog";
+import Event from "../state/actions/event";
 
 const styles = {
     drawer: (theme: any) => ({
@@ -16,7 +19,6 @@ const styles = {
     }),
     container: {
         padding: 1.5,
-        paddingTop: 2.5,
         boxSizing: 'border-box',
         flex: 1,
         display: 'flex',
@@ -31,7 +33,17 @@ interface SideBarProps {
 }
 
 const SideBar = (props: SideBarProps) => {
+    const dispatch = useDispatch();
     const videoList = useSelector(Selector.Video.videoList);
+    const uploadDialogOpen = useSelector(Selector.Upload.dialogOpen);
+
+    const openUploadDialog = () => {
+        dispatch(Event.Upload.uploadDialogOpened({}));
+    };
+
+    const closeUploadDialog = () => {
+        dispatch(Event.Upload.uploadDialogClosed({}));
+    };
 
     return (
         <Drawer
@@ -41,14 +53,22 @@ const SideBar = (props: SideBarProps) => {
             variant={props.isLargeScreen ? 'persistent' : 'temporary'}
             children={(
                 <Box sx={styles.container}>
-                    {videoList.map(video => (
-                        <SideBarItem
-                            key={video.name}
-                            url={`/videos/${encodeURIComponent(video.name)}`}
-                            label={`${video.name} (${video.frameWidth}x${video.frameHeight})`}
-                            icon={<VideocamIcon />}
-                        />
-                    ))}
+                    <List sx={{ display: 'flex', flexDirection: 'column', flex: 1, paddingBottom: 1 }} disablePadding={true}>
+                        {videoList.map(video => (
+                            <SideBarItem
+                                key={video.name}
+                                url={`/videos/${encodeURIComponent(video.name)}`}
+                                title={`${video.name} (${Math.round(video.duration)}s)`}
+                                subtitle={`${video.frameWidth}x${video.frameHeight}, ${video.fps} FPS`}
+                                icon={<VideocamIcon />}
+                            />
+                        ))}
+                    </List>
+                    <Fab variant={'extended'} color={'primary'} onClick={openUploadDialog}>
+                        <UploadIcon sx={{ mr: 1 }} />
+                        Upload
+                    </Fab>
+                    <UploadDialog open={uploadDialogOpen} onClose={closeUploadDialog} />
                 </Box>
             )}
         />

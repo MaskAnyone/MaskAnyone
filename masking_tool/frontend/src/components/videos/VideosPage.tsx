@@ -1,13 +1,11 @@
 import {useEffect, useState} from "react";
-import Api from "../../api";
 import {useDispatch} from "react-redux";
-import Event from "../../state/actions/event";
 import {useParams} from "react-router";
 import {Box, Divider} from "@mui/material";
-import Config from "../../config";
 import DoubleVideo from "./DoubleVideo";
 import VideoRunParams from "./VideoRunParams";
 import VideoResultsOverview from "./VideoResultsOverview";
+import Command from "../../state/actions/command";
 
 const VideosPage = () => {
     const dispatch = useDispatch();
@@ -20,9 +18,7 @@ const VideosPage = () => {
     }
 
     useEffect(() => {
-        Api.fetchVideos().then(videos => {
-            dispatch(Event.Video.videoListFetched({ videoList: videos }));
-        });
+        dispatch(Command.Video.fetchVideoList({}));
     }, []);
 
     return (

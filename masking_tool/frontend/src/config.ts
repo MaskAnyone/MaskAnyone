@@ -7,6 +7,11 @@ interface ConfigType {
     api: {
         baseUrl: string;
     };
+    upload: {
+        maxSize: number;
+        accept: Record<string, string[]>;
+        concurrency: number;
+    };
 }
 
 const Config: ConfigType = {
@@ -17,6 +22,13 @@ const Config: ConfigType = {
     },
     api: {
         baseUrl: window.location.origin + '/api',
+    },
+    upload: {
+        maxSize: 200_000_000, /* 200 MB */
+        accept: {
+            'video/mp4': ['.mp4'],
+        },
+        concurrency: 3,
     },
 };
 
