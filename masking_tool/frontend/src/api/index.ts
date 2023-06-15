@@ -85,7 +85,15 @@ const Api = {
             },
         });
     },
-    finalizeVideoUpload: async (videoName: string): Promise<void> => {},
+    finalizeVideoUpload: async (videoName: string): Promise<void> => {
+        await sendApiRequest({
+            url: 'videos/upload/finalize',
+            method: 'post',
+            data: {
+                video_name: videoName,
+            },
+        });
+    },
 };
 
 export default Api;

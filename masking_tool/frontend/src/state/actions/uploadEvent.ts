@@ -18,6 +18,7 @@ export interface VideoUploadProgressChangedPayload {
 }
 
 export interface VideoUploadFinishedPayload {
+    videoName: string;
 }
 
 const UploadEvent = {

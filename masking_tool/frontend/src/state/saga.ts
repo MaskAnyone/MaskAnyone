@@ -1,5 +1,6 @@
 import { all, call, delay, spawn } from 'redux-saga/effects';
 import {uploadFilesFlow, uploadProgressWatcherFlow} from "./sagas/upload/uploadFilesFlow";
+import {fetchVideoListFlow} from "./sagas/video/fetchVideoListFlow";
 
 /**
  * Prevents the root saga from terminating entirely due to some error in another saga
@@ -29,6 +30,8 @@ const makeRestartable = (saga: any) => {
 };
 
 const sagas: any[] = [
+    fetchVideoListFlow,
+
     uploadFilesFlow,
     uploadProgressWatcherFlow,
 ].map(makeRestartable);

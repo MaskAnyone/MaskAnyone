@@ -88,12 +88,23 @@ def run(run_params: RunParams):
     result_path = run_masking(run_params)
     return {"result_video_path": result_path}
 
+# Not really needed right now but for future extension
 @app.post("/videos/upload/request")
 def request_video_upload(params: RequestVideoUploadParams):
     video_path = os.path.join(VIDEOS_BASE_PATH, params.video_name)
 
     if os.path.exists(video_path):
         raise HTTPException(status_code=400, detail="A video with this name exists already")
+
+    return {}
+
+# Not really needed right now but for future extension
+@app.post("/videos/upload/finalize")
+def request_video_upload(params: RequestVideoUploadParams):
+    video_path = os.path.join(VIDEOS_BASE_PATH, params.video_name)
+
+    if not os.path.exists(video_path):
+        raise HTTPException(status_code=400, detail="A video with this name does not exist")
 
     return {}
 

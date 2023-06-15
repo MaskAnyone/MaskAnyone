@@ -1,6 +1,11 @@
 import {Action, handleActions} from 'redux-actions';
 import Event from "../actions/event";
-import {UploadDialogClosedPayload, UploadDialogOpenedPayload} from "../actions/uploadEvent";
+import {
+    UploadDialogClosedPayload,
+    UploadDialogOpenedPayload, VideoUploadFinishedPayload,
+    VideoUploadProgressChangedPayload,
+    VideoUploadStartedPayload
+} from "../actions/uploadEvent";
 
 export interface UploadState {
     dialogOpen: boolean;
@@ -25,6 +30,32 @@ export const uploadReducer = handleActions<UploadState, any>(
             return {
                 ...state,
                 dialogOpen: false,
+            };
+        },
+        [Event.Upload.videoUploadStarted.toString()]: (state, action: Action<VideoUploadStartedPayload>): UploadState => {
+            return {
+                ...state,
+                uploadProgress: {
+                    ...state.uploadProgress,
+                    [action.payload.videoName]: 0,
+                },
+            };
+        },
+        [Event.Upload.videoUploadProgressChanged.toString()]: (state, action: Action<VideoUploadProgressChangedPayload>): UploadState => {
+            return {
+                ...state,
+                uploadProgress: {
+                    ...state.uploadProgress,
+                    [action.payload.videoName]: action.payload.progress,
+                },
+            };
+        },
+        [Event.Upload.videoUploadFinished.toString()]: (state, action: Action<VideoUploadFinishedPayload>): UploadState => {
+            const { [action.payload.videoName]: _, ...newUploadProgress } = state.uploadProgress;
+
+            return {
+                ...state,
+                uploadProgress: newUploadProgress,
             };
         },
     },

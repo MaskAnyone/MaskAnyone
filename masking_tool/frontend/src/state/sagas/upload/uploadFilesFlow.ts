@@ -35,7 +35,8 @@ const onUploadVideo = function*(file: FileUpload) {
 
     yield call(Api.finalizeVideoUpload, file.file.name);
 
-    yield put(Event.Upload.videoUploadFinished({ }));
+    yield put(Event.Upload.videoUploadFinished({ videoName: file.file.name }));
+    yield put(Command.Video.fetchVideoList({}));
 };
 
 const onUploadVideos = function*(files: Array<FileUpload>) {
