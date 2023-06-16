@@ -6,6 +6,7 @@ import DoubleVideo from "./DoubleVideo";
 import VideoRunParams from "./VideoRunParams";
 import VideoResultsOverview from "./VideoResultsOverview";
 import Command from "../../state/actions/command";
+import PoseRenderer3D from "./PoseRenderer3D";
 
 const VideosPage = () => {
     const dispatch = useDispatch();
@@ -27,6 +28,8 @@ const VideosPage = () => {
             <Divider style={{marginBottom: "15px"}}/>
             {videoName && (<DoubleVideo videoName={videoName} selectedResult={selectedResult}/>)}
             {videoName && (<VideoResultsOverview key={videoName} videoName={videoName} updateSelectedResult={updateSelectedResult} />)}
+
+            {/*<PoseRenderer3D />*/}
         </Box>
     );
 };
