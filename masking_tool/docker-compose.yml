@@ -17,6 +17,8 @@ services:
       - TIMEOUT=600
     volumes:
       - ./backend:/app
+    depends_on:
+      - postgres
     #deploy:
     #  resources:
     #    reservations:
@@ -24,9 +26,37 @@ services:
     #        - driver: nvidia
     #          capabilities: [ gpu ]
 
+  postgres:
+    build:
+      context: ./docker/postgres
+    env_file:
+      - ./app.env
+    volumes:
+      - ./docker/postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
+      - data-postgres:/var/lib/postgresql/data
+
+  pgadmin:
+    build:
+      context: ./docker/pgadmin
+    ports:
+      - "5433:443"
+    environment:
+      PGADMIN_ENABLE_TLS: "True"
+      PGADMIN_DEFAULT_EMAIL: "dev@dev.dev"
+      PGADMIN_DEFAULT_PASSWORD: "dev"
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    depends_on:
+      - postgres
+
   yarn:
     build:
       context: ./docker/yarn
     command: "yarn start"
     volumes:
       - ./frontend:/app
+
+
+volumes:
+  data-postgres:
+    driver: local
