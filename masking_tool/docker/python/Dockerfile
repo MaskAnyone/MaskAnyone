@@ -11,10 +11,15 @@ RUN apt-get update \
         python-is-python3 \
         python3-opencv \
         libgl1 \
-        libglib2.0-0
+        libglib2.0-0 \
+        libpq-dev \
+        gcc \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN pip install \
     fastapi \
     mediapipe \
     uvicorn[standard] \
-    ultralytics
+    ultralytics \
+    psycopg2
