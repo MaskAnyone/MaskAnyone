@@ -1,15 +1,15 @@
 import psycopg2
+import os
 
 
 class DBConnection:
     def __init__(self):
-        # @todo move to env
         self.__connection = psycopg2.connect(
-            database="prototype",
-            user="dev",
-            password="dev",
-            host="postgres",
-            port='5432'
+            database=os.environ['BACKEND_PG_DATABASE'],
+            user=os.environ['BACKEND_PG_USER'],
+            password=os.environ['BACKEND_PG_PASSWORD'],
+            host=os.environ['BACKEND_PG_HOST'],
+            port=os.environ['BACKEND_PG_PORT']
         )
 
     def execute(self, sql: str):

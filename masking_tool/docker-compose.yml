@@ -15,6 +15,8 @@ services:
     command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
     environment:
       - TIMEOUT=600
+    env_file:
+      - ./app.env
     volumes:
       - ./backend:/app
     depends_on:
