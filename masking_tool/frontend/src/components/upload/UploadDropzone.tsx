@@ -58,7 +58,7 @@ const UploadDropzone = (props: UploadDropzoneProps) => {
                             <List dense={true}>
                                 {props.stagedFiles.map(stagedFile => (
                                     <ListItem key={stagedFile.id}>
-                                        <UploadProgress value={uploadProgress[stagedFile.file.name] || 0} />
+                                        <UploadProgress value={uploadProgress[stagedFile.id] || 0} />
                                         <ListItemText
                                             sx={styles.stagedFilesListItemText}
                                             primary={stagedFile.file.name}

@@ -26,4 +26,9 @@ class RunParams(BaseModel):
     detailed_facemesh: bool
 
 class RequestVideoUploadParams(BaseModel):
+    video_id: str
     video_name: str
+
+class FinalizeVideoUploadParams(BaseModel):
+    video_id: str
+

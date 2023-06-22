@@ -12,7 +12,15 @@ class DBConnection:
             port=os.environ['BACKEND_PG_PORT']
         )
 
-    def execute(self, sql: str):
+    def execute(self, sql: str, bindings: dict = {}):
         cursor = self.__connection.cursor()
-        cursor.execute(sql)
-        return cursor.fetchall()
+        cursor.execute(sql, bindings)
+        self.__connection.commit()
+        cursor.close()
+
+    def select_all(self, sql: str, bindings: dict = {}):
+        cursor = self.__connection.cursor()
+        cursor.execute(sql, bindings)
+        result = cursor.fetchall()
+        cursor.close()
+        return result

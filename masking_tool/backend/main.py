@@ -10,7 +10,7 @@ from utils.request_utils import range_requests_response
 from utils.app_utils import clear_temp_dir, init_directories
 
 from runner import run_masking
-from models import RunParams, RequestVideoUploadParams
+from models import RunParams, RequestVideoUploadParams, FinalizeVideoUploadParams
 
 from db.video_manager import VideoManager
 from db.db_connection import DBConnection
@@ -32,39 +32,6 @@ def get_videos():
     return {
         'videos': videos
     }
-
-"""
-@app.get("/videos")
-def get_videos():
-    videos = []
-
-    for video_name in os.listdir(VIDEOS_BASE_PATH):
-        video_path = os.path.join(VIDEOS_BASE_PATH, video_name)
-        capture = cv2.VideoCapture(video_path)
-
-        frame_width = round(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-        frame_height = round(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fps = capture.get(cv2.CAP_PROP_FPS)
-        frame_count = capture.get(cv2.CAP_PROP_FRAME_COUNT)
-        duration = frame_count / fps
-
-        h = int(capture.get(cv2.CAP_PROP_FOURCC))
-        codec = chr(h&0xff) + chr((h>>8)&0xff) + chr((h>>16)&0xff) + chr((h>>24)&0xff)
-
-        videos.append({
-            'name': video_name,
-            'frame_width': frame_width,
-            'frame_height': frame_height,
-            'fps': round(fps),
-            'frame_count': frame_count,
-            'duration': duration,
-            'codec': codec,
-        })
-
-    return {
-        "videos": videos,
-    }
-"""
 
 @app.get('/videos/{video_id}')
 def get_video_stream(video_id, request: Request):
@@ -114,26 +81,50 @@ def request_video_upload(params: RequestVideoUploadParams):
     if video_manager.has_video_with_name(params.video_name):
         raise HTTPException(status_code=400, detail="A video with this name exists already")
 
-    video_path = os.path.join(VIDEOS_BASE_PATH, params.video_id + '.mp4')
+    video_manager.add_pending_video(
+        params.video_id,
+        params.video_name
+    )
+    #video_path = os.path.join(VIDEOS_BASE_PATH, params.video_id + '.mp4')
 
     return {}
 
 # Not really needed right now but for future extension
 @app.post("/videos/upload/finalize")
-def request_video_upload(params: RequestVideoUploadParams):
-    video_path = os.path.join(VIDEOS_BASE_PATH, params.video_name)
+def finalize_video_upload(params: FinalizeVideoUploadParams):
+    video_path = os.path.join(VIDEOS_BASE_PATH, params.video_id + '.mp4')
 
     if not os.path.exists(video_path):
         raise HTTPException(status_code=400, detail="A video with this name does not exist")
 
+    capture = cv2.VideoCapture(video_path)
+
+    frame_width = round(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = round(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = capture.get(cv2.CAP_PROP_FPS)
+    frame_count = capture.get(cv2.CAP_PROP_FRAME_COUNT)
+    duration = frame_count / fps
+
+    h = int(capture.get(cv2.CAP_PROP_FOURCC))
+    codec = chr(h & 0xff) + chr((h >> 8) & 0xff) + chr((h >> 16) & 0xff) + chr((h >> 24) & 0xff)
+
+    video_manager.set_video_to_valid(
+        params.video_id,
+        {
+            'frame_width': frame_width,
+            'frame_height': frame_height,
+            'fps': round(fps),
+            'frame_count': round(frame_count),
+            'duration': duration,
+            'codec': codec,
+        }
+    )
+
     return {}
 
-@app.post("/videos/upload/{video_name}")
-async def upload_video(video_name, request: Request):
-    video_path = os.path.join(VIDEOS_BASE_PATH, video_name)
-
-    if os.path.exists(video_path):
-        raise HTTPException(status_code=400, detail="A video with this name exists already")
+@app.post("/videos/upload/{video_id}")
+async def upload_video(video_id, request: Request):
+    video_path = os.path.join(VIDEOS_BASE_PATH, video_id + '.mp4')
 
     video_content = await request.body()
 
