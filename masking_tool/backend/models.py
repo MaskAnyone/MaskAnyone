@@ -16,7 +16,8 @@ class MaskingStrategy(IntEnum):
     CHARACTER_3D = 3
 
 class RunParams(BaseModel):
-    video: str
+    id: str
+    video_id: str
     extract_person_only: bool
     head_only_hiding: bool
     hiding_strategy: HidingStrategy

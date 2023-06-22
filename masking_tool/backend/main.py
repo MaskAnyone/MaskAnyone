@@ -13,7 +13,9 @@ from runner import run_masking
 from models import RunParams, RequestVideoUploadParams, FinalizeVideoUploadParams
 
 from db.video_manager import VideoManager
+from db.job_manager import JobManager
 from db.db_connection import DBConnection
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -24,6 +26,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 video_manager = VideoManager(DBConnection())
+job_manager = JobManager(DBConnection())
+
 
 @app.get("/videos")
 def get_videos():
@@ -33,6 +37,7 @@ def get_videos():
         'videos': videos
     }
 
+
 @app.get('/videos/{video_id}')
 def get_video_stream(video_id, request: Request):
     video_path = os.path.join(VIDEOS_BASE_PATH, video_id + '.mp4')
@@ -40,6 +45,34 @@ def get_video_stream(video_id, request: Request):
     return range_requests_response(
         request, file_path=video_path, content_type="video/mp4"
     )
+
+
+@app.post('/jobs/create')
+def create_job(run_params: RunParams):
+    job_manager.create_new_job(
+        run_params.id,
+        run_params.video_id,
+        {
+            'extract_person_only': run_params.extract_person_only,
+            'head_only_hiding': run_params.head_only_hiding,
+            'hiding_strategy': run_params.hiding_strategy,
+            'head_only_masking': run_params.head_only_masking,
+            'mask_creation_strategy': run_params.mask_creation_strategy,
+            'detailed_fingers': run_params.detailed_fingers,
+            'detailed_facemesh': run_params.detailed_facemesh
+        }
+    )
+
+@app.get('/jobs/next')
+def fetch_next_job():
+    job = job_manager.fetch_next_job()
+
+    return {
+        'job': job
+    }
+
+
+
 
 @app.get('/results/result/{original_video_name}/{result_video_name}')
 def get_result_video_stream(original_video_name: str, result_video_name: str, request: Request):

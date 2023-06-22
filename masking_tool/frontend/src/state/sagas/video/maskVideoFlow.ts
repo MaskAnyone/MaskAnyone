@@ -11,6 +11,7 @@ const onMaskVideo = function*(payload: MaskVideoPayload) {
 
         yield call(
             Api.maskVideo,
+            payload.id,
             payload.videoId,
             payload.extractPersonOnly,
             payload.headOnlyHiding,
