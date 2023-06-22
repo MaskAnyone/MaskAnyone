@@ -37,7 +37,7 @@ export const uploadReducer = handleActions<UploadState, any>(
                 ...state,
                 uploadProgress: {
                     ...state.uploadProgress,
-                    [action.payload.videoName]: 0,
+                    [action.payload.videoId]: 0,
                 },
             };
         },
@@ -46,12 +46,12 @@ export const uploadReducer = handleActions<UploadState, any>(
                 ...state,
                 uploadProgress: {
                     ...state.uploadProgress,
-                    [action.payload.videoName]: action.payload.progress,
+                    [action.payload.videoId]: action.payload.progress,
                 },
             };
         },
         [Event.Upload.videoUploadFinished.toString()]: (state, action: Action<VideoUploadFinishedPayload>): UploadState => {
-            const { [action.payload.videoName]: _, ...newUploadProgress } = state.uploadProgress;
+            const { [action.payload.videoId]: _, ...newUploadProgress } = state.uploadProgress;
 
             return {
                 ...state,

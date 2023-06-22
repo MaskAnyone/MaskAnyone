@@ -9,16 +9,16 @@ export interface UploadDialogClosedPayload {
 }
 
 export interface VideoUploadStartedPayload {
-    videoName: string;
+    videoId: string;
 }
 
 export interface VideoUploadProgressChangedPayload {
-    videoName: string;
+    videoId: string;
     progress: number;
 }
 
 export interface VideoUploadFinishedPayload {
-    videoName: string;
+    videoId: string;
 }
 
 const UploadEvent = {

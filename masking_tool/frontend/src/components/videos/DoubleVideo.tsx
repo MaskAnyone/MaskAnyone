@@ -4,15 +4,15 @@ import {useEffect, useRef} from "react";
 
 
 interface DoubleVideoProps {
-    videoName: string;
+    videoId: string;
     selectedResult: string | undefined
 }
 
 const DoubleVideo = (props: DoubleVideoProps) => {
     const video1Ref = useRef<HTMLVideoElement>(null);
     const video2Ref = useRef<HTMLVideoElement>(null);
-    const originalPath = Config.api.baseUrl + '/videos/' + props.videoName;
-    const resultPath = Config.api.baseUrl + '/results/result/' + props.videoName.split('.')[0] + '/' + props.selectedResult;
+    const originalPath = Config.api.baseUrl + '/videos/' + props.videoId;
+    const resultPath = Config.api.baseUrl + '/results/result/' + props.videoId + '/' + props.selectedResult;
 
     useEffect(() => {
         if (!video1Ref.current || !video2Ref.current) {

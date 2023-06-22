@@ -57,9 +57,9 @@ const SideBar = (props: SideBarProps) => {
                         {videoList.map(video => (
                             <SideBarItem
                                 key={video.name}
-                                url={`/videos/${encodeURIComponent(video.name)}`}
-                                title={`${video.name} (${Math.round(video.duration)}s)`}
-                                subtitle={`${video.frameWidth}x${video.frameHeight}, ${video.fps} FPS`}
+                                url={`/videos/${video.id}`}
+                                title={`${video.name} (${Math.round(video.videoInfo.duration)}s)`}
+                                subtitle={`${video.videoInfo.frameWidth}x${video.videoInfo.frameHeight}, ${video.videoInfo.fps} FPS`}
                                 icon={<VideocamIcon />}
                             />
                         ))}

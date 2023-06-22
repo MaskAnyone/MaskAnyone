@@ -4,20 +4,19 @@ import { Divider, Grid, Paper, Tooltip, styled } from "@mui/material";
 import HelpIcon from '@mui/icons-material/Help';
 
 interface VideoResultsProps {
-    videoName: string;
+    videoId: string;
     updateSelectedResult: (resultVideoName: string) => void
 }
 
 const VideoResultsOverview = (props: VideoResultsProps) => {
-    
+
     const [results, setResults] = useState<string[]>([])
     const [resultPreviews, setResultPreviews] = useState<any[]>([])
     const [loading, setLoading] = useState<boolean>(true)
     const [selectedResultIdx, setSelectedResultIdx] = useState<number|undefined>()
 
     useEffect(() => {
-        console.log(props.videoName)
-        Api.fetchVideoResults(props.videoName.split('.')[0]).then(results => {
+        Api.fetchVideoResults(props.videoId).then(results => {
             setResults(results)
         });
     }, []);
@@ -25,12 +24,12 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
     useEffect(() => {
         let previewPromises: Promise<any>[] = []
         for(const result of results) {
-            previewPromises.push(Api.fetchResultPreview(props.videoName.split('.')[0], result))
+            previewPromises.push(Api.fetchResultPreview(props.videoId, result))
         }
         Promise.all(previewPromises).then(previews => {
             setResultPreviews(previews)
             setLoading(false)
-            
+
         })
     }, [results]);
 
@@ -54,14 +53,14 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
     const isSelected = (idx: number) => {
         return idx == selectedResultIdx
     }
-    
-    
+
+
     return (
         <>
-            {!loading ? 
+            {!loading ?
                 <>
                     <Divider style={{marginTop: "20px"}}/>
-                    
+
                     <div style={{display: "flex", alignItems: "center", marginTop: "20px"}}>
                         <h3 style={{marginRight: "10px"}}>Processed Results</h3>
                         <Tooltip title=" Click on a result to run it next to the original video">

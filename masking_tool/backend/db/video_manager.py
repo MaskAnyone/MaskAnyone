@@ -17,3 +17,11 @@ class VideoManager:
             result.append(Video(*video_data))
 
         return result
+
+    def has_video_with_name(self, video_name: str) -> bool:
+        result = self.__db_connection.execute(
+            'SELECT id FROM videos WHERE name=%(name)s',
+            {name: video_name}
+        )
+
+        return len(result) > 0

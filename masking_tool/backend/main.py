@@ -12,6 +12,9 @@ from utils.app_utils import clear_temp_dir, init_directories
 from runner import run_masking
 from models import RunParams, RequestVideoUploadParams
 
+from db.video_manager import VideoManager
+from db.db_connection import DBConnection
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_directories()
@@ -20,6 +23,17 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+video_manager = VideoManager(DBConnection())
+
+@app.get("/videos")
+def get_videos():
+    videos = video_manager.fetch_videos()
+
+    return {
+        'videos': videos
+    }
+
+"""
 @app.get("/videos")
 def get_videos():
     videos = []
@@ -34,21 +48,27 @@ def get_videos():
         frame_count = capture.get(cv2.CAP_PROP_FRAME_COUNT)
         duration = frame_count / fps
 
+        h = int(capture.get(cv2.CAP_PROP_FOURCC))
+        codec = chr(h&0xff) + chr((h>>8)&0xff) + chr((h>>16)&0xff) + chr((h>>24)&0xff)
+
         videos.append({
             'name': video_name,
-            'frameWidth': frame_width,
-            'frameHeight': frame_height,
+            'frame_width': frame_width,
+            'frame_height': frame_height,
             'fps': round(fps),
+            'frame_count': frame_count,
             'duration': duration,
+            'codec': codec,
         })
 
     return {
         "videos": videos,
     }
+"""
 
-@app.get('/videos/{video_name}')
-def get_video_stream(video_name, request: Request):
-    video_path = os.path.join(VIDEOS_BASE_PATH, video_name)
+@app.get('/videos/{video_id}')
+def get_video_stream(video_id, request: Request):
+    video_path = os.path.join(VIDEOS_BASE_PATH, video_id + '.mp4')
 
     return range_requests_response(
         request, file_path=video_path, content_type="video/mp4"
@@ -58,7 +78,7 @@ def get_video_stream(video_name, request: Request):
 def get_result_video_stream(original_video_name: str, result_video_name: str, request: Request):
     video_path = os.path.join(RESULT_BASE_PATH, original_video_name, result_video_name)
     if not os.path.exists(video_path):
-        raise HTTPException(status_code=404, detail="Requested result video not found.") 
+        raise HTTPException(status_code=404, detail="Requested result video not found.")
 
     return range_requests_response(
         request, file_path=video_path, content_type="video/mp4"
@@ -78,7 +98,7 @@ def get_result_preview_for_video(original_video_name: str, result_video_name: st
     preview_file = os.path.splitext(result_video_name)[0] + ".png"
     image_path = os.path.join(RESULT_BASE_PATH, original_video_name, preview_file)
     if not os.path.exists(image_path):
-        raise HTTPException(status_code=404, detail="Preview Image not found") 
+        raise HTTPException(status_code=404, detail="Preview Image not found")
     with open(image_path, 'rb') as f:
         base64image = base64.b64encode(f.read())
     return {"image": base64image}
@@ -91,10 +111,10 @@ def run(run_params: RunParams):
 # Not really needed right now but for future extension
 @app.post("/videos/upload/request")
 def request_video_upload(params: RequestVideoUploadParams):
-    video_path = os.path.join(VIDEOS_BASE_PATH, params.video_name)
-
-    if os.path.exists(video_path):
+    if video_manager.has_video_with_name(params.video_name):
         raise HTTPException(status_code=400, detail="A video with this name exists already")
+
+    video_path = os.path.join(VIDEOS_BASE_PATH, params.video_id + '.mp4')
 
     return {}
 

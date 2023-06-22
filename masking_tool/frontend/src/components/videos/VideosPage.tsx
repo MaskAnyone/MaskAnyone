@@ -10,7 +10,7 @@ import PoseRenderer3D from "./PoseRenderer3D";
 
 const VideosPage = () => {
     const dispatch = useDispatch();
-    const { videoName } = useParams<{ videoName: string }>();
+    const { videoId } = useParams<{ videoId: string }>();
 
     const [selectedResult, setSelectedResult] = useState<string|undefined>()
 
@@ -24,10 +24,10 @@ const VideosPage = () => {
 
     return (
         <Box>
-            {videoName && (<VideoRunParams videoName={videoName} />)}
+            {videoId && (<VideoRunParams videoId={videoId} />)}
             <Divider style={{marginBottom: "15px"}}/>
-            {videoName && (<DoubleVideo videoName={videoName} selectedResult={selectedResult}/>)}
-            {videoName && (<VideoResultsOverview key={videoName} videoName={videoName} updateSelectedResult={updateSelectedResult} />)}
+            {videoId && (<DoubleVideo videoId={videoId} selectedResult={selectedResult}/>)}
+            {videoId && (<VideoResultsOverview key={videoId} videoId={videoId} updateSelectedResult={updateSelectedResult} />)}
 
             {/*<PoseRenderer3D />*/}
         </Box>

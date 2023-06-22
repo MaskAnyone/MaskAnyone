@@ -6,7 +6,7 @@ export interface FetchVideoListPayload {
 }
 
 export interface MaskVideoPayload {
-    videoName: string;
+    videoId: string;
     extractPersonOnly: boolean;
     headOnlyHiding: boolean;
     hidingStrategy: number;
