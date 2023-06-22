@@ -6,7 +6,7 @@ import Command from "../../state/actions/command";
 import Selector from "../../state/selector";
 
 interface VideoRunParamsProps {
-    videoName: string;
+    videoId: string;
 }
 
 const VideoRunParams = (props: VideoRunParamsProps) => {
@@ -28,12 +28,12 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
     }, [headOnlyHiding])
 
     const maskVideo = () => {
-        if (!props.videoName || !hidingStrategy || ! maskCreationStrategy) {
+        if (!props.videoId || !hidingStrategy || ! maskCreationStrategy) {
             return;
         }
 
         dispatch(Command.Video.maskVideo({
-            videoName: props.videoName,
+            videoId: props.videoId,
             extractPersonOnly,
             headOnlyHiding,
             hidingStrategy,
@@ -102,7 +102,7 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
                             children={'Mask Video'}
                             onClick={maskVideo}
                             style={{marginTop: "10px"}}
-                            disabled={videoMaskingJobs[props.videoName]}
+                            disabled={videoMaskingJobs[props.videoId]}
                         />
                     </FormGroup>
                 </Grid>

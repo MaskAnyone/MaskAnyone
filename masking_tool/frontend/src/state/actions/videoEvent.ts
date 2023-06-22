@@ -1,21 +1,22 @@
 import {createAction} from 'redux-actions';
+import {Video} from "../types/Video";
 
 const createVideoEvent = <T>(type: string) => createAction<T>('_E/VD/' + type);
 
 export interface VideoListFetchedPayload {
-    videoList: any[];
+    videoList: Video[];
 }
 
 export interface VideoMaskingStartedPayload {
-    videoName: string;
+    videoId: string;
 }
 
 export interface VideoMaskingFailedPayload {
-    videoName: string;
+    videoId: string;
 }
 
 export interface VideoMaskingFinishedPayload {
-    videoName: string;
+    videoId: string;
 }
 
 const VideoEvent = {

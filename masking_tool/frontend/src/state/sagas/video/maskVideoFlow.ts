@@ -7,11 +7,11 @@ import Event from "../../actions/event";
 
 const onMaskVideo = function*(payload: MaskVideoPayload) {
     try {
-        yield put(Event.Video.videoMaskingStarted({ videoName: payload.videoName }));
+        yield put(Event.Video.videoMaskingStarted({ videoId: payload.videoId }));
 
         yield call(
             Api.maskVideo,
-            payload.videoName,
+            payload.videoId,
             payload.extractPersonOnly,
             payload.headOnlyHiding,
             payload.hidingStrategy,
@@ -21,10 +21,10 @@ const onMaskVideo = function*(payload: MaskVideoPayload) {
             payload.detailedFaceMesh
         );
 
-        yield put(Event.Video.videoMaskingFinished({ videoName: payload.videoName }));
+        yield put(Event.Video.videoMaskingFinished({ videoId: payload.videoId }));
     } catch (e) {
         console.error(e);
-        yield put(Event.Video.videoMaskingFailed({ videoName: payload.videoName }));
+        yield put(Event.Video.videoMaskingFailed({ videoId: payload.videoId }));
     }
 };
 

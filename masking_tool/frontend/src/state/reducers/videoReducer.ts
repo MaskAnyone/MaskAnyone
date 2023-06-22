@@ -32,7 +32,7 @@ export const videoReducer = handleActions<VideoState, any>(
                 ...state,
                 maskingJobs: {
                     ...state.maskingJobs,
-                    [action.payload.videoName]: true,
+                    [action.payload.videoId]: true,
                 },
             };
         },
@@ -41,7 +41,7 @@ export const videoReducer = handleActions<VideoState, any>(
                 ...state,
                 maskingJobs: {
                     ...state.maskingJobs,
-                    [action.payload.videoName]: false,
+                    [action.payload.videoId]: false,
                 },
             };
         },
@@ -50,7 +50,7 @@ export const videoReducer = handleActions<VideoState, any>(
                 ...state,
                 maskingJobs: {
                     ...state.maskingJobs,
-                    [action.payload.videoName]: false,
+                    [action.payload.videoId]: false,
                 },
             };
         }

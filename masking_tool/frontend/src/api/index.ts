@@ -1,5 +1,6 @@
 import axios, {AxiosRequestConfig, AxiosResponse} from 'axios';
 import Config from "../config";
+import {ApiFetchVideosResponse} from "./types";
 
 const configuredAxios = axios.create({
     baseURL: Config.api.baseUrl,
@@ -10,13 +11,13 @@ const sendApiRequest = async (config: AxiosRequestConfig): Promise<AxiosResponse
 };
 
 const Api = {
-    fetchVideos: async (): Promise<any[]> => {
+    fetchVideos: async (): Promise<ApiFetchVideosResponse> => {
         const result = await sendApiRequest({
             url: 'videos',
             method: 'get',
         });
 
-        return result.data.videos;
+        return result.data;
     },
     fetchVideoResults: async (original_video_name: string): Promise<string[]> => {
         const result = await sendApiRequest({
@@ -36,7 +37,7 @@ const Api = {
         return result.data.image
     },
     maskVideo: async (
-        videoName: string,
+        videoId: string,
         extractPersonOnly: boolean,
         headOnlyHiding: boolean,
         hidingStrategy: number,
@@ -49,7 +50,7 @@ const Api = {
             url: 'run',
             method: 'post',
             data: {
-                video: videoName,
+                video: videoId,
                 extract_person_only: extractPersonOnly,
                 head_only_hiding: headOnlyHiding,
                 hiding_strategy: hidingStrategy,
@@ -60,22 +61,23 @@ const Api = {
             }
         });
     },
-    requestVideoUpload: async (videoName: string): Promise<void> => {
+    requestVideoUpload: async (videoId: string, videoName: string): Promise<void> => {
         await sendApiRequest({
             url: 'videos/upload/request',
             method: 'post',
             data: {
+                video_id: videoId,
                 video_name: videoName,
             },
         });
     },
     uploadVideo: async (
-        videoName: string,
+        videoId: string,
         fileContent: ArrayBuffer,
         onUploadProgress: (percentage: number) => void,
     ): Promise<void> => {
         await sendApiRequest({
-            url: `/videos/upload/${encodeURIComponent(videoName)}`,
+            url: `/videos/upload/${videoId}`,
             method: 'post',
             data: fileContent,
             headers: { 'Content-Type': 'application/octet-stream' },
@@ -85,12 +87,12 @@ const Api = {
             },
         });
     },
-    finalizeVideoUpload: async (videoName: string): Promise<void> => {
+    finalizeVideoUpload: async (videoId: string): Promise<void> => {
         await sendApiRequest({
             url: 'videos/upload/finalize',
             method: 'post',
             data: {
-                video_name: videoName,
+                video_id: videoId,
             },
         });
     },

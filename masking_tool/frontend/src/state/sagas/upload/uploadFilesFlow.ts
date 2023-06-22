@@ -10,6 +10,7 @@ import Api from "../../../api";
 
 interface FileUpload {
     file: File;
+    id: string;
     tags: string[];
 }
 
@@ -24,25 +25,25 @@ const onStartFileUploadWatcher = function*() {
 };
 
 const onUploadVideo = function*(file: FileUpload) {
-    yield call(Api.requestVideoUpload, file.file.name);
+    yield call(Api.requestVideoUpload, file.id, file.file.name);
 
     const fileContent: ArrayBuffer = yield call(readFileArrayBuffer, file.file);
-    yield call(Api.uploadVideo, file.file.name, fileContent, percentage => {
+    yield call(Api.uploadVideo, file.id, fileContent, percentage => {
         uploadProgressChannel.put(
-            Event.Upload.videoUploadProgressChanged({ videoName: file.file.name, progress: percentage }),
+            Event.Upload.videoUploadProgressChanged({ videoId: file.id, progress: percentage }),
         );
     });
 
-    yield call(Api.finalizeVideoUpload, file.file.name);
+    yield call(Api.finalizeVideoUpload, file.id);
 
-    yield put(Event.Upload.videoUploadFinished({ videoName: file.file.name }));
+    yield put(Event.Upload.videoUploadFinished({ videoId: file.id }));
     yield put(Command.Video.fetchVideoList({}));
 };
 
 const onUploadVideos = function*(files: Array<FileUpload>) {
     for (const file of files) {
         yield put(uploadChannel, { file });
-        yield put(Event.Upload.videoUploadStarted({ videoName: file.file.name }));
+        yield put(Event.Upload.videoUploadStarted({ videoId: file.id }));
     }
 };
 
