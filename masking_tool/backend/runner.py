@@ -37,7 +37,7 @@ def create_person_mask(video_path: str, masking_strategy: MaskingStrategy, head_
 
 def run_masking(run_params: RunParams) -> str:
     background_video = None
-    video_path = os.path.join(video_base_path, run_params.video)
+    video_path = os.path.join(video_base_path, run_params.video_id + '.mp4')
     if run_params.extract_person_only:
         background_video = create_black_bg(video_path)
     else:
