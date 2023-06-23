@@ -1,5 +1,6 @@
 from backend_client import BackendClient
 from local_data_manager import LocalDataManager
+import os
 
 class VideoManager:
     __backend_client: BackendClient
@@ -12,4 +13,4 @@ class VideoManager:
 
     def load_original_video(self, video_id: str):
         video_data = self.__backend_client.fetch_video(video_id)
-        self.__local_data_manager.write_binary(video_id + '.mp4', video_data)
+        self.__local_data_manager.write_binary(os.path.join('original', video_id + '.mp4'), video_data)

@@ -9,6 +9,8 @@ class LocalDataManager:
 
         if not os.path.exists(self.__base_dir):
             os.makedirs(self.__base_dir)
+            os.makedirs(os.path.join(self.__base_dir, 'original'))
+            os.makedirs(os.path.join(self.__base_dir, 'results'))
 
     def write_binary(self, file_name: str, content):
         file = open(os.path.join(self.__base_dir, file_name), 'wb')

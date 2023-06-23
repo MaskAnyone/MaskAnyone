@@ -6,12 +6,13 @@ import sys
 import os
 from runner import run_masking
 from models import RunParams
+from utils.app_utils import clear_temp_dir, init_directories
 
 DATA_BASE_DIR = 'local_data'
-ORIGINAL_DATA_BASE_DIR = os.path.join(DATA_BASE_DIR, 'original')
 
 backend_client = BackendClient()
-video_manager = VideoManager(backend_client, LocalDataManager(ORIGINAL_DATA_BASE_DIR))
+video_manager = VideoManager(backend_client, LocalDataManager(DATA_BASE_DIR))
+init_directories()
 
 
 def fetch_next_job():

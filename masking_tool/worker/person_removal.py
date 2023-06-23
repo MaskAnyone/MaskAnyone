@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import mediapipe as mp
 from utils.drawing_utils import draw_segment_mask, overlay
+from config import RESULT_BASE_PATH
 
 from ultralytics import YOLO
 
@@ -18,7 +19,7 @@ def remove_person_bbox(video_path: str, face_only: bool, confidence_treshold: fl
     frameHeight = video_cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
     samplerate = video_cap.get(cv2.CAP_PROP_FPS)
     fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-    vid_out_path = os.path.join("results", "bg_video_temp.mp4")
+    vid_out_path = os.path.join(RESULT_BASE_PATH, "bg_video_temp.mp4")
     out = cv2.VideoWriter(vid_out_path, fourcc, fps = samplerate, frameSize = (int(frameWidth), int(frameHeight)))
 
     while True:
@@ -48,7 +49,7 @@ def remove_person_silhoutte(video_path: str):
     frameHeight = video_cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
     samplerate = video_cap.get(cv2.CAP_PROP_FPS)
     fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-    vid_out_path = os.path.join("results", "bg_video_temp.mp4")
+    vid_out_path = os.path.join(RESULT_BASE_PATH, "bg_video_temp.mp4")
     out = cv2.VideoWriter(vid_out_path, fourcc, fps = samplerate, frameSize = (int(frameWidth), int(frameHeight)))
     count = 0
     while True:
@@ -78,7 +79,7 @@ def remove_person_silhoutte_mp(video_path: str):
     frameHeight = capture.get(cv2.CAP_PROP_FRAME_HEIGHT) #check frame height
     samplerate = capture.get(cv2.CAP_PROP_FPS)   #fps = frames per second
     fourcc = cv2.VideoWriter_fourcc(*'MP4V') #for different video formats you could use e.g., *'XVID'
-    vid_out_path = os.path.join("results", "bg_video_temp.mp4")
+    vid_out_path = os.path.join(RESULT_BASE_PATH, "bg_video_temp.mp4")
     out = cv2.VideoWriter(vid_out_path, fourcc, 
                           fps = samplerate, frameSize = (int(frameWidth), int(frameHeight)))
 
@@ -109,7 +110,7 @@ def remove_person_estimate_bg(video_path: str, hiding_model: str):
     frameHeight = video_cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
     samplerate = video_cap.get(cv2.CAP_PROP_FPS)
     fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-    vid_out_path = os.path.join("results", "bg_video_temp.mp4")
+    vid_out_path = os.path.join(RESULT_BASE_PATH, "bg_video_temp.mp4")
     out = cv2.VideoWriter(vid_out_path, fourcc, fps = samplerate, frameSize = (int(frameWidth), int(frameHeight)))
     model = None
     while True:
@@ -142,7 +143,7 @@ def blur(video_path: str, face_only: bool, confidence_treshold: float) -> str:
     frameHeight = video_cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
     samplerate = video_cap.get(cv2.CAP_PROP_FPS)
     fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-    vid_out_path = os.path.join("results", os.path.split(video_path)[1])
+    vid_out_path = os.path.join(RESULT_BASE_PATH, os.path.split(video_path)[1])
     out = cv2.VideoWriter(vid_out_path, fourcc, fps = samplerate, frameSize = (int(frameWidth), int(frameHeight)))
 
     while True:
