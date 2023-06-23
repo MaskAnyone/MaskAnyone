@@ -24,3 +24,6 @@ class DBConnection:
         result = cursor.fetchall()
         cursor.close()
         return result
+
+    def get_cursor(self):
+        return self.__connection.cursor()

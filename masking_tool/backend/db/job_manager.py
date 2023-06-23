@@ -14,19 +14,23 @@ class JobManager:
         )
 
     def fetch_next_job(self):
-        # @todo For multiple workers this must be a transaction!
-
-        jobs = self.__db_connection.select_all(
+        # @todo make this nice
+        cursor = self.__db_connection.get_cursor()
+        cursor.execute('BEGIN')
+        cursor.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
+        cursor.execute(
             'SELECT * FROM jobs WHERE status=%(status)s LIMIT 1',
             {'status': 'open'}
         )
+        jobs = cursor.fetchall()
 
-        if len(jobs) < 1:
-            return None
+        if len(jobs) > 0:
+            cursor.execute(
+                'UPDATE jobs SET status=%(status)s, started_at=current_timestamp WHERE id=%(id)s',
+                {'status': 'running', 'id': jobs[0][0]}
+            )
 
-        self.__db_connection.execute(
-            'UPDATE jobs SET status=%(status)s, started_at=current_timestamp WHERE id=%(id)s',
-            {'status': 'running', 'id': jobs[0][0]}
-        )
+        cursor.execute('COMMIT')
+        cursor.close()
 
-        return Job(*jobs[0])
+        return None if len(jobs) < 1 else Job(*jobs[0])
