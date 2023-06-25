@@ -23,6 +23,7 @@ async def lifespan(app: FastAPI):
     yield
     clear_temp_dir()
 
+
 app = FastAPI(lifespan=lifespan)
 
 video_manager = VideoManager(DBConnection())
@@ -63,6 +64,7 @@ def create_job(run_params: RunParams):
         }
     )
 
+
 @app.get('/jobs/next')
 def fetch_next_job():
     job = job_manager.fetch_next_job()
@@ -72,6 +74,9 @@ def fetch_next_job():
     }
 
 
+@app.post('/jobs/{job_id}/finish')
+def finish_job(job_id: str):
+    job_manager.mark_job_as_finished(job_id)
 
 
 @app.get('/results/result/{original_video_name}/{result_video_name}')
@@ -84,6 +89,7 @@ def get_result_video_stream(original_video_name: str, result_video_name: str, re
         request, file_path=video_path, content_type="video/mp4"
     )
 
+
 @app.get('/results/{original_video_name}')
 def get_results_for_video(original_video_name: str):
     results_path = os.path.join(RESULT_BASE_PATH, original_video_name)
@@ -92,6 +98,7 @@ def get_results_for_video(original_video_name: str):
     else:
         result_videos = [p for p in os.listdir(results_path) if os.path.splitext(p)[1] != ".png"]
     return {"results": result_videos}
+
 
 @app.get('/results/preview/{original_video_name}/{result_video_name}')
 def get_result_preview_for_video(original_video_name: str, result_video_name: str):
@@ -103,10 +110,12 @@ def get_result_preview_for_video(original_video_name: str, result_video_name: st
         base64image = base64.b64encode(f.read())
     return {"image": base64image}
 
+
 @app.post("/run")
 def run(run_params: RunParams):
     result_path = run_masking(run_params)
     return {"result_video_path": result_path}
+
 
 # Not really needed right now but for future extension
 @app.post("/videos/upload/request")
@@ -118,9 +127,10 @@ def request_video_upload(params: RequestVideoUploadParams):
         params.video_id,
         params.video_name
     )
-    #video_path = os.path.join(VIDEOS_BASE_PATH, params.video_id + '.mp4')
+    # video_path = os.path.join(VIDEOS_BASE_PATH, params.video_id + '.mp4')
 
     return {}
+
 
 # Not really needed right now but for future extension
 @app.post("/videos/upload/finalize")
@@ -155,6 +165,7 @@ def finalize_video_upload(params: FinalizeVideoUploadParams):
 
     return {}
 
+
 @app.post("/videos/upload/{video_id}")
 async def upload_video(video_id, request: Request):
     video_path = os.path.join(VIDEOS_BASE_PATH, video_id + '.mp4')
@@ -165,4 +176,33 @@ async def upload_video(video_id, request: Request):
     file.write(video_content)
     file.close()
 
-    return {}
+
+@app.post('/videos/{video_id}/results/{result_video_id}')
+async def upload_result_video(video_id: str, result_video_id: str, request: Request):
+    result_dir = os.path.join(RESULT_BASE_PATH, video_id)
+    if not os.path.exists(result_dir):
+        os.mkdir(result_dir)
+
+    video_path = os.path.join(result_dir, video_id + '.mp4')
+
+    video_content = await request.body()
+
+    file = open(video_path, 'wb')
+    file.write(video_content)
+    file.close()
+
+
+@app.post('/videos/{video_id}/results/{result_video_id}/preview')
+async def upload_result_video_preview_image(video_id: str, result_video_id: str, request: Request):
+    result_dir = os.path.join(RESULT_BASE_PATH, video_id)
+    if not os.path.exists(result_dir):
+        os.mkdir(result_dir)
+
+    image_path = os.path.join(result_dir, video_id + '.png')
+
+    image_content = await request.body()
+
+    file = open(image_path, 'wb')
+    file.write(image_content)
+    file.close()
+
