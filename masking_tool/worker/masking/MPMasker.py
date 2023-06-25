@@ -27,7 +27,7 @@ class MPMasker(BaseMasker):
 
     def setup_masking_utilities(self):
         face_model_path = os.path.join("models", "face_landmarker.task")
-        pose_model_path = os.path.join("models", "pose_landmarker_lite.task")
+        pose_model_path = os.path.join("models", "pose_landmarker_heavy.task")
         hand_model_path = os.path.join("models", "hand_landmarker.task")
 
         BaseOptions = mp.tasks.BaseOptions
