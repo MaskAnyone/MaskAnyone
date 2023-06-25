@@ -22,4 +22,5 @@ RUN pip install \
     mediapipe \
     uvicorn[standard] \
     ultralytics \
-    psycopg2
+    psycopg2 \
+    requests

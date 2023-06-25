@@ -7,7 +7,9 @@ from person_removal import blur, remove_person_bbox, remove_person_estimate_bg, 
 from models import MaskingStrategy, HidingStrategy, RunParams
 from masking.maskers import maskers
 
-video_base_path = "videos"
+# @todo
+video_base_path = "local_data/original"
+
 
 def hide_person(video_path: str, hiding_strategy: HidingStrategy, face_only: bool):
     supports_face_only = [HidingStrategy.BLUR, HidingStrategy.BBOX]
@@ -27,6 +29,7 @@ def hide_person(video_path: str, hiding_strategy: HidingStrategy, face_only: boo
     elif hiding_strategy == HidingStrategy.BLUR:
         return blur(video_path, face_only, 0.25)
 
+
 def create_person_mask(video_path: str, masking_strategy: MaskingStrategy, head_only: bool, detailed_facemesh: bool,
                        detailed_fingers: bool, background_video_path: str) -> str:
     masker = maskers[masking_strategy]()
@@ -35,9 +38,10 @@ def create_person_mask(video_path: str, masking_strategy: MaskingStrategy, head_
     else:
         return masker.mask(video_path, background_video_path, detailed_facemesh, True, detailed_fingers)
 
-def run_masking(run_params: RunParams) -> str:
+
+def run_masking(video_id, run_params: RunParams) -> str:
     background_video = None
-    video_path = os.path.join(video_base_path, run_params.video_id + '.mp4')
+    video_path = os.path.join(video_base_path, video_id + '.mp4')
     if run_params.extract_person_only:
         background_video = create_black_bg(video_path)
     else:

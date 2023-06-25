@@ -37,6 +37,7 @@ const Api = {
         return result.data.image
     },
     maskVideo: async (
+        id: string,
         videoId: string,
         extractPersonOnly: boolean,
         headOnlyHiding: boolean,
@@ -47,10 +48,11 @@ const Api = {
         detailedFaceMesh: boolean
     ): Promise<void> => {
         await sendApiRequest({
-            url: 'run',
+            url: 'jobs/create',
             method: 'post',
             data: {
-                video: videoId,
+                id,
+                video_id: videoId,
                 extract_person_only: extractPersonOnly,
                 head_only_hiding: headOnlyHiding,
                 hiding_strategy: hidingStrategy,

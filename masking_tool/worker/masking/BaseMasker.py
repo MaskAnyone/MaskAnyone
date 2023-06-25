@@ -30,16 +30,8 @@ class BaseMasker():
     def draw_mask(self, face_mask, body_mask, fingers_mask):
         pass
 
-    def init_out_dir(self, video_path):
-        result_dir = os.path.join(RESULT_BASE_PATH, os.path.splitext(os.path.basename(video_path))[0])
-        if not os.path.exists(result_dir):
-            os.mkdir(result_dir)
-        self.output_path = os.path.join(result_dir, os.path.split(video_path)[1])
-
     def mask(self, video_path: str, bg_video_path: str, face: bool, body: bool, fingers: bool):
         print(f"Masking Video {video_path}. Params set to: face: {face}, body: {body}, fingers: {fingers}")
-
-        self.init_out_dir(video_path)
 
         capture = cv2.VideoCapture(video_path)
         capture_bg = cv2.VideoCapture(bg_video_path)
@@ -52,6 +44,9 @@ class BaseMasker():
         if int(capture.get(cv2.CAP_PROP_FRAME_COUNT)) != int(capture_bg.get(cv2.CAP_PROP_FRAME_COUNT)):
             raise Exception("Background Video not same length as Video to mask")
 
+        out_path = video_path.replace('original', 'results')
+        print('OUT', out_path)
+
         """
         vp09 seems to be a reasonable compromise that doesn't require a custom build, works in most modern browsers
         and is comparably efficient
@@ -60,7 +55,7 @@ class BaseMasker():
         mp4v is not supported by browsers
         """
         fourcc = cv2.VideoWriter_fourcc(*'vp09')
-        out = cv2.VideoWriter(self.output_path, fourcc, fps = samplerate, frameSize = (int(frameWidth), int(frameHeight)))
+        out = cv2.VideoWriter(out_path, fourcc, fps = samplerate, frameSize = (int(frameWidth), int(frameHeight)))
 
         self.setup_masking_utilities()
 
@@ -97,4 +92,4 @@ class BaseMasker():
         capture.release()
         capture_bg.release()
         cv2.destroyAllWindows()
-        return self.output_path
+        return out_path

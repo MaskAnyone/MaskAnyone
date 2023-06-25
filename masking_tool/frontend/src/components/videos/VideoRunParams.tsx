@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {useDispatch, useSelector} from "react-redux";
 import Command from "../../state/actions/command";
 import Selector from "../../state/selector";
+import { v4 as uuidv4 } from 'uuid';
 
 interface VideoRunParamsProps {
     videoId: string;
@@ -33,6 +34,7 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
         }
 
         dispatch(Command.Video.maskVideo({
+            id: uuidv4(),
             videoId: props.videoId,
             extractPersonOnly,
             headOnlyHiding,

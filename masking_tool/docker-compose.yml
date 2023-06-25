@@ -21,6 +21,15 @@ services:
       - ./backend:/app
     depends_on:
       - postgres
+
+  python-worker:
+    build:
+      context: ./docker/python
+    command: "python worker.py"
+    env_file:
+      - ./app.env
+    volumes:
+      - ./worker:/app
     #deploy:
     #  resources:
     #    reservations:

@@ -16,8 +16,6 @@ class MaskingStrategy(IntEnum):
     CHARACTER_3D = 3
 
 class RunParams(BaseModel):
-    id: str
-    video_id: str
     extract_person_only: bool
     head_only_hiding: bool
     hiding_strategy: HidingStrategy
@@ -25,11 +23,3 @@ class RunParams(BaseModel):
     mask_creation_strategy: MaskingStrategy
     detailed_fingers: bool
     detailed_facemesh: bool
-
-class RequestVideoUploadParams(BaseModel):
-    video_id: str
-    video_name: str
-
-class FinalizeVideoUploadParams(BaseModel):
-    video_id: str
-
