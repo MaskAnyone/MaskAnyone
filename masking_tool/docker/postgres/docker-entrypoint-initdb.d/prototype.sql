@@ -111,7 +111,6 @@ COPY public.result_videos (id, video_id, job_id, video_info) FROM stdin;
 COPY public.videos (id, name, status, video_info) FROM stdin;
 96e9e676-51ac-4af5-9952-3ad371669ddc	ted_kid.mp4	valid	{"fps": 30, "codec": "avc1", "duration": 7.006966666666666, "frame_count": 210, "frame_width": 1920, "frame_height": 1080}
 c466648e-7a51-4bf9-b876-0f7ee59ea0ad	sample.mp4	valid	{"fps": 30, "codec": "avc1", "duration": 17.266000000000002, "frame_count": 518, "frame_width": 1280, "frame_height": 720}
-dcd7f0f2-7f77-403f-b0bc-14a8198793d8	test.mp4	valid	{"fps": 30, "codec": "avc1", "duration": 42.83316666666667, "frame_count": 1285, "frame_width": 640, "frame_height": 360}
 \.
 
 

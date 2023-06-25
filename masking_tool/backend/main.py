@@ -9,7 +9,6 @@ from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 from utils.request_utils import range_requests_response
 from utils.app_utils import clear_temp_dir, init_directories
 
-from runner import run_masking
 from models import RunParams, RequestVideoUploadParams, FinalizeVideoUploadParams
 
 from db.video_manager import VideoManager
@@ -109,12 +108,6 @@ def get_result_preview_for_video(original_video_name: str, result_video_name: st
     with open(image_path, 'rb') as f:
         base64image = base64.b64encode(f.read())
     return {"image": base64image}
-
-
-@app.post("/run")
-def run(run_params: RunParams):
-    result_path = run_masking(run_params)
-    return {"result_video_path": result_path}
 
 
 # Not really needed right now but for future extension
