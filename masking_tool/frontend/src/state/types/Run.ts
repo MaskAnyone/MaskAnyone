@@ -5,3 +5,14 @@ export interface Run {
     params: string
     duration: number
 }
+
+export type RunParams = {
+
+}
+
+export type Preset = {
+    name: string,
+    previewImagePath?: string,
+    detailText?: string,
+    detailImagePaths?: string[]
+}
