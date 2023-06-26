@@ -1,4 +1,4 @@
-import { Box, Grid, Paper } from "@mui/material";
+import { Box, Grid, Paper, Typography } from "@mui/material";
 import MasksIcon from '@mui/icons-material/Masks';
 import { ReactElement } from "react";
 
@@ -32,7 +32,7 @@ const PresetItem = (props: PresetItemProps) => {
                             src={require(previewImagePath)} 
                         /> :  icon}
                     </Grid>
-                    <Grid item xs={8} sx={{ fontWeight: 400 }}>{name}</Grid>
+                    <Grid item xs={8} sx={{ fontWeight: 400 }}><Typography>{name}</Typography></Grid>
                 </Grid>
                 {hideInfo ? <></> : <Grid container>
                     <Grid item xs={12}></Grid>
