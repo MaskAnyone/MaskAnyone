@@ -18,7 +18,7 @@ init_directories()
 def fetch_next_job():
     try:
         return backend_client.fetch_next_job()
-    except:
+    except Exception as error:
         print('Error while fetching next job')
 
     return None
@@ -26,9 +26,15 @@ def fetch_next_job():
 
 def handle_job(job):
     print('Start working on job ' + job['id'])
-    video_manager.load_original_video(job['video_id'])
 
-    run_masking(job['video_id'], RunParams.parse_obj(job['data']))
+    video_id = job['video_id']
+    video_manager.load_original_video(video_id)
+
+    run_masking(video_id, RunParams.parse_obj(job['data']))
+
+    video_manager.upload_result_video(video_id)
+    video_manager.upload_result_video_preview_image(video_id)
+    video_manager.cleanup_result_video_files(video_id)
 
 
 while True:
@@ -37,7 +43,13 @@ while True:
     if job is None:
         print('No suitable job found')
     else:
-        handle_job(job)
+        try:
+            handle_job(job)
+            backend_client.mark_job_as_finished(job['id'])
+        except Exception as error:
+            print('Handling job with id ' + job['id'] + ' failed')
+            print(error)
+            # @todo: mark job as failed in backend
 
     sys.stdout.flush()  # Flush log output
     time.sleep(10)  #

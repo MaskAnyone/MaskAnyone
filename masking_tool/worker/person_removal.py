@@ -3,6 +3,8 @@ import os
 import cv2
 import numpy as np
 import mediapipe as mp
+from mediapipe import solutions
+from mediapipe.framework.formats import landmark_pb2
 from utils.drawing_utils import draw_segment_mask, overlay
 from config import RESULT_BASE_PATH
 
@@ -73,36 +75,59 @@ def remove_person_silhoutte(video_path: str):
     return vid_out_path
 
 def remove_person_silhoutte_mp(video_path: str):
-    mp_holistic = mp.solutions.holistic
+    model_path = os.path.join("models", "pose_landmarker_heavy.task")
+
+    BaseOptions = mp.tasks.BaseOptions
+    PoseLandmarker = mp.tasks.vision.PoseLandmarker
+    PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
+    VisionRunningMode = mp.tasks.vision.RunningMode
+
+    options = PoseLandmarkerOptions(
+        base_options=BaseOptions(model_asset_path=model_path),
+        running_mode=VisionRunningMode.VIDEO,
+        output_segmentation_masks=True,
+        num_poses=2)
+
     capture = cv2.VideoCapture(video_path) #load in the videocapture
     frameWidth = capture.get(cv2.CAP_PROP_FRAME_WIDTH) #check frame width
     frameHeight = capture.get(cv2.CAP_PROP_FRAME_HEIGHT) #check frame height
     samplerate = capture.get(cv2.CAP_PROP_FPS)   #fps = frames per second
     fourcc = cv2.VideoWriter_fourcc(*'MP4V') #for different video formats you could use e.g., *'XVID'
     vid_out_path = os.path.join(RESULT_BASE_PATH, "bg_video_temp.mp4")
-    out = cv2.VideoWriter(vid_out_path, fourcc, 
+    out = cv2.VideoWriter(vid_out_path, fourcc,
                           fps = samplerate, frameSize = (int(frameWidth), int(frameHeight)))
 
-    # Run MediaPipe frame by frame using Holistic with `enable_segmentation=True` to get pose segmentation.
-    time = 0
-    with mp_holistic.Holistic(
-        static_image_mode=True, enable_segmentation=True, refine_face_landmarks=True) as holistic:
-        while (True):
-            ret, image = capture.read() #read frame
-            if ret == True: #if there is a frame
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) #make sure the image is in RGB format
-                results = holistic.process(image) #apply Mediapipe holistic processing
-                # Draw pose segmentation
-                h, w, c = image.shape
-                if  np.all(results.segmentation_mask) != None: #check if there is a pose found
-                    masked_img = draw_segment_mask(image, results.segmentation_mask)
-                out.write(masked_img) #save the frame to the new masked video
-                time = time+(1000/samplerate)#update the time variable  for the next frame
+    with PoseLandmarker.create_from_options(options) as landmarker:
+        while capture.isOpened():
+            ret, frame = capture.read()
+
+            if ret:
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame_timestamp_ms = capture.get(cv2.CAP_PROP_POS_MSEC)
+                mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
+
+                pose_landmarker_result = landmarker.detect_for_video(mp_image, int(frame_timestamp_ms))
+
+                output_image = cv2.cvtColor(mp_image.numpy_view(), cv2.COLOR_RGB2BGR)
+                if pose_landmarker_result.segmentation_masks:
+                    for segmentation_mask in pose_landmarker_result.segmentation_masks:
+                        mask = segmentation_mask.numpy_view()
+                        seg_mask = np.repeat(mask[:, :, np.newaxis], 3, axis=2)
+
+                        output_image[seg_mask > 0.3] = 0
+                        interpolation_mask = (seg_mask > 0.1) & (seg_mask <= 0.3)
+                        interpolation_factor = (seg_mask - 0.1) / (0.3 - 0.1)
+                        output_image[interpolation_mask] = (1 - interpolation_factor[interpolation_mask]) * output_image[interpolation_mask] + interpolation_factor[interpolation_mask] * 0
+
+                out.write(output_image)
             else:
+                # Break the loop if no frames are left
                 break
+
     out.release()
     capture.release()
     return vid_out_path
+
 
 def remove_person_estimate_bg(video_path: str, hiding_model: str):
     video_cap = cv2.VideoCapture(video_path)
