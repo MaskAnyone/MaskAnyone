@@ -26,6 +26,21 @@ const ParamterTabOverview = (props: ParameterTabOverviewProps) => {
         return str.charAt(0).toUpperCase() + str.slice(1)
     }
 
+    const onMethodChange = (videoPart: string, strategy: "hidingStrategy" | "maskingStrategy", methodKey: string) => {
+        onParamsChange({
+            ...runParams,
+            videoMasking: {
+                ...runParams.videoMasking,
+                [videoPart]: {
+                    ...runParams.videoMasking[videoPart],
+                    [strategy]:{
+                        key: methodKey,
+                        params: {}
+                    }
+                }
+        }})
+    }
+
     const maskVideoStrategyParamSetter = (videoPart: string, strategy: "hidingStrategy" | "maskingStrategy") => {
         const paramSetter = (newParams: object) => {
             onParamsChange({
@@ -71,16 +86,17 @@ const ParamterTabOverview = (props: ParameterTabOverviewProps) => {
                 const videoPartMethod = maskingMethods[videoPart]
                 const activeHidingStrategy: string = runParams.videoMasking[videoPart].hidingStrategy.key
                 const activeMaskingStrategy = runParams.videoMasking[videoPart].maskingStrategy?.key
-                console.log(videoPartMethod)
                 return (
                    <>
                         <Grid item xs={4}>
                             <Typography>{upperFirst(videoPart)}</Typography>
                         </Grid>
-                        <Grid item xs={4}>
-                            <FormControl fullWidth>
+                        <Grid container xs={4} rowSpacing={2}>
+                            <Grid item xs={8}>
                                 <Select
                                     value={activeHidingStrategy}
+                                    onChange={(e) => {onMethodChange(videoPart, "hidingStrategy", e.target.value)}}
+                                    fullWidth
                                 >
                                     {Object.keys(videoPartMethod.hidingMethods).map((hidingMethod: string) => {
                                         return (
@@ -88,17 +104,21 @@ const ParamterTabOverview = (props: ParameterTabOverviewProps) => {
                                         )
                                     })}
                                 </Select>
-                                <MethodSettings
+                            </Grid>
+                            <Grid item xs={4} sx={{ display: 'flex', alignItems: 'center'}}>
+                            <MethodSettings
                                     methodName={activeHidingStrategy}
                                     formSchema={maskingMethods[videoPart].hidingMethods[activeHidingStrategy].parameterSchema}
                                     onSet={maskVideoStrategyParamSetter(videoPart, "hidingStrategy")}
                                 />
-                            </FormControl>
+                            </Grid>  
                         </Grid>
-                        <Grid item xs={4}>
-                            {videoPartMethod.maskingMethods ? <FormControl fullWidth>
+                            {videoPartMethod.maskingMethods ?  <Grid container xs={4} rowSpacing={2}>
+                            <Grid item xs={8}>
                                 <Select
                                     value={activeMaskingStrategy}
+                                    onChange={(e) => {onMethodChange(videoPart, "maskingStrategy", e.target.value)}}
+                                    fullWidth
                                 >
                                     {Object.keys(videoPartMethod.maskingMethods).map((maskingMethod: string) => {
                                         return (
@@ -106,13 +126,14 @@ const ParamterTabOverview = (props: ParameterTabOverviewProps) => {
                                         )
                                     })}
                                 </Select>
+                                </Grid>
+                                <Grid item xs={4} sx={{ display: 'flex', alignItems: 'center'}}>
                                 <MethodSettings
                                     methodName={activeMaskingStrategy}
                                     formSchema={maskingMethods[videoPart].maskingMethods![activeMaskingStrategy].parameterSchema}
                                     onSet={maskVideoStrategyParamSetter(videoPart, "maskingStrategy")}
                                 />
-                            </FormControl> : <></>}
-                        </Grid>
+                                </Grid> </Grid>: <Grid item xs={4}></Grid>}
                     </>
                 )
             })}
