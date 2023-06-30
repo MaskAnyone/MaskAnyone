@@ -78,6 +78,14 @@ def finish_job(job_id: str):
     job_manager.mark_job_as_finished(job_id)
 
 
+@app.get('/jobs')
+def fetch_jobs():
+    jobs = job_manager.fetch_jobs()
+
+    return {
+        'jobs': jobs
+    }
+
 @app.get('/results/result/{original_video_name}/{result_video_name}')
 def get_result_video_stream(original_video_name: str, result_video_name: str, request: Request):
     video_path = os.path.join(RESULT_BASE_PATH, original_video_name, result_video_name)

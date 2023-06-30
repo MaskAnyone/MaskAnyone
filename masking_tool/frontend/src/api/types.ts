@@ -14,3 +14,9 @@ export interface ApiFetchVideosResponse {
         };
     }[];
 }
+
+export interface ApiFetchJobsResponse {
+    jobs: {
+        id: string;
+    }[];
+}
