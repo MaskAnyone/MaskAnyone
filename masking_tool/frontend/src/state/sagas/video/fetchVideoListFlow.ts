@@ -28,6 +28,10 @@ const onFetchVideoList = function*(payload: FetchVideoListPayload) {
         yield put(Event.Video.videoListFetched({ videoList }));
     } catch (e) {
         console.error(e);
+        yield put(Command.Notification.enqueueNotification({
+            severity: 'error',
+            message: 'Failed to fetch video list',
+        }));
     }
 };
 

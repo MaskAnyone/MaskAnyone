@@ -18,6 +18,10 @@ const onFetchJobList = function*(payload: FetchJobListPayload) {
         yield put(Event.Job.jobListFetched({ jobList }));
     } catch (e) {
         console.error(e);
+        yield put(Command.Notification.enqueueNotification({
+            severity: 'error',
+            message: 'Failed to fetch job list',
+        }));
     }
 };
 

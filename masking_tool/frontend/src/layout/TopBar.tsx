@@ -6,7 +6,7 @@ import MaskIcon from '@mui/icons-material/Masks';
 const styles = {
     appBar: (theme: any) => ({
         [theme.breakpoints.up('lg')]: {
-            zIndex: 2000,
+            zIndex: 1200,
         },
         boxShadow: 'none',
     }),

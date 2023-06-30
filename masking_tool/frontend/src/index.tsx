@@ -7,6 +7,7 @@ import {Provider} from "react-redux";
 import {store} from "./state/store";
 import {ThemeProvider} from "@mui/material";
 import {theme} from "./mui/theme";
+import Notifier from "./components/common/Notifier";
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 
@@ -16,6 +17,7 @@ root.render(
             <BrowserRouter>
                 <App />
             </BrowserRouter>
+            <Notifier />
         </ThemeProvider>
     </Provider>
 );
