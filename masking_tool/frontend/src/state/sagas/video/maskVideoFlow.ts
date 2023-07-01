@@ -23,9 +23,18 @@ const onMaskVideo = function*(payload: MaskVideoPayload) {
         );
 
         yield put(Event.Video.videoMaskingFinished({ videoId: payload.videoId }));
+
+        yield put(Command.Notification.enqueueNotification({
+            severity: 'info',
+            message: 'Video masking process started',
+        }));
     } catch (e) {
         console.error(e);
         yield put(Event.Video.videoMaskingFailed({ videoId: payload.videoId }));
+        yield put(Command.Notification.enqueueNotification({
+            severity: 'error',
+            message: 'Video masking could not be started',
+        }));
     }
 };
 

@@ -7,6 +7,18 @@ class JobManager:
     def __init__(self, db_connection: DBConnection):
         self.__db_connection = db_connection
 
+    def fetch_jobs(self):
+        result = []
+
+        job_data_list = self.__db_connection.select_all(
+            'SELECT * FROM jobs ORDER BY created_at DESC'
+        )
+
+        for job_data in job_data_list:
+            result.append(Job(*job_data))
+
+        return result
+
     def create_new_job(self, id: str, video_id: str, data: dict):
         self.__db_connection.execute(
             'INSERT INTO jobs (id, video_id, type, status, data, created_at) VALUES (%(id)s, %(video_id)s, %(type)s, %(status)s, %(data)s, current_timestamp)',
