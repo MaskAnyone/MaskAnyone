@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -9,58 +8,20 @@ import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
-import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
-import Checkbox from '@mui/material/Checkbox';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
-import DeleteIcon from '@mui/icons-material/Delete';
-import FilterListIcon from '@mui/icons-material/FilterList';
 import { visuallyHidden } from '@mui/utils';
-import { Chip } from '@mui/material';
-
-interface Data {
-  id: string
-  videoName: string
-  params: string
-  duration: number
-  status: string
-}
-
-function createData(
-  id: string,
-  videoName: string,
-  params: string,
-  duration: number,
-  status: string
-): Data {
-  return {
-    id,
-    videoName,
-    params,
-    duration,
-    status,
-  }
-}
+import { Chip, Link as MuiLink } from '@mui/material';
+import {useSelector} from "react-redux";
+import Selector from "../state/selector";
+import {Job} from "../state/types/Job";
+import {Link} from "react-router-dom";
 
 const statusColors: { [status: string] : "info"|"success"|"error" } = {
-    "running": "info",
-    "success": "success",
-    "failed": "error"
+    'running': 'info',
+    'finished': 'success',
+    'failed': 'error',
 }
-
-const rows = [
-  createData('run1', 'ted.mp4',"bbox, mediapipe", 23, "running"),
-  createData('run2', 'ted.mp4',"bbox, mediapipe", 230, "success"),
-  createData('run3', 'ted.mp4',"bbox, mediapipe", 231, "failed"),
-  createData('run4', 'ted.mp4',"bbox, mediapipe", 203, "success"),
-  createData('run5', 'ted.mp4',"bbox, mediapipe", 310, "success"),
-  createData('run6', 'ted.mp4',"bbox, mediapipe", 23, "success"),
-  createData('run7', 'ted.mp4',"bbox, mediapipe", 23, "success"),
-];
 
 function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
   if (b[orderBy] < a[orderBy]) {
@@ -86,53 +47,31 @@ function getComparator<Key extends keyof any>(
     : (a, b) => -descendingComparator(a, b, orderBy);
 }
 
-// Since 2020 all major browsers ensure sort stability with Array.prototype.sort().
-// stableSort() brings sort stability to non-modern browsers (notably IE11). If you
-// only support modern browsers you can replace stableSort(exampleArray, exampleComparator)
-// with exampleArray.slice().sort(exampleComparator)
-function stableSort<T>(array: readonly T[], comparator: (a: T, b: T) => number) {
-  const stabilizedThis = array.map((el, index) => [el, index] as [T, number]);
-  stabilizedThis.sort((a, b) => {
-    const order = comparator(a[0], b[0]);
-    if (order !== 0) {
-      return order;
-    }
-    return a[1] - b[1];
-  });
-  return stabilizedThis.map((el) => el[0]);
-}
-
 interface HeadCell {
   disablePadding: boolean;
-  id: keyof Data;
+  id: keyof Job;
   label: string;
   numeric: boolean;
 }
 
 const headCells: readonly HeadCell[] = [
   {
-    id: 'id',
+    id: 'videoId',
     numeric: false,
-    disablePadding: true,
-    label: 'ID',
+    disablePadding: false,
+    label: 'Video',
   },
   {
-    id: 'videoName',
-    numeric: true,
+    id: 'type',
+    numeric: false,
     disablePadding: false,
-    label: 'Video Name',
+    label: 'Type',
   },
   {
-    id: 'params',
-    numeric: true,
+    id: 'startedAt',
+    numeric: false,
     disablePadding: false,
-    label: 'Params',
-  },
-  {
-    id: 'duration',
-    numeric: true,
-    disablePadding: false,
-    label: 'Duration',
+    label: 'Created At',
   },
   {
     id: 'status',
@@ -143,7 +82,7 @@ const headCells: readonly HeadCell[] = [
 ];
 
 interface EnhancedTableProps {
-  onRequestSort: (event: React.MouseEvent<unknown>, property: keyof Data) => void;
+  onRequestSort: (event: React.MouseEvent<unknown>, property: keyof Job) => void;
   order: Order;
   orderBy: string;
   rowCount: number;
@@ -153,7 +92,7 @@ function EnhancedTableHead(props: EnhancedTableProps) {
   const { order, orderBy, rowCount, onRequestSort } =
     props;
   const createSortHandler =
-    (property: keyof Data) => (event: React.MouseEvent<unknown>) => {
+    (property: keyof Job) => (event: React.MouseEvent<unknown>) => {
       onRequestSort(event, property);
     };
 
@@ -187,14 +126,16 @@ function EnhancedTableHead(props: EnhancedTableProps) {
 }
 
 const RunsPage = () => {
-  const [order, setOrder] = React.useState<Order>('asc');
-  const [orderBy, setOrderBy] = React.useState<keyof Data>('id');
+  const jobs = useSelector(Selector.Job.jobList);
+  const videos = useSelector(Selector.Video.videoList);
+  const [order, setOrder] = React.useState<Order>('desc');
+  const [orderBy, setOrderBy] = React.useState<keyof Job>('createdAt');
   const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
   const handleRequestSort = (
     event: React.MouseEvent<unknown>,
-    property: keyof Data,
+    property: keyof Job,
   ) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
@@ -211,15 +152,15 @@ const RunsPage = () => {
   };
 
   const emptyRows =
-    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
+    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - jobs.length) : 0;
 
   const visibleRows = React.useMemo(
-    () =>
-      stableSort(rows, getComparator(order, orderBy)).slice(
+      // @ts-ignore
+    () => jobs.slice().sort(getComparator(order, orderBy)).slice(
         page * rowsPerPage,
         page * rowsPerPage + rowsPerPage,
-      ),
-    [order, orderBy, page, rowsPerPage],
+    ),
+    [order, orderBy, page, rowsPerPage, jobs],
   );
 
   return (
@@ -243,7 +184,7 @@ const RunsPage = () => {
               order={order}
               orderBy={orderBy}
               onRequestSort={handleRequestSort}
-              rowCount={rows.length}
+              rowCount={jobs.length}
             />
             <TableBody>
               {visibleRows.map((row, index) => {
@@ -255,17 +196,13 @@ const RunsPage = () => {
                     key={row.id}
                     sx={{ cursor: 'pointer' }}
                   >
-                    <TableCell
-                      component="th"
-                      id={String(index)}
-                      scope="row"
-                      padding="none"
-                    >
-                      {row.id}
+                    <TableCell>
+                      <MuiLink component={Link} to={`/videos/${row.videoId}`}>
+                        {videos.find(video => video.id === row.videoId)?.name}
+                      </MuiLink>
                     </TableCell>
-                    <TableCell align="right">{row.videoName}</TableCell>
-                    <TableCell align="right">{row.params}</TableCell>
-                    <TableCell align="right">{row.duration}</TableCell>
+                    <TableCell>{row.type}</TableCell>
+                    <TableCell>{row.startedAt?.toLocaleString()}</TableCell>
                     <TableCell align="right">
                         <Chip label={row.status} color={statusColors[row.status]} />
                     </TableCell>
@@ -287,7 +224,7 @@ const RunsPage = () => {
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={rows.length}
+          count={jobs.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}

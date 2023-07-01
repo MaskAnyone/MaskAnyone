@@ -11,7 +11,7 @@ class JobManager:
         result = []
 
         job_data_list = self.__db_connection.select_all(
-            'SELECT * FROM jobs'
+            'SELECT * FROM jobs ORDER BY created_at DESC'
         )
 
         for job_data in job_data_list:

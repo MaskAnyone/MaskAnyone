@@ -1,7 +1,9 @@
-import {AppBar, Box, Button, IconButton, Toolbar, Typography} from "@mui/material";
+import {AppBar, Badge, Box, Button, IconButton, Toolbar, Typography} from "@mui/material";
 import MenuIcon from '@mui/icons-material/Menu';
 import { Link } from "react-router-dom";
 import MaskIcon from '@mui/icons-material/Masks';
+import {useSelector} from "react-redux";
+import Selector from "../state/selector";
 
 const styles = {
     appBar: (theme: any) => ({
@@ -13,6 +15,15 @@ const styles = {
     toolbar: {
         justifyContent: 'space-between',
     },
+    navigationContainer: {
+        flexGrow: 1,
+        display: { xs: 'flex', md: 'flex' },
+    },
+    navigationButton: {
+        my: 2,
+        color: 'white',
+        display: 'block',
+    },
 };
 
 interface TopBarProps {
@@ -20,9 +31,9 @@ interface TopBarProps {
     onOpenSideBar?: () => void;
 }
 
-const pages = [{name: 'Runs', url: '/runs'}, {name: 'Presets', url: '/presets'}]
-
 const TopBar = (props: TopBarProps) => {
+    const activeJobCount = useSelector(Selector.Job.openAndRunningJobCount);
+
     return (
         <AppBar position={'fixed'} color={'primary'} sx={styles.appBar}>
             <Toolbar sx={styles.toolbar}>
@@ -33,34 +44,35 @@ const TopBar = (props: TopBarProps) => {
                 component="a"
                 href="/"
                 sx={{
-                mr: 2,
-                display: { xs: 'none', md: 'flex' },
-                fontFamily: 'monospace',
-                fontWeight: 700,
-                letterSpacing: '.12rem',
-                color: 'inherit',
-                textDecoration: 'none',
+                    mr: 2,
+                    display: { xs: 'none', md: 'flex' },
+                    fontFamily: 'monospace',
+                    fontWeight: 700,
+                    letterSpacing: '.12rem',
+                    color: 'inherit',
+                    textDecoration: 'none',
                 }}
-            >
-                MaskAnyone
-            </Typography>
-                <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'flex' } }}>
-                    {pages.map((page) => (
-                    <Button
-                        key={page.name}
-                        sx={{ my: 2, color: 'white', display: 'block' }}
-                        component={Link}
-                        to={page.url}
-                    >
-                        {page.name}
-                    </Button>
-                    ))}
-                </Box>
-                {(!props.isLargeScreen) && (
-                    <IconButton sx={{color: 'white'}} onClick={props.onOpenSideBar}>
-                        <MenuIcon />
-                    </IconButton>
-                )}
+                children={'MaskAnyone'}
+            />
+            <Box sx={styles.navigationContainer}>
+                <Button
+                    sx={styles.navigationButton}
+                    component={Link}
+                    to={'/runs'}
+                    children={<Badge badgeContent={activeJobCount} max={9} color={'secondary'}>Runs</Badge>}
+                />
+                <Button
+                    sx={styles.navigationButton}
+                    component={Link}
+                    to={'/presets'}
+                    children={'Presets'}
+                />
+            </Box>
+            {(!props.isLargeScreen) && (
+                <IconButton sx={{color: 'white'}} onClick={props.onOpenSideBar}>
+                    <MenuIcon />
+                </IconButton>
+            )}
             </Toolbar>
         </AppBar>
     );
