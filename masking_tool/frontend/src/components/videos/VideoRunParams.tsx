@@ -1,9 +1,8 @@
 import { Grid, FormGroup, FormControlLabel, Switch, Button, MenuItem, Select, Box, SelectChangeEvent, InputLabel, FormControl } from "@mui/material"
 import MasksIcon from '@mui/icons-material/Masks';
 import { useEffect, useState } from "react";
-import {useDispatch, useSelector} from "react-redux";
+import {useDispatch} from "react-redux";
 import Command from "../../state/actions/command";
-import Selector from "../../state/selector";
 import { v4 as uuidv4 } from 'uuid';
 
 interface VideoRunParamsProps {
@@ -12,7 +11,6 @@ interface VideoRunParamsProps {
 
 const VideoRunParams = (props: VideoRunParamsProps) => {
     const dispatch = useDispatch();
-    const videoMaskingJobs = useSelector(Selector.Video.videoMaskingJobs);
     const [extractPersonOnly, setExtractPersonOnly] = useState(false)
     const [headOnlyHiding, setHeadOnlyHiding] = useState(false)
     const [hidingStrategy, setHidingStrategy] = useState<number|undefined>()
@@ -104,7 +102,6 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
                             children={'Mask Video'}
                             onClick={maskVideo}
                             style={{marginTop: "10px"}}
-                            disabled={videoMaskingJobs[props.videoId]}
                         />
                     </FormGroup>
                 </Grid>

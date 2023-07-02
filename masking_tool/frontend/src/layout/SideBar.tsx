@@ -36,6 +36,7 @@ const SideBar = (props: SideBarProps) => {
     const dispatch = useDispatch();
     const videoList = useSelector(Selector.Video.videoList);
     const uploadDialogOpen = useSelector(Selector.Upload.dialogOpen);
+    const videoJobsRecord = useSelector(Selector.Job.videoActiveJobCountRecord);
 
     const openUploadDialog = () => {
         dispatch(Event.Upload.uploadDialogOpened({}));
@@ -61,6 +62,7 @@ const SideBar = (props: SideBarProps) => {
                                 title={`${video.name} (${Math.round(video.videoInfo.duration)}s)`}
                                 subtitle={`${video.videoInfo.frameWidth}x${video.videoInfo.frameHeight}, ${video.videoInfo.fps} FPS`}
                                 icon={<VideocamIcon />}
+                                badge={videoJobsRecord[video.id] || 0}
                             />
                         ))}
                     </List>

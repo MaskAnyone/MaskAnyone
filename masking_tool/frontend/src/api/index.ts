@@ -44,7 +44,7 @@ const Api = {
 
         return result.data;
     },
-    maskVideo: async (
+    createBasicMaskingJob: async (
         id: string,
         videoId: string,
         extractPersonOnly: boolean,

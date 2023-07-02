@@ -11,10 +11,29 @@ const openAndRunningJobCount = createSelector(
         .length,
 );
 
-const VideoSelector = {
+const videoActiveJobCountRecord = createSelector(
+    [jobList],
+    (jobList): Record<string, number> => {
+        const jobRecord: Record<string, number> = {};
+        const activeJobList = jobList.filter(job => job.status === 'open' || job.status === 'running');
+
+        for (const job of activeJobList) {
+            if (!jobRecord[job.videoId]) {
+                jobRecord[job.videoId] = 0;
+            }
+
+            jobRecord[job.videoId] = jobRecord[job.videoId] + 1;
+        }
+
+        return jobRecord;
+    },
+);
+
+const JobSelector = {
     jobList,
 
     openAndRunningJobCount,
+    videoActiveJobCountRecord,
 };
 
-export default VideoSelector;
+export default JobSelector;

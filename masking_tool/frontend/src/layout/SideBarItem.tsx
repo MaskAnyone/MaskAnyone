@@ -1,5 +1,5 @@
 import {useLocation} from "react-router";
-import {Box, Button, ListItem, ListItemText} from "@mui/material";
+import {Badge, Box, Button, ListItem, ListItemText} from "@mui/material";
 import {Link} from "react-router-dom";
 
 const styles = {
@@ -38,6 +38,7 @@ interface SideBarItemProps {
     title: string;
     subtitle: string;
     icon: any;
+    badge: number;
 }
 
 const SideBarItem = (props: SideBarItemProps) => {
@@ -50,7 +51,9 @@ const SideBarItem = (props: SideBarItemProps) => {
                 className={location.pathname.startsWith(props.url) ? 'active' : ''}
                 children={(<>
                     <Box sx={styles.icon}>{props.icon}</Box>
-                    <ListItemText primary={props.title} secondary={props.subtitle} />
+                    <Badge badgeContent={props.badge} max={9} color={'secondary'} sx={{ '& .MuiBadge-badge': { marginTop: 1 } }}>
+                        <ListItemText primary={props.title} secondary={props.subtitle} />
+                    </Badge>
                 </>)}
                 component={Link}
                 to={props.url}

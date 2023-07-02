@@ -28,22 +28,29 @@ class JobManager:
     def fetch_next_job(self):
         # @todo make this nice
         cursor = self.__db_connection.get_cursor()
-        cursor.execute('BEGIN')
-        cursor.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
-        cursor.execute(
-            'SELECT * FROM jobs WHERE status=%(status)s LIMIT 1',
-            {'status': 'open'}
-        )
-        jobs = cursor.fetchall()
+        jobs = []
 
-        if len(jobs) > 0:
+        try:
+            cursor.execute('BEGIN')
+            cursor.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
             cursor.execute(
-                'UPDATE jobs SET status=%(status)s, started_at=current_timestamp WHERE id=%(id)s',
-                {'status': 'running', 'id': jobs[0][0]}
+                'SELECT * FROM jobs WHERE status=%(status)s LIMIT 1',
+                {'status': 'open'}
             )
+            jobs = cursor.fetchall()
 
-        cursor.execute('COMMIT')
-        cursor.close()
+            if len(jobs) > 0:
+                cursor.execute(
+                    'UPDATE jobs SET status=%(status)s, started_at=current_timestamp WHERE id=%(id)s',
+                    {'status': 'running', 'id': jobs[0][0]}
+                )
+
+            cursor.execute('COMMIT')
+        except Exception as error:
+            cursor.execute('ROLLBACK')
+            raise error
+        finally:
+            cursor.close()
 
         return None if len(jobs) < 1 else Job(*jobs[0])
 

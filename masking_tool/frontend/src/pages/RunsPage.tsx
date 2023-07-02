@@ -68,10 +68,16 @@ const headCells: readonly HeadCell[] = [
     label: 'Type',
   },
   {
-    id: 'startedAt',
+    id: 'createdAt',
     numeric: false,
     disablePadding: false,
     label: 'Created At',
+  },
+  {
+    id: 'startedAt',
+    numeric: false,
+    disablePadding: false,
+    label: 'Started At',
   },
   {
     id: 'status',
@@ -202,6 +208,7 @@ const RunsPage = () => {
                       </MuiLink>
                     </TableCell>
                     <TableCell>{row.type}</TableCell>
+                    <TableCell>{row.createdAt.toLocaleString()}</TableCell>
                     <TableCell>{row.startedAt?.toLocaleString()}</TableCell>
                     <TableCell align="right">
                         <Chip label={row.status} color={statusColors[row.status]} />

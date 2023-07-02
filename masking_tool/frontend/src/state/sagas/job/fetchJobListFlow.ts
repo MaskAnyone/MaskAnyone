@@ -1,4 +1,4 @@
-import {call, fork, put, take} from 'redux-saga/effects';
+import {call, fork, put, take, delay, select} from 'redux-saga/effects';
 import {Action} from 'redux-actions';
 import Command from "../../actions/command";
 import Api from "../../../api";
@@ -6,6 +6,25 @@ import Event from "../../actions/event";
 import {ApiFetchJobsResponse} from "../../../api/types";
 import {FetchJobListPayload} from "../../actions/jobCommand";
 import {Job} from "../../types/Job";
+
+let pollingRunning = false;
+
+const onStartPollingJobListUpdates = function*() {
+    if (pollingRunning) {
+        return;
+    }
+
+    pollingRunning = true;
+
+    while (pollingRunning) {
+        yield delay(10000);
+        yield put(Command.Job.fetchJobList({}));
+
+        if (!pollingRunning) {
+            break;
+        }
+    }
+}
 
 const onFetchJobList = function*(payload: FetchJobListPayload) {
     try {
@@ -23,6 +42,12 @@ const onFetchJobList = function*(payload: FetchJobListPayload) {
         }));
 
         yield put(Event.Job.jobListFetched({ jobList }));
+
+        if (jobList.some(job => job.status === 'running' || job.status === 'open')) {
+            yield fork(onStartPollingJobListUpdates);
+        } else {
+            pollingRunning = false;
+        }
     } catch (e) {
         console.error(e);
         yield put(Command.Notification.enqueueNotification({

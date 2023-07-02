@@ -3,14 +3,11 @@ import {Action} from 'redux-actions';
 import {MaskVideoPayload} from "../../actions/videoCommand";
 import Command from "../../actions/command";
 import Api from "../../../api";
-import Event from "../../actions/event";
 
 const onMaskVideo = function*(payload: MaskVideoPayload) {
     try {
-        yield put(Event.Video.videoMaskingStarted({ videoId: payload.videoId }));
-
         yield call(
-            Api.maskVideo,
+            Api.createBasicMaskingJob,
             payload.id,
             payload.videoId,
             payload.extractPersonOnly,
@@ -22,7 +19,7 @@ const onMaskVideo = function*(payload: MaskVideoPayload) {
             payload.detailedFaceMesh
         );
 
-        yield put(Event.Video.videoMaskingFinished({ videoId: payload.videoId }));
+        yield put(Command.Job.fetchJobList({}));
 
         yield put(Command.Notification.enqueueNotification({
             severity: 'info',
@@ -30,7 +27,6 @@ const onMaskVideo = function*(payload: MaskVideoPayload) {
         }));
     } catch (e) {
         console.error(e);
-        yield put(Event.Video.videoMaskingFailed({ videoId: payload.videoId }));
         yield put(Command.Notification.enqueueNotification({
             severity: 'error',
             message: 'Video masking could not be started',
