@@ -5,7 +5,7 @@ import Command from "../../state/actions/command";
 import { v4 as uuidv4 } from 'uuid';
 import PresetSelection from "./PresetSelection";
 import TabPanel from "./ParamTabPanel";
-import { HidingStrategy, RunParams } from "../../state/types/Run";
+import { Strategy, RunParams } from "../../state/types/Run";
 import MasksIcon from '@mui/icons-material/Masks';
 import TuneIcon from '@mui/icons-material/Tune';
 import ParamterTabOverview from "./ParameterTabOverview";
@@ -18,7 +18,14 @@ interface VideoRunParamsProps {
 
 const initialRunParams: RunParams = {
     videoMasking: {},
-    threeDModelCreation: {},
+    threeDModelCreation: {
+        skeleton: false,
+        skeletonParams: {},
+        blender: false,
+        blenderParams: {},
+        blendshapes: false,
+        blendshapesParams: {}
+    },
     voiceMasking: {}
 }
 

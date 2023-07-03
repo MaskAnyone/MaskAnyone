@@ -45,7 +45,14 @@ interface PresetSelectionProps {
                     }
                 }
             },
-            threeDModelCreation: {},
+            threeDModelCreation: {
+                skeleton: false,
+                skeletonParams: {},
+                blender: false,
+                blenderParams: {},
+                blendshapes: false,
+                blendshapesParams: {}
+            },
             voiceMasking: {}
         }
     },
@@ -81,7 +88,14 @@ interface PresetSelectionProps {
                     }
                 }
             },
-            threeDModelCreation: {},
+            threeDModelCreation: {
+                skeleton: false,
+                skeletonParams: {},
+                blender: false,
+                blenderParams: {},
+                blendshapes: false,
+                blendshapesParams: {}
+            },
             voiceMasking: {}
         }
     },
@@ -89,7 +103,14 @@ interface PresetSelectionProps {
         name: "Video to 3D Character",
         runParams: {
             videoMasking: {},
-            threeDModelCreation: {},
+            threeDModelCreation: {
+                skeleton: false,
+                skeletonParams: {},
+                blender: false,
+                blenderParams: {},
+                blendshapes: false,
+                blendshapesParams: {}
+            },
             voiceMasking: {}
         }
     },
@@ -97,7 +118,14 @@ interface PresetSelectionProps {
         name: "Replace Face (Coming Soon!)",
         runParams: {
             videoMasking: {},
-            threeDModelCreation: {},
+            threeDModelCreation: {
+                skeleton: false,
+                skeletonParams: {},
+                blender: false,
+                blenderParams: {},
+                blendshapes: false,
+                blendshapesParams: {}
+            },
             voiceMasking: {}
         }
     },
@@ -133,7 +161,14 @@ interface PresetSelectionProps {
                     }
                 }
             },
-            threeDModelCreation: {},
+            threeDModelCreation: {
+                skeleton: false,
+                skeletonParams: {},
+                blender: false,
+                blenderParams: {},
+                blendshapes: false,
+                blendshapesParams: {}
+            },
             voiceMasking: {}
         }
     },

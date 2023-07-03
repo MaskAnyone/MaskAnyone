@@ -1,4 +1,4 @@
-import { FormControl, Grid, MenuItem, Select, Tab, Tabs, Typography } from "@mui/material";
+import { Checkbox, FormControl, FormControlLabel, FormGroup, Grid, MenuItem, Select, Tab, Tabs, Typography } from "@mui/material";
 import { useState } from "react";
 import TabPanel from "./ParamTabPanel";
 import { RunParams } from "../../state/types/Run";
@@ -61,6 +61,16 @@ const ParamterTabOverview = (props: ParameterTabOverviewProps) => {
         return paramSetter
     }
 
+    const set3DParams = (strategy: "blender" | "skeleton" | "blendshapes", value: boolean) => {
+        onParamsChange({
+            ...runParams,
+            threeDModelCreation: {
+                ...runParams.threeDModelCreation,
+                [strategy]: value
+            }
+        })
+    }
+
     const a11yProps = (index: number) => {
         return {
           id: `vertical-tab-${index}`,
@@ -76,9 +86,9 @@ const ParamterTabOverview = (props: ParameterTabOverviewProps) => {
         onChange={handleTabChange}
         sx={{ borderRight: 1, borderColor: 'divider' }}
     >
-        <Tab icon={<MovieFilterIcon />} iconPosition="start" label="Mask Video" {...a11yProps(0)} />
-        <Tab  icon={<EmojiPeopleIcon />} iconPosition="start" label="Extract 3D Model" {...a11yProps(1)} />
-        <Tab icon={<GraphicEqIcon />} iconPosition="start" label="Mask Voice" {...a11yProps(2)} />
+        <Tab icon={<MovieFilterIcon />} iconPosition="start" label="Video Masking" {...a11yProps(0)} />
+        <Tab icon={<GraphicEqIcon />} iconPosition="start" label="Voice Masking" {...a11yProps(1)} />
+        <Tab icon={<EmojiPeopleIcon />} iconPosition="start" label="3D Extraction" {...a11yProps(2)} />
     </Tabs>
     <TabPanel value={selectedTab} index={0}>
         <Typography>Select strategies for masking different parts of your video.</Typography>
@@ -87,7 +97,7 @@ const ParamterTabOverview = (props: ParameterTabOverviewProps) => {
                 const videoPartMethods = maskingMethods[videoPart]
                 const activeHidingStrategyKey: string = runParams.videoMasking[videoPart].hidingStrategy.key
                 const activeHidingStrategy = videoPartMethods.hidingMethods[activeHidingStrategyKey]
-                const activeMaskingStrategyKey = runParams.videoMasking[videoPart].maskingStrategy?.key
+                const activeMaskingStrategyKey = runParams.videoMasking[videoPart].maskingStrategy!.key
                 return (
                    <>
                         <Grid item xs={2} sx={{ display: 'flex', alignItems: 'center'}}>
@@ -151,12 +161,26 @@ const ParamterTabOverview = (props: ParameterTabOverviewProps) => {
 
     </TabPanel>
     <TabPanel value={selectedTab} index={1}>
-        <Typography>Select a strategy for extracting a 3D model from your video.</Typography>
-
-    </TabPanel>
-    <TabPanel value={selectedTab} index={2}>
         <Typography>Coming soon! Stay tuned...</Typography>
     </TabPanel> 
+    <TabPanel value={selectedTab} index={2}>
+        <Typography>Select whether you want to extract 3D models from you video and define extraction parameters.</Typography>
+        <FormGroup  sx={{pt: 3, pl: 5}}>
+            <FormControlLabel
+                control={<Checkbox value={runParams.threeDModelCreation.skeleton} onChange={(e,c) => {set3DParams("skeleton", c)}}/>}
+                label="3D Skeleton" 
+            />
+            <FormControlLabel
+                control={<Checkbox value={runParams.threeDModelCreation.blender} onChange={(e,c) => {set3DParams("blender", c)}} />}
+                label="3D Character in Blender (FBX File)"
+            />
+            <FormControlLabel
+                control={<Checkbox value={runParams.threeDModelCreation.blendshapes} onChange={(e,c) => {set3DParams("blendshapes", c)}}/>}
+                label="Facial Expressions on Animated Character (gLTF Model)"
+            />
+        </FormGroup>
+    </TabPanel>
+
     </>
     )
 }

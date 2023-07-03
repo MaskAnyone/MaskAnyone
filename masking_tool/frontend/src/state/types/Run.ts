@@ -1,5 +1,3 @@
-import { RJSFSchema } from "@rjsf/utils";
-
 export type Preset = {
     detailImagePaths?: string[]
     detailText?: string,
@@ -16,21 +14,30 @@ export interface Run {
     videoName: string;
 }
 
-export type HidingStrategy = {
+export type Strategy = {
     key: string, // @todo add exact values "blur" | "blackout" | "estimate"
     params: object
 }
 
 // videopart describes the part of the video that should be masked (e.g face, background, body...)
-export type VideoMaskingParams ={
+export type VideoMaskingParams = {
     [videoPart: string] : {
-        hidingStrategy: HidingStrategy,
-        maskingStrategy?: any // Not every video part can be masked (e.g background can only be hidden)
+        hidingStrategy: Strategy,
+        maskingStrategy?: Strategy // Not every video part can be masked (e.g background can only be hidden)
     }
+}
+
+export type ThreeDModelCreationParams = {
+    skeleton: boolean,
+    skeletonParams: {[paramName: string]: any}
+    blender: boolean,
+    blenderParams: {[paramName: string]: any}
+    blendshapes: boolean,
+    blendshapesParams: {[paramName: string]: any}
 }
 
 export type RunParams = {
     videoMasking: VideoMaskingParams
-    threeDModelCreation: any
+    threeDModelCreation: ThreeDModelCreationParams
     voiceMasking: any
 }
