@@ -1,9 +1,8 @@
-import { Button } from "@mui/base"
-import { Dialog, DialogTitle, DialogContent, DialogContentText, TextField, DialogActions, IconButton } from "@mui/material"
+import { Button, Dialog, DialogTitle, DialogContent, DialogContentText, TextField, DialogActions, IconButton } from "@mui/material"
 import { useState } from "react"
 import TuneIcon from '@mui/icons-material/Tune';
 import validator from '@rjsf/validator-ajv8';
-import Form from '@rjsf/core';
+import Form from '@rjsf/mui';
 import { RJSFSchema } from "@rjsf/utils";
 
 interface MethodSettingProps {
@@ -44,6 +43,7 @@ const MethodSettings = (props: MethodSettingProps) => {
                     onChange={log('changed')}
                     onSubmit={log('submitted')}
                     onError={log('errors')}
+
                 />,
             </DialogContent>
             <DialogActions>

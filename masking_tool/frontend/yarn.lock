@@ -1955,6 +1955,16 @@
     nanoid "^3.3.6"
     prop-types "^15.8.1"
 
+"@rjsf/material-ui@^5.8.2":
+  version "5.8.2"
+  resolved "https://registry.yarnpkg.com/@rjsf/material-ui/-/material-ui-5.8.2.tgz#804082fb5fcbac6ef61ae7ca7a544519e193f781"
+  integrity sha512-VXtNULIL9HAsObhbBZahY+7/Y+F4MP5CgQ/ihfNmHSlbK01S68ifvjiCzPaHNyT8kHd5pKhRbR2UobNTAolRxQ==
+
+"@rjsf/mui@^5.8.2":
+  version "5.8.2"
+  resolved "https://registry.yarnpkg.com/@rjsf/mui/-/mui-5.8.2.tgz#1b33f3418d320d4bb2561c67b85ed89756a98f95"
+  integrity sha512-ky6XYqXQhb8oKfgXDJkBerXCWjy4Ftc4gSMjkgbhp5zz2fLMl1gXlJQD8T5dAOSS131nnQgKG0/ylfv5/ui53A==
+
 "@rjsf/utils@^5.8.2":
   version "5.8.2"
   resolved "https://registry.yarnpkg.com/@rjsf/utils/-/utils-5.8.2.tgz#82e4263eae860f8b08dd9dc7e91585eaf1cf87d9"

@@ -2,7 +2,6 @@ import { Grid, FormGroup, FormControlLabel, Switch, Button, MenuItem, Select, Bo
 import { useEffect, useState } from "react";
 import {useDispatch, useSelector} from "react-redux";
 import Command from "../../state/actions/command";
-import Selector from "../../state/selector";
 import { v4 as uuidv4 } from 'uuid';
 import PresetSelection from "./PresetSelection";
 import TabPanel from "./ParamTabPanel";
@@ -24,8 +23,6 @@ const initialRunParams: RunParams = {
 }
 
 const VideoRunParams = (props: VideoRunParamsProps) => {
-    const dispatch = useDispatch();
-    const videoMaskingJobs = useSelector(Selector.Video.videoMaskingJobs);
 
     const [presetView, setPresetView] = useState(true)
     const [runParams, setRunParams] = useState<RunParams>(initialRunParams)

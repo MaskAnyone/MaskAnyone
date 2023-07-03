@@ -14,3 +14,16 @@ export interface ApiFetchVideosResponse {
         };
     }[];
 }
+
+export interface ApiFetchJobsResponse {
+    jobs: {
+        id: string;
+        video_id: string;
+        type: string;
+        status: 'open'|'running'|'finished'|'failed';
+        data: object;
+        created_at: string;
+        started_at: string|null;
+        finished_at: string|null;
+    }[];
+}

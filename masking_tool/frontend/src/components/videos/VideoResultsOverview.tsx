@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Api from "../../api";
-import { Box, Divider, Grid, Paper, Tooltip, styled } from "@mui/material";
+import { Box, Divider, Grid, Paper, Tooltip, Typography, styled } from "@mui/material";
 import HelpIcon from '@mui/icons-material/Help';
 
 interface VideoResultsProps {
@@ -62,7 +62,7 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
                     <Divider style={{marginTop: "20px"}}/>
                     <Box sx={{bgcolor: 'background.paper'}}>
                         <div style={{display: "flex", alignItems: "center", marginTop: "20px"}}>
-                            <h3 style={{marginRight: "10px"}}>Processed Results</h3>
+                            <Typography variant={"h6"} style={{marginRight: "10px"}}>Processed Results</Typography>
                             <Tooltip title=" Click on a result to run it next to the original video">
                                 <HelpIcon />
                             </Tooltip>

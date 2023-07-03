@@ -1,6 +1,6 @@
 import axios, {AxiosRequestConfig, AxiosResponse} from 'axios';
 import Config from "../config";
-import {ApiFetchVideosResponse} from "./types";
+import {ApiFetchJobsResponse, ApiFetchVideosResponse} from "./types";
 
 const configuredAxios = axios.create({
     baseURL: Config.api.baseUrl,
@@ -36,7 +36,15 @@ const Api = {
         })
         return result.data.image
     },
-    maskVideo: async (
+    fetchJobs: async (): Promise<ApiFetchJobsResponse> => {
+        const result = await sendApiRequest({
+            url: 'jobs',
+            method: 'get',
+        });
+
+        return result.data;
+    },
+    createBasicMaskingJob: async (
         id: string,
         videoId: string,
         extractPersonOnly: boolean,

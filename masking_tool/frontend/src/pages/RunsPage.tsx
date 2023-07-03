@@ -7,56 +7,141 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
+import TableSortLabel from '@mui/material/TableSortLabel';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
-import { Chip } from '@mui/material';
-import { useState } from 'react';
-import { Run } from '../state/types/Run';
-import { Order, getComparator, stableSort } from '../util/sorting';
-import EnhancedTableHead from '../components/runs/EnhancedTableHead';
-
-function createData(
-  id: string,
-  videoName: string,
-  params: string,
-  duration: number,
-  status: 'success' | 'running' | 'failed'
-): Run {
-  return {
-    id,
-    videoName,
-    params,
-    duration,
-    status,
-  }
-}
+import { visuallyHidden } from '@mui/utils';
+import { Chip, Link as MuiLink } from '@mui/material';
+import {useSelector} from "react-redux";
+import Selector from "../state/selector";
+import {Job} from "../state/types/Job";
+import {Link} from "react-router-dom";
 
 const statusColors: { [status: string] : "info"|"success"|"error" } = {
-    "running": "info",
-    "success": "success",
-    "failed": "error"
+    'running': 'info',
+    'finished': 'success',
+    'failed': 'error',
 }
 
-const mockRows = [
-  createData('run1', 'ted.mp4',"bbox, mediapipe", 23, "running"),
-  createData('run2', 'ted.mp4',"bbox, mediapipe", 230, "success"),
-  createData('run3', 'ted.mp4',"bbox, mediapipe", 231, "failed"),
-  createData('run4', 'ted.mp4',"bbox, mediapipe", 203, "success"),
-  createData('run5', 'ted.mp4',"bbox, mediapipe", 310, "success"),
-  createData('run6', 'ted.mp4',"bbox, mediapipe", 23, "success"),
-  createData('run7', 'ted.mp4',"bbox, mediapipe", 23, "success"),
+function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
+  if (b[orderBy] < a[orderBy]) {
+    return -1;
+  }
+  if (b[orderBy] > a[orderBy]) {
+    return 1;
+  }
+  return 0;
+}
+
+type Order = 'asc' | 'desc';
+
+function getComparator<Key extends keyof any>(
+  order: Order,
+  orderBy: Key,
+): (
+  a: { [key in Key]: number | string },
+  b: { [key in Key]: number | string },
+) => number {
+  return order === 'desc'
+    ? (a, b) => descendingComparator(a, b, orderBy)
+    : (a, b) => -descendingComparator(a, b, orderBy);
+}
+
+interface HeadCell {
+  disablePadding: boolean;
+  id: keyof Job;
+  label: string;
+  numeric: boolean;
+}
+
+const headCells: readonly HeadCell[] = [
+  {
+    id: 'videoId',
+    numeric: false,
+    disablePadding: false,
+    label: 'Video',
+  },
+  {
+    id: 'type',
+    numeric: false,
+    disablePadding: false,
+    label: 'Type',
+  },
+  {
+    id: 'createdAt',
+    numeric: false,
+    disablePadding: false,
+    label: 'Created At',
+  },
+  {
+    id: 'startedAt',
+    numeric: false,
+    disablePadding: false,
+    label: 'Started At',
+  },
+  {
+    id: 'status',
+    numeric: true,
+    disablePadding: false,
+    label: 'Status',
+  },
 ];
 
+interface EnhancedTableProps {
+  onRequestSort: (event: React.MouseEvent<unknown>, property: keyof Job) => void;
+  order: Order;
+  orderBy: string;
+  rowCount: number;
+}
+
+function EnhancedTableHead(props: EnhancedTableProps) {
+  const { order, orderBy, rowCount, onRequestSort } =
+    props;
+  const createSortHandler =
+    (property: keyof Job) => (event: React.MouseEvent<unknown>) => {
+      onRequestSort(event, property);
+    };
+
+  return (
+    <TableHead>
+      <TableRow>
+        {headCells.map((headCell) => (
+          <TableCell
+            key={headCell.id}
+            align={headCell.numeric ? 'right' : 'left'}
+            padding={headCell.disablePadding ? 'none' : 'normal'}
+            sortDirection={orderBy === headCell.id ? order : false}
+          >
+            <TableSortLabel
+              active={orderBy === headCell.id}
+              direction={orderBy === headCell.id ? order : 'asc'}
+              onClick={createSortHandler(headCell.id)}
+            >
+              {headCell.label}
+              {orderBy === headCell.id ? (
+                <Box component="span" sx={visuallyHidden}>
+                  {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
+                </Box>
+              ) : null}
+            </TableSortLabel>
+          </TableCell>
+        ))}
+      </TableRow>
+    </TableHead>
+  );
+}
+
 const RunsPage = () => {
-  const [order, setOrder] = useState<Order>('asc');
-  const [orderBy, setOrderBy] = useState<keyof Run>('id');
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [rows, setRows] = useState<Run[]>(mockRows)
+  const jobs = useSelector(Selector.Job.jobList);
+  const videos = useSelector(Selector.Video.videoList);
+  const [order, setOrder] = React.useState<Order>('desc');
+  const [orderBy, setOrderBy] = React.useState<keyof Job>('createdAt');
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
   const handleRequestSort = (
     event: React.MouseEvent<unknown>,
-    property: keyof Run,
+    property: keyof Job,
   ) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
@@ -73,15 +158,15 @@ const RunsPage = () => {
   };
 
   const emptyRows =
-    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
+    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - jobs.length) : 0;
 
   const visibleRows = React.useMemo(
-    () =>
-      stableSort(rows, getComparator(order, orderBy)).slice(
+      // @ts-ignore
+    () => jobs.slice().sort(getComparator(order, orderBy)).slice(
         page * rowsPerPage,
         page * rowsPerPage + rowsPerPage,
-      ),
-    [order, orderBy, page, rowsPerPage],
+    ),
+    [order, orderBy, page, rowsPerPage, jobs],
   );
 
   return (
@@ -105,7 +190,7 @@ const RunsPage = () => {
               order={order}
               orderBy={orderBy}
               onRequestSort={handleRequestSort}
-              rowCount={rows.length}
+              rowCount={jobs.length}
             />
             <TableBody>
               {visibleRows.map((row, index) => {
@@ -117,17 +202,14 @@ const RunsPage = () => {
                     key={row.id}
                     sx={{ cursor: 'pointer' }}
                   >
-                    <TableCell
-                      component="th"
-                      id={String(index)}
-                      scope="row"
-                      padding="none"
-                    >
-                      {row.id}
+                    <TableCell>
+                      <MuiLink component={Link} to={`/videos/${row.videoId}`}>
+                        {videos.find(video => video.id === row.videoId)?.name}
+                      </MuiLink>
                     </TableCell>
-                    <TableCell align="right">{row.videoName}</TableCell>
-                    <TableCell align="right">{row.params}</TableCell>
-                    <TableCell align="right">{row.duration}</TableCell>
+                    <TableCell>{row.type}</TableCell>
+                    <TableCell>{row.createdAt.toLocaleString()}</TableCell>
+                    <TableCell>{row.startedAt?.toLocaleString()}</TableCell>
                     <TableCell align="right">
                         <Chip label={row.status} color={statusColors[row.status]} />
                     </TableCell>
@@ -149,7 +231,7 @@ const RunsPage = () => {
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={rows.length}
+          count={jobs.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
