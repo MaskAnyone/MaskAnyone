@@ -1,6 +1,7 @@
-import {Box} from "@mui/material";
+import {Box, Grid} from "@mui/material";
 import Config from "../../config";
-import {useEffect, useRef} from "react";
+import {useEffect, useRef, useState} from "react";
+import PoseRenderer3D from "./PoseRenderer3D";
 
 
 interface DoubleVideoProps {
@@ -8,11 +9,33 @@ interface DoubleVideoProps {
     selectedResult: string | undefined
 }
 
+enum views {
+    video,
+    blendshapes3D,
+    skeleton3D
+}
+
 const DoubleVideo = (props: DoubleVideoProps) => {
     const video1Ref = useRef<HTMLVideoElement>(null);
     const video2Ref = useRef<HTMLVideoElement>(null);
     const originalPath = Config.api.baseUrl + '/videos/' + props.videoId;
     const resultPath = Config.api.baseUrl + '/results/result/' + props.videoId + '/' + props.selectedResult;
+    const [view, setView] = useState<views>(views.video)
+
+    const displaySelectedView = () => {
+         if(view==views.video) {
+            return (
+            <video controls={false} key={resultPath} style={{width: '100%'}} ref={video2Ref}>
+                <source src={resultPath} type={'video/mp4'} key={resultPath} />
+            </video>)
+         }
+        if(view==views.blendshapes3D) {
+            return (<></>)
+         }
+        if(view==views.skeleton3D) {
+            return <PoseRenderer3D />
+        }
+    }
 
     useEffect(() => {
         if (!video1Ref.current || !video2Ref.current) {
@@ -42,14 +65,18 @@ const DoubleVideo = (props: DoubleVideoProps) => {
 
     return (
         <Box>
-            <video controls={true} key={originalPath} style={{ width: 'calc(50% - 4px)' }} ref={video1Ref}>
-                <source src={originalPath} type={'video/mp4'} key={originalPath} />
-            </video>
-            {props.selectedResult && (
-                <video controls={false} key={resultPath} style={{width: 'calc(50% - 4px)', marginLeft: '8px'}} ref={video2Ref}>
-                    <source src={resultPath} type={'video/mp4'} key={resultPath} />
-                </video>
-            )}
+            <Grid container rowSpacing={2} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+                <Grid item xs={6} >
+                    <video controls={true} key={originalPath} style={{width: '100%'}} ref={video1Ref}>
+                        <source src={originalPath} type={'video/mp4'} key={originalPath} />
+                    </video>
+                </Grid>
+                <Grid item xs={6}>
+                    {props.selectedResult && displaySelectedView()}
+                </Grid>
+                <Grid item xs={12}>
+                </Grid>
+            </Grid>
         </Box>
     );
 };
