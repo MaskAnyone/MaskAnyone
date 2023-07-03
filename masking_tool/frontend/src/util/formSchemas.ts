@@ -58,7 +58,7 @@ export const blackoutFormSchemaSubject: RJSFSchema = {
       default: 'Silhouette',
       description: 'Bounding box lays a bounding box over the subject for hiding, while silhouette hides the subject within its exact contours only.'
     },
-    color: { type: 'string', title: 'Masking color', default: "black", description: 'The color with which the background should be overlayed and hidden.'},
+    color: { type: 'string', title: 'Masking color', default: "#000", description: 'The color with which the background should be overlayed and hidden.'},
     extraPixels: {type: 'number', title: "Additional pixels", default: 0, description: "Additional pixels to lay around the detected subject to ensure even further that it is masked completely."}
   },
   dependencies: {

@@ -8,15 +8,16 @@ import { IChangeEvent } from "@rjsf/core";
 
 interface MethodSettingProps {
     children?: React.ReactNode
-    formSchema: RJSFSchema,
+    formSchema?: RJSFSchema,
     uiSchema?: UiSchema,
-    methodName: string
+    methodName: string,
+    values?: {[paramterName: string]: any}
     onSet: (params: object) => void
 }
 
 const MethodSettings = (props: MethodSettingProps) => {
     const [open, setOpen] = useState(false)
-    const {formSchema, uiSchema, methodName, onSet} = props
+    const {formSchema, uiSchema, methodName, values, onSet} = props
 
     const submitFormRef: React.RefObject<HTMLInputElement> = createRef();
 
@@ -38,22 +39,30 @@ const MethodSettings = (props: MethodSettingProps) => {
         }
     }
 
-    const log = (type: any) => console.log.bind(console, type);
+    if(!formSchema) {
+        return (
+            <div>
+            <IconButton aria-label="Adjust method parameters" disabled={true}>
+                <TuneIcon />
+            </IconButton>
+            </div>
+        )
+    }
 
     return (
         <div>
-            <IconButton onClick={onSetOpen}aria-label="Adjust method parameters">
+            <IconButton onClick={onSetOpen} aria-label="Adjust method parameters">
                 <TuneIcon />
             </IconButton>
+
             <Dialog open={open} onClose={() =>  setOpen(false)}>
             <DialogTitle>Customize parameters for {methodName}</DialogTitle>
             <DialogContent>
                 <Form
                     schema={formSchema}
                     validator={validator}
-                    onChange={log('changed')}
                     onSubmit={onSubmit}
-                    onError={log('errors')}
+                    formData={values}
                     uiSchema={uiSchema}
                 >
                     <input ref={submitFormRef} type="submit" style={{ display: "none" }} />

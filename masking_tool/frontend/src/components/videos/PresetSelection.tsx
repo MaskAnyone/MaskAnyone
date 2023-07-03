@@ -14,7 +14,35 @@ interface PresetSelectionProps {
     {
         name: "Blur Face",
         runParams: {
-            videoMasking: {},
+            videoMasking: {
+                "body": {
+                    hidingStrategy: {
+                        key: "none",
+                        params: {}
+                    }, maskingStrategy: {
+                        key: "none",
+                        params: {}
+                    }
+                },
+                "head": {
+                    hidingStrategy: {
+                        key: "blur",
+                        params: {}
+                    }, maskingStrategy: {
+                        key: "none",
+                        params: {}
+                    }
+                },
+                "background": {
+                    hidingStrategy: {
+                        key: "none",
+                        params: {}
+                    }, maskingStrategy: {
+                        key: "none",
+                        params: {}
+                    }
+                }
+            },
             threeDModelCreation: {},
             voiceMasking: {}
         }
@@ -30,7 +58,35 @@ interface PresetSelectionProps {
     {
         name: "Video to 3D Character",
         runParams: {
-            videoMasking: {},
+            videoMasking: {
+                "body": {
+                    hidingStrategy: {
+                        key: "blackOut",
+                        params: {}
+                    }, maskingStrategy: {
+                        key: "skeleton",
+                        params: {}
+                    }
+                },
+                "head": {
+                    hidingStrategy: {
+                        key: "blackOut",
+                        params: {}
+                    }, maskingStrategy: {
+                        key: "skeleton",
+                        params: {}
+                    }
+                },
+                "background": {
+                    hidingStrategy: {
+                        key: "none",
+                        params: {}
+                    }, maskingStrategy: {
+                        key: "none",
+                        params: {}
+                    }
+                }
+            },
             threeDModelCreation: {},
             voiceMasking: {}
         }
