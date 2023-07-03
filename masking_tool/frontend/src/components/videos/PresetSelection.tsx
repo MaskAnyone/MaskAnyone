@@ -14,6 +14,7 @@ interface PresetSelectionProps {
  const mockPresets: Preset[] = [
     {
         name: "Blur Face",
+        detailText: "This preset will blur the face of detected persons in the video. Only the face will be blurred, the rest of the video will stay untouched.",
         runParams: {
             videoMasking: {
                 "body": {
@@ -156,6 +157,7 @@ const PresetSelection = (props: PresetSelectionProps) => {
                                     name={preset.name}
                                     selected={selected==preset.name}
                                     previewImagePath={preset.previewImagePath}
+                                    description={preset.detailText}
                                     onClick={() => onPresetClicked(preset)}
                                 />
                             </Grid>
@@ -165,7 +167,6 @@ const PresetSelection = (props: PresetSelectionProps) => {
                         <PresetItem
                             name="Custom Run"
                             icon={<TuneIcon/>}
-                            hideInfo={true}
                             selected={false}
                             onClick={() => props.onCustomModeRequested()}
                         />

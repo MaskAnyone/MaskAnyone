@@ -1,19 +1,18 @@
-import { Box, Grid, Paper, Typography } from "@mui/material";
+import { Box, Grid, Paper, Tooltip, Typography } from "@mui/material";
 import MasksIcon from '@mui/icons-material/Masks';
 import { ReactElement } from "react";
-
+import HelpIcon from '@mui/icons-material/Help';
 interface PresetItemProps {
     name: string,
     icon?: ReactElement,
     previewImagePath?: string
-    hideInfo?: boolean
     selected: boolean
+    description?: string
     onClick?: () => void
 }
 
 const PresetItem = (props: PresetItemProps) => {
-    const {name, selected, previewImagePath} = props
-    const hideInfo = props.hideInfo || false
+    const {name, selected, previewImagePath, description} = props
     const onClick = props.onClick || function(){}
     const icon = props.icon || <MasksIcon />
 
@@ -23,9 +22,10 @@ const PresetItem = (props: PresetItemProps) => {
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
-            height: '50px',
+            height: '80px',
             backgroundColor: '#fff',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            position: "relative"
         }
         if(selected) {
             style['borderWidth'] = "2px"
@@ -40,16 +40,19 @@ const PresetItem = (props: PresetItemProps) => {
             <Grid container>
                 <Grid item xs={12} >
                     <Grid container>
-                    <Grid item xs={4}>
-                        {previewImagePath ? <img 
-                            src={require(previewImagePath)} 
-                        /> :  icon}
+                        <Grid item xs={4}>
+                            {previewImagePath ? <img 
+                                src={require(previewImagePath)} 
+                            /> :  icon}
+                        </Grid>
+                        <Grid item xs={8} sx={{ fontWeight: 400 }}><Typography>{name}</Typography></Grid>
+                        </Grid>
                     </Grid>
-                    <Grid item xs={8} sx={{ fontWeight: 400 }}><Typography>{name}</Typography></Grid>
                 </Grid>
-                </Grid>
-                {hideInfo ? <></> : <Grid item xs={12}></Grid>}
-                </Grid>
+                {description? 
+                    <Tooltip title={description} sx={{position: "absolute", bottom: "10px", right: "10px"}}>
+                        <HelpIcon />
+                    </Tooltip>: <></>}
         </Paper>
     )
 }
