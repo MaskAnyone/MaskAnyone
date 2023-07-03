@@ -4,6 +4,7 @@ import PresetItem from "./PresetItem";
 import TuneIcon from '@mui/icons-material/Tune';
 import { useState } from "react";
 import { Preset, RunParams } from "../../state/types/Run";
+import { maskingMethods } from "../../util/maskingMethods";
 
 interface PresetSelectionProps {
     onPresetSelect: (runParams: RunParams) => void
@@ -27,7 +28,7 @@ interface PresetSelectionProps {
                 "head": {
                     hidingStrategy: {
                         key: "blur",
-                        params: {}
+                        params: maskingMethods["body"].hidingMethods!["blur"].defaultValues!
                     }, maskingStrategy: {
                         key: "none",
                         params: {}
@@ -50,31 +51,23 @@ interface PresetSelectionProps {
     {
         name: "Mask Kinematics",
         runParams: {
-            videoMasking: {},
-            threeDModelCreation: {},
-            voiceMasking: {}
-        }
-    },
-    {
-        name: "Video to 3D Character",
-        runParams: {
             videoMasking: {
                 "body": {
                     hidingStrategy: {
-                        key: "blackOut",
-                        params: {}
+                        key: "blackout",
+                        params: maskingMethods["body"].hidingMethods["blackout"].defaultValues!
                     }, maskingStrategy: {
                         key: "skeleton",
-                        params: {}
+                        params: maskingMethods["body"].maskingMethods!["skeleton"].defaultValues!
                     }
                 },
                 "head": {
                     hidingStrategy: {
-                        key: "blackOut",
-                        params: {}
+                        key: "blackout",
+                        params: maskingMethods["head"].hidingMethods["blackout"].defaultValues!
                     }, maskingStrategy: {
                         key: "skeleton",
-                        params: {}
+                        params: maskingMethods["head"].maskingMethods!["skeleton"].defaultValues!
                     }
                 },
                 "background": {
@@ -83,7 +76,7 @@ interface PresetSelectionProps {
                         params: {}
                     }, maskingStrategy: {
                         key: "none",
-                        params: {}
+                        params: maskingMethods["background"].hidingMethods!["blur"].defaultValues!
                     }
                 }
             },
@@ -92,7 +85,15 @@ interface PresetSelectionProps {
         }
     },
     {
-        name: "Replace Face",
+        name: "Video to 3D Character",
+        runParams: {
+            videoMasking: {},
+            threeDModelCreation: {},
+            voiceMasking: {}
+        }
+    },
+    {
+        name: "Replace Face (Coming Soon!)",
         runParams: {
             videoMasking: {},
             threeDModelCreation: {},
@@ -102,7 +103,35 @@ interface PresetSelectionProps {
     {
         name: "Blur Background",
         runParams: {
-            videoMasking: {},
+            videoMasking: {
+                "body": {
+                    hidingStrategy: {
+                        key: "none",
+                        params: {}
+                    }, maskingStrategy: {
+                        key: "none",
+                        params: {}
+                    }
+                },
+                "head": {
+                    hidingStrategy: {
+                        key: "none",
+                        params: {}
+                    }, maskingStrategy: {
+                        key: "none",
+                        params: {}
+                    }
+                },
+                "background": {
+                    hidingStrategy: {
+                        key: "blur",
+                        params: {}
+                    }, maskingStrategy: {
+                        key: "none",
+                        params: {}
+                    }
+                }
+            },
             threeDModelCreation: {},
             voiceMasking: {}
         }
