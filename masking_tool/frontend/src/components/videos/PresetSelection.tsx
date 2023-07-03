@@ -7,29 +7,60 @@ import { Preset, RunParams } from "../../state/types/Run";
 
 interface PresetSelectionProps {
     onPresetSelect: (runParams: RunParams) => void
-    customClickedHandler: (val: boolean) => void
+    onCustomModeRequested: () => void
 }
 
  const mockPresets: Preset[] = [
     {
         name: "Blur Face",
+        runParams: {
+            videoMasking: {},
+            threeDModelCreation: {},
+            voiceMasking: {}
+        }
     },
     {
         name: "Mask Kinematics",
+        runParams: {
+            videoMasking: {},
+            threeDModelCreation: {},
+            voiceMasking: {}
+        }
     },
     {
         name: "Video to 3D Character",
+        runParams: {
+            videoMasking: {},
+            threeDModelCreation: {},
+            voiceMasking: {}
+        }
     },
     {
         name: "Replace Face",
+        runParams: {
+            videoMasking: {},
+            threeDModelCreation: {},
+            voiceMasking: {}
+        }
     },
     {
         name: "Blur Background",
+        runParams: {
+            videoMasking: {},
+            threeDModelCreation: {},
+            voiceMasking: {}
+        }
     },
 ]
 
 const PresetSelection = (props: PresetSelectionProps) => {
     const [presets, setPresets] = useState(mockPresets)
+    const [selected, setSelected] = useState<string | undefined>()
+
+    const onPresetClicked = (preset: Preset) => {
+        setSelected(preset.name)
+        props.onPresetSelect(preset.runParams)
+    }
 
     return(
                 <Grid container rowSpacing={2} columnSpacing={{ xs: 1, sm: 2, md: 3 }} xs={12} marginTop={"10px"}>
@@ -38,7 +69,9 @@ const PresetSelection = (props: PresetSelectionProps) => {
                             <Grid item xs={4}>
                                 <PresetItem
                                     name={preset.name}
+                                    selected={selected==preset.name}
                                     previewImagePath={preset.previewImagePath}
+                                    onClick={() => onPresetClicked(preset)}
                                 />
                             </Grid>
                         )
@@ -48,7 +81,8 @@ const PresetSelection = (props: PresetSelectionProps) => {
                             name="Custom Run"
                             icon={<TuneIcon/>}
                             hideInfo={true}
-                            onClick={() => props.customClickedHandler(true)}
+                            selected={false}
+                            onClick={() => props.onCustomModeRequested()}
                         />
                     </Grid>
                 </Grid>

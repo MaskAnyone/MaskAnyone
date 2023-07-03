@@ -26,6 +26,7 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
 
     const [presetView, setPresetView] = useState(true)
     const [runParams, setRunParams] = useState<RunParams>(initialRunParams)
+    const [presetSelected, setPresetSelected] = useState(false)
 
     const initRunParams = () => {
         const newRunParams = initialRunParams
@@ -52,6 +53,16 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
         initRunParams()
     }, [])
 
+    const onPresetSelected = (runParams: RunParams) => {
+        setRunParams(runParams)
+        setPresetSelected(true)
+    }
+
+    const onCustomModeRequested = () => {
+        setPresetView(false)
+        setPresetSelected(false)
+    }
+
     const maskVideo = () => {
         if (!props.videoId) {
             return;
@@ -75,14 +86,19 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
             {presetView ? 
                 <Box sx={{ flexGrow: 1, padding: "20px 40px" }}>
                     <Grid container>
-                        <PresetSelection onPresetSelect={setRunParams} customClickedHandler={setPresetView}/>
+                        <PresetSelection onPresetSelect={onPresetSelected} onCustomModeRequested={onCustomModeRequested}/>
                         <Grid container xs={12}>
                                 <Grid item xs={12}>
-                                    <Box display="flex" justifyContent="flex-end" alignItems="flex-end" paddingTop={"22px"}>
+                                    <Box
+                                        display="flex"
+                                        justifyContent="flex-end" 
+                                        alignItems="flex-end"
+                                        visibility={presetSelected? "visible": "hidden"}
+                                        paddingTop={"22px"}>
                                         <Button
                                             variant={'contained'}
                                             startIcon={<TuneIcon/>}
-                                            children={'Modify Params'}
+                                            children={'Customize Params'}
                                             onClick={() => setPresetView(false)}
                                             sx={{marginRight: "20px"}}
                                         />

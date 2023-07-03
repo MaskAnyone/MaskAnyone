@@ -1,9 +1,10 @@
-import { RJSFSchema } from "@rjsf/utils"
+import { RJSFSchema, UiSchema } from "@rjsf/utils"
 
 export type Method = {
     name: string,
     description: string, 
     parameterSchema: RJSFSchema
+    uiSchema?: UiSchema
 }
 
 export type MaskingMethods = {

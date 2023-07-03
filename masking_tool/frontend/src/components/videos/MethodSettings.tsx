@@ -1,30 +1,41 @@
 import { Button, Dialog, DialogTitle, DialogContent, DialogContentText, TextField, DialogActions, IconButton } from "@mui/material"
-import { useState } from "react"
+import { Fragment, createRef, useState } from "react"
 import TuneIcon from '@mui/icons-material/Tune';
 import validator from '@rjsf/validator-ajv8';
 import Form from '@rjsf/mui';
-import { RJSFSchema } from "@rjsf/utils";
+import { RJSFSchema, UiSchema } from "@rjsf/utils";
+import { IChangeEvent } from "@rjsf/core";
 
 interface MethodSettingProps {
     children?: React.ReactNode
-    formSchema: RJSFSchema
+    formSchema: RJSFSchema,
+    uiSchema?: UiSchema,
     methodName: string
     onSet: (params: object) => void
 }
 
 const MethodSettings = (props: MethodSettingProps) => {
     const [open, setOpen] = useState(false)
-    const [localParams, setLocalParams] = useState([])
-    const {formSchema, methodName, onSet} = props
+    const {formSchema, uiSchema, methodName, onSet} = props
+
+    const submitFormRef: React.RefObject<HTMLInputElement> = createRef();
 
     const onSetOpen = () => {
         // @todo reset params to global form
         setOpen(true)
     }
 
+    const onSubmit = ({ formData }: IChangeEvent<any, RJSFSchema, any>, e: React.FormEvent<any>) => {
+        onSet(formData)
+    }
+
     const handleParamsSet = () => {
-        onSet(localParams)
-        setOpen(false)
+        if(submitFormRef.current){
+            submitFormRef.current.click()
+            setOpen(false)
+        } else {
+            throw "submitFormRef not set"
+        }
     }
 
     const log = (type: any) => console.log.bind(console, type);
@@ -41,14 +52,16 @@ const MethodSettings = (props: MethodSettingProps) => {
                     schema={formSchema}
                     validator={validator}
                     onChange={log('changed')}
-                    onSubmit={log('submitted')}
+                    onSubmit={onSubmit}
                     onError={log('errors')}
-
-                />,
+                    uiSchema={uiSchema}
+                >
+                    <input ref={submitFormRef} type="submit" style={{ display: "none" }} />
+                </Form>
             </DialogContent>
             <DialogActions>
                 <Button onClick={() => setOpen(false)}>Cancel</Button>
-                <Button onClick={handleParamsSet}>Set</Button>
+                <Button onClick={() => handleParamsSet()}>Set</Button>
             </DialogActions>
             </Dialog>
       </div>

@@ -1,10 +1,11 @@
-import { RJSFSchema } from "@rjsf/utils";
+import { RJSFSchema, UiSchema } from "@rjsf/utils";
 
 export const blurFormSchemaSubject: RJSFSchema = {
   type: 'object',
   properties: {
     subjectDetection: {
       type: 'string',
+      title: 'Subject Detection (Localization) Method',
       enum: ['Silhouette', 'BoundingBox'],
       default: 'Silhouette',
       description: 'Bounding box lays a bounding box over the subject for hiding, while silhouette hides the subject within its exact contours only.'
@@ -19,6 +20,8 @@ export const blurFormSchemaSubject: RJSFSchema = {
           properties: {
             subjectDetection: {enum: ['Silhouette']},
             detectionModel: {
+              title: 'AI-Model for Subject Detection',
+              description: 'Pre-trained models that detects (localizes) the subject in the video.',
               type: 'string',
               enum: ['MediaPipe', 'Yolo'],
               default: 'MediaPipe',
@@ -29,6 +32,8 @@ export const blurFormSchemaSubject: RJSFSchema = {
           properties: {
             subjectDetection: {enum: ['BoundingBox']},
             detectionModel: {
+              title: 'AI-Model for Subject Detection',
+              description: 'Pre-trained models that detects (localizes) the subject in the video.',
               type: 'string',
               enum: [ 'Yolo'],
               default: 'Yolo',
@@ -38,6 +43,10 @@ export const blurFormSchemaSubject: RJSFSchema = {
       ]
     },
   },
+};
+
+export const blurFormSchemaSubjectUI: UiSchema = {
+  'ui:order': ['subjectDetection', 'detectionModel', 'kernelSize', 'extraPixels'],
 };
 
 export const blackoutFormSchemaSubject: RJSFSchema = {
@@ -59,6 +68,8 @@ export const blackoutFormSchemaSubject: RJSFSchema = {
           properties: {
             subjectDetection: {enum: ['Silhouette']},
             detectionModel: {
+              title: 'AI-Model for Subject Detection',
+              description: 'Pre-trained models that detect (localize) the subject in the video.',
               type: 'string',
               enum: ['MediaPipe', 'Yolo'],
               default: 'MediaPipe',
@@ -69,6 +80,8 @@ export const blackoutFormSchemaSubject: RJSFSchema = {
           properties: {
             subjectDetection: {enum: ['BoundingBox']},
             detectionModel: {
+              title: 'AI-Model for Subject Detection',
+              description: 'Pre-trained models that detect (localize) the subject in the video.',
               type: 'string',
               enum: [ 'Yolo'],
               default: 'Yolo',
@@ -78,6 +91,10 @@ export const blackoutFormSchemaSubject: RJSFSchema = {
       ]
     },
   },
+};
+
+export const blackoutFormSchemaSubjectUI: UiSchema = {
+  'ui:order': ['subjectDetection', 'detectionModel', 'color', 'extraPixels'],
 };
 
 export const blurFormSchemaBG: RJSFSchema = {

@@ -88,10 +88,11 @@ const ParamterTabOverview = (props: ParameterTabOverviewProps) => {
                 const activeMaskingStrategy = runParams.videoMasking[videoPart].maskingStrategy?.key
                 return (
                    <>
-                        <Grid item xs={4}>
+                        <Grid item xs={2} sx={{ display: 'flex', alignItems: 'center'}}>
                             <Typography>{upperFirst(videoPart)}</Typography>
                         </Grid>
-                        <Grid container xs={4} rowSpacing={2}>
+                        <Grid item xs={5}>
+                        <Grid container>
                             <Grid item xs={8}>
                                 <Select
                                     value={activeHidingStrategy}
@@ -109,11 +110,14 @@ const ParamterTabOverview = (props: ParameterTabOverviewProps) => {
                             <MethodSettings
                                     methodName={activeHidingStrategy}
                                     formSchema={maskingMethods[videoPart].hidingMethods[activeHidingStrategy].parameterSchema}
+                                    uiSchema={maskingMethods[videoPart].hidingMethods[activeHidingStrategy].uiSchema}
                                     onSet={maskVideoStrategyParamSetter(videoPart, "hidingStrategy")}
                                 />
                             </Grid>  
+                            </Grid>
                         </Grid>
-                            {videoPartMethod.maskingMethods ?  <Grid container xs={4} rowSpacing={2}>
+                            {videoPartMethod.maskingMethods ?  <Grid item xs={5}>
+                                <Grid container>
                             <Grid item xs={8}>
                                 <Select
                                     value={activeMaskingStrategy}
@@ -133,7 +137,7 @@ const ParamterTabOverview = (props: ParameterTabOverviewProps) => {
                                     formSchema={maskingMethods[videoPart].maskingMethods![activeMaskingStrategy].parameterSchema}
                                     onSet={maskVideoStrategyParamSetter(videoPart, "maskingStrategy")}
                                 />
-                                </Grid> </Grid>: <Grid item xs={4}></Grid>}
+                                </Grid> </Grid></Grid>: <Grid item xs={4}></Grid>}
                     </>
                 )
             })}

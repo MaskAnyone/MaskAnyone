@@ -1,5 +1,5 @@
 import { MaskingMethods } from "../state/types/RunParamRendering";
-import { blackoutFormSchemaBG, blackoutFormSchemaSubject, blurFormSchemaBG, blurFormSchemaSubject, faceMeshFormSchema, skeletonFormSchema } from "./formSchemas";
+import { blackoutFormSchemaBG, blackoutFormSchemaSubject, blackoutFormSchemaSubjectUI, blurFormSchemaBG, blurFormSchemaSubject, blurFormSchemaSubjectUI, faceMeshFormSchema, skeletonFormSchema } from "./formSchemas";
 
 export const maskingMethods: MaskingMethods = {
     head : {
@@ -7,12 +7,14 @@ export const maskingMethods: MaskingMethods = {
             blur: {
                 name: "Blur",
                 description: "Gaussian Blurring",
-                parameterSchema: blurFormSchemaSubject
+                parameterSchema: blurFormSchemaSubject,
+                uiSchema: blurFormSchemaSubjectUI
             },
             blackout: {
                 name: "Blackout",
                 description: "Hiding the subject with the selected color",
-                parameterSchema: blackoutFormSchemaSubject
+                parameterSchema: blackoutFormSchemaSubject,
+                uiSchema: blackoutFormSchemaSubjectUI
             },
         },
         maskingMethods: {
@@ -33,12 +35,14 @@ export const maskingMethods: MaskingMethods = {
             blur: {
                 name: "Blur",
                 description: "Gaussian Blurring",
-                parameterSchema: blurFormSchemaSubject
+                parameterSchema: blurFormSchemaSubject,
+                uiSchema: blurFormSchemaSubjectUI
             },
             blackout: {
                 name: "Blackout",
                 description: "Hiding the subject with the selected color",
-                parameterSchema: blackoutFormSchemaSubject
+                parameterSchema: blackoutFormSchemaSubject,
+                uiSchema: blackoutFormSchemaSubjectUI
             },
         },
         maskingMethods: {

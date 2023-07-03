@@ -5,6 +5,7 @@ export type Preset = {
     detailText?: string,
     name: string,
     previewImagePath?: string,
+    runParams: RunParams
 }
 
 export interface Run {
