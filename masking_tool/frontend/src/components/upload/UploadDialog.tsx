@@ -86,7 +86,7 @@ const UploadDialog = (props: UploadDialogProps) => {
         <Dialog open={props.open} onClose={uploadRunning ? undefined : props.onClose} fullWidth={true}>
             <DialogTitle>Upload</DialogTitle>
             <DialogContent>
-                <Box sx={styles.tagBarWrapper}>
+                <Box component="div" sx={styles.tagBarWrapper}>
                     {/* @todo disabled */}
                     <div style={{ display: 'none' }}><TagBar tags={tags} onChange={setTags} /></div>
                 </Box>

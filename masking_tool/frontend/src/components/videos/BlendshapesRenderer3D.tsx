@@ -6,8 +6,8 @@ const BlendshapesRenderer3D = () => {
     return(
         <>
             <Canvas
-              camera={{ fov: 90 }} shadows
-              style={{ backgroundColor: '#FAD972', height: 600 }}
+              camera={{ fov: 10 }} shadows
+              style={{ backgroundColor: '#FAD972', height: 350 }}
             >
                 <ambientLight intensity={0.5} />
                 <pointLight position={[10, 10, 10]} color={new Color(1, 1, 0)} intensity={0.5} castShadow />

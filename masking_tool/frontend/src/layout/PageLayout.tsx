@@ -45,7 +45,7 @@ const PageLayout = () => {
     });
 
     return (
-        <Box sx={styles.root}>
+        <Box component="div" sx={styles.root}>
             <SideBar
                 open={sideBarOpen}
                 isLargeScreen={isLargeScreen}
@@ -55,7 +55,7 @@ const PageLayout = () => {
                 isLargeScreen={isLargeScreen}
                 onOpenSideBar={() => setSideBarOpen(!sideBarOpen)}
             />
-            <Box sx={styles.content} className={isLargeScreen ? 'left-padding' : ''}>
+            <Box component="div" sx={styles.content} className={isLargeScreen ? 'left-padding' : ''}>
                 <Outlet />
             </Box>
         </Box>

@@ -60,7 +60,7 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
             {!loading ?
                 <>
                     <Divider style={{marginTop: "20px"}}/>
-                    <Box sx={{bgcolor: 'background.paper'}}>
+                    <Box component="div" sx={{bgcolor: 'background.paper'}}>
                         <div style={{display: "flex", alignItems: "center", marginTop: "20px"}}>
                             <Typography variant={"h6"} style={{marginRight: "10px"}}>Processed Results</Typography>
                             <Tooltip title=" Click on a result to run it next to the original video">

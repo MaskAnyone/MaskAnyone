@@ -53,7 +53,7 @@ const SideBar = (props: SideBarProps) => {
             onClose={props.onClose}
             variant={props.isLargeScreen ? 'persistent' : 'temporary'}
             children={(
-                <Box sx={styles.container}>
+                <Box component="div" sx={styles.container}>
                     <List sx={{ display: 'flex', flexDirection: 'column', flex: 1, paddingBottom: 1 }} disablePadding={true}>
                         {videoList.map(video => (
                             <SideBarItem

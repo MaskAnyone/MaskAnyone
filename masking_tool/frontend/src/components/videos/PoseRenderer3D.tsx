@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {useEffect, useRef, useState} from "react";
 // @ts-ignore
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import poseTed from './ted_kid_pose.json';
+import poseTed from '../../mockData/ted_kid_pose.json';
 import { connections } from '../../util/skeletonConnections';
 
 const PoseRenderer3D = () => {

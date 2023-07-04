@@ -82,15 +82,16 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
     };
 
     return (
-        <Box sx={{ flexGrow: 1, bgcolor: 'background.paper', display: 'flex', minHeight: 224 }}>
+        <Box component="div" sx={{ flexGrow: 1, bgcolor: 'background.paper', display: 'flex', minHeight: 224 }}>
             {presetView ? 
-                <Box sx={{ flexGrow: 1, padding: "20px 40px" }}>
+                <Box component="div" sx={{ flexGrow: 1, padding: "20px 40px" }}>
                     <Grid container>
                         <PresetSelection selectedPreset={selectedPreset} onPresetSelect={onPresetSelected} onCustomModeRequested={onCustomModeRequested}/>
                         <Grid container xs={12}>
                                 <Grid item xs={12}>
                                     <Box
                                         display="flex"
+                                        component="div"
                                         justifyContent="flex-end" 
                                         alignItems="flex-end"
                                         visibility={selectedPreset? "visible": "hidden"}
@@ -114,7 +115,7 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
                     </Grid>
                 </Box> 
             : <div>
-                <Box sx={{ flexGrow: 1, padding: "20px 40px" }}>
+                <Box component="div" sx={{ flexGrow: 1, padding: "20px 40px" }}>
                     <Grid container>
                         <Grid item xs={12}>
                         <IconButton onClick={() => setPresetView(true)}>

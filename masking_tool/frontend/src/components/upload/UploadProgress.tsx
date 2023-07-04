@@ -20,7 +20,7 @@ interface UploadProgressProps {
 
 const UploadProgress = (props: UploadProgressProps) => {
     return (
-        <Box position={'relative'} display={'inline-flex'}>
+        <Box component="div" position={'relative'} display={'inline-flex'}>
             <CircularProgress variant={'determinate'} value={100} sx={styles.circularProgressBottom} />
             <CircularProgress
                 variant={'determinate'}
@@ -33,6 +33,7 @@ const UploadProgress = (props: UploadProgressProps) => {
                 left={0}
                 bottom={0}
                 right={0}
+                component="div"
                 position={'absolute'}
                 display={'flex'}
                 alignItems={'center'}

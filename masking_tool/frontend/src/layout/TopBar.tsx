@@ -54,7 +54,7 @@ const TopBar = (props: TopBarProps) => {
                 }}
                 children={'MaskAnyone'}
             />
-            <Box sx={styles.navigationContainer}>
+            <Box component="div" sx={styles.navigationContainer}>
                 <Button
                     sx={styles.navigationButton}
                     component={Link}

@@ -50,7 +50,7 @@ const SideBarItem = (props: SideBarItemProps) => {
                 sx={styles.button}
                 className={location.pathname.startsWith(props.url) ? 'active' : ''}
                 children={(<>
-                    <Box sx={styles.icon}>{props.icon}</Box>
+                    <Box component="div" sx={styles.icon}>{props.icon}</Box>
                     <Badge badgeContent={props.badge} max={9} color={'secondary'} sx={{ '& .MuiBadge-badge': { marginTop: 1 } }}>
                         <ListItemText primary={props.title} secondary={props.subtitle} />
                     </Badge>

@@ -2,6 +2,7 @@ import {Box, FormControl, FormControlLabel, Grid, Radio, RadioGroup} from "@mui/
 import Config from "../../config";
 import {useEffect, useRef, useState} from "react";
 import PoseRenderer3D from "./PoseRenderer3D";
+import BlendshapesRenderer3D from "./BlendshapesRenderer3D";
 
 
 interface DoubleVideoProps {
@@ -30,7 +31,7 @@ const DoubleVideo = (props: DoubleVideoProps) => {
             </video>)
          }
         if(view==views.blendshapes3D) {
-            return (<></>)
+            return (<BlendshapesRenderer3D />)
          }
         if(view==views.skeleton3D) {
             return <PoseRenderer3D />
@@ -64,7 +65,7 @@ const DoubleVideo = (props: DoubleVideoProps) => {
     }, [originalPath, resultPath]);
 
     return (
-        <Box>
+        <Box component="div">
             <Grid container rowSpacing={2} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
                 <Grid item xs={6} >
                     <video controls={true} key={originalPath} style={{width: '100%'}} ref={video1Ref}>

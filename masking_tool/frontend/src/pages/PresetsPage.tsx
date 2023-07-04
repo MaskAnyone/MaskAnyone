@@ -2,7 +2,7 @@ import { Box } from "@mui/material";
 
 const PresetsPage = () => {
     return (
-        <Box>
+        <Box component="div">
             <h2>Presets</h2>
             This page will soon allow you to create and save your own presets.
         </Box>

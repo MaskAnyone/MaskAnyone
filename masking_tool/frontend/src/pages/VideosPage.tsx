@@ -15,13 +15,11 @@ const VideosPage = () => {
     }
 
     return (
-        <Box>
+        <Box component="div">
             {videoId && (<VideoRunParams videoId={videoId} />)}
             <Divider style={{marginBottom: "15px"}}/>
             {videoId && (<DoubleVideo videoId={videoId} selectedResult={selectedResult}/>)}
             {videoId && (<VideoResultsOverview key={videoId} videoId={videoId} updateSelectedResult={updateSelectedResult} />)}
-
-            {/*<PoseRenderer3D />*/}
         </Box>
     );
 };

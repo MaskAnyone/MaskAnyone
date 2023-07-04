@@ -24,8 +24,8 @@ import { useGLTF, useAnimations } from '@react-three/drei'
 import { useFrame, useGraph } from '@react-three/fiber';
 import { GLTF } from 'three-stdlib'
 import * as Kalidokit from 'kalidokit';
-import initialFaceResults from "../../../mockData/faceResults3.json"
-import initialPoseResults from "../../../mockData/poseResults.json"
+import initialFaceResults from "../../mockData/faceResults3.json"
+import initialPoseResults from "../../mockData/poseResults.json"
 
 interface Blendshapes {
   [name: string]: number;
@@ -51,6 +51,7 @@ type GLTFResult = GLTF & {
 }
 type ActionName = 'Expression' | 'KeyAction' | 'HeadMovement' | 'BodyAction'
 type GLTFActions = Record<ActionName, THREE.AnimationAction>
+
 function updateBlendshapes(headMesh: any, nodes: any, blendshapes: any, transformationMatrix: any) {
   if (!headMesh.morphTargetDictionary) {
     return;
@@ -187,7 +188,7 @@ export function Character(props: JSX.IntrinsicElements['group']) {
         count = 0
       }
       updateBlendshapes(headMesh, nodes, faceResults.blendshapes[count], faceResults.transformationMatrices[count]);
-      updatePose(poseResults.pose[count], poseResults.poseWorld[count], bones)
+      // updatePose(poseResults.pose[count], poseResults.poseWorld[count], bones)
       count = count + 1
     }, 50);
   }, [nodes]);

@@ -13,7 +13,7 @@ const TagBar = (props: TagBarProps) => {
     const allKnownTags = ['Test 1', 'Test 2'];
 
     return (
-        <Box>
+        <Box component="div">
             <Autocomplete
                 size={'small'}
                 multiple={true}

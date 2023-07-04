@@ -170,7 +170,7 @@ const RunsPage = () => {
   );
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box component="div" sx={{ width: '100%' }}>
       <Paper sx={{ width: '100%', mb: 2 }}>
         <TableContainer sx={{padding: "20px"}}>
         <Typography
