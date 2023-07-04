@@ -1,5 +1,5 @@
-import { Checkbox, FormControl, FormControlLabel, FormGroup, Grid, MenuItem, Select, Tab, Tabs, Typography } from "@mui/material";
-import { useState } from "react";
+import { Box, Button, Checkbox, Divider, FormControl, FormControlLabel, FormGroup, Grid, MenuItem, Select, Tab, Tabs, Typography } from "@mui/material";
+import React, { useState } from "react";
 import TabPanel from "./ParamTabPanel";
 import { RunParams } from "../../state/types/Run";
 import MethodSettings from "./MethodSettings";
@@ -12,11 +12,16 @@ import { MaskingMethods, Method } from "../../state/types/RunParamRendering";
 interface ParameterTabOverviewProps {
     runParams: RunParams
     onParamsChange: (runParams: RunParams) => void
+    onRunClicked: () => void
 }
+
+const ButtonInTabs = ({onClick, children } : { onClick: () => void, children: React.ReactNode}) => {
+    return <Button onClick={onClick} sx={{margin: "10px"}} children={children} variant="contained"/>;
+  };
 
 const ParamterTabOverview = (props: ParameterTabOverviewProps) => {
     const [selectedTab, setSelectedTab] = useState<number>(0)
-    const { runParams, onParamsChange } = props
+    const { runParams, onParamsChange, onRunClicked } = props
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setSelectedTab(newValue);
@@ -78,26 +83,38 @@ const ParamterTabOverview = (props: ParameterTabOverviewProps) => {
         };
     }
     return (
-        <>
-        <Tabs
-        orientation="vertical"
-        variant="scrollable"
-        value={selectedTab}
-        onChange={handleTabChange}
-        sx={{ borderRight: 1, borderColor: 'divider' }}
-    >
-        <Tab icon={<MovieFilterIcon />} iconPosition="start" label="Video Masking" {...a11yProps(0)} />
-        <Tab icon={<GraphicEqIcon />} iconPosition="start" label="Voice Masking" {...a11yProps(1)} />
-        <Tab icon={<EmojiPeopleIcon />} iconPosition="start" label="3D Extraction" {...a11yProps(2)} />
-    </Tabs>
+        <div style={{display: "flex"}}>
+            <Tabs
+                orientation="vertical"
+                variant="scrollable"
+                value={selectedTab}
+                onChange={handleTabChange}
+                sx={{ borderRight: 1, borderColor: 'divider' }}
+            >
+                <Tab icon={<MovieFilterIcon />} iconPosition="start" label="Video Masking" {...a11yProps(0)} />
+                <Tab icon={<GraphicEqIcon />} iconPosition="start" label="Voice Masking" {...a11yProps(1)} />
+                <Tab icon={<EmojiPeopleIcon />} iconPosition="start" label="3D Extraction" {...a11yProps(2)} />
+                <ButtonInTabs 
+                    onClick={() => onRunClicked()}>
+                    Run
+                </ButtonInTabs>
+            </Tabs>
     <TabPanel value={selectedTab} index={0}>
         <Typography>Select strategies for masking different parts of your video.</Typography>
         <Grid container sx={{pt: 3, pl: 5}} rowSpacing={2} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+            <Grid item xs={12}>
+                <Grid container>
+                    <Grid item xs={2}>Video Part to Mask</Grid>
+                    <Grid item xs={5}>Hiding Strategy</Grid>
+                    <Grid item xs={5}>Masking Strategy</Grid>
+                </Grid>
+                <Divider light />
+            </Grid>
             {Object.keys(maskingMethods).map((videoPart: string) => {
                 const videoPartMethods = maskingMethods[videoPart]
                 const activeHidingStrategyKey: string = runParams.videoMasking[videoPart].hidingStrategy.key
                 const activeHidingStrategy = videoPartMethods.hidingMethods[activeHidingStrategyKey]
-                const activeMaskingStrategyKey = runParams.videoMasking[videoPart].maskingStrategy!.key
+                const activeMaskingStrategyKey = runParams.videoMasking[videoPart].maskingStrategy?.key
                 return (
                    <>
                         <Grid item xs={2} sx={{ display: 'flex', alignItems: 'center'}}>
@@ -129,7 +146,7 @@ const ParamterTabOverview = (props: ParameterTabOverviewProps) => {
                             </Grid>  
                             </Grid>
                         </Grid>
-                            {videoPartMethods.maskingMethods ?  <Grid item xs={5}>
+                            {videoPartMethods.maskingMethods && activeMaskingStrategyKey?  <Grid item xs={5}>
                                 <Grid container>
                             <Grid item xs={8}>
                                 <Select
@@ -180,8 +197,7 @@ const ParamterTabOverview = (props: ParameterTabOverviewProps) => {
             />
         </FormGroup>
     </TabPanel>
-
-    </>
+    </div>
     )
 }
 

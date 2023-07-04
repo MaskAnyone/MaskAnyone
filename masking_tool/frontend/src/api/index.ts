@@ -1,6 +1,7 @@
 import axios, {AxiosRequestConfig, AxiosResponse} from 'axios';
 import Config from "../config";
 import {ApiFetchJobsResponse, ApiFetchVideosResponse} from "./types";
+import { RunParams } from '../state/types/Run';
 
 const configuredAxios = axios.create({
     baseURL: Config.api.baseUrl,
@@ -47,27 +48,15 @@ const Api = {
     createBasicMaskingJob: async (
         id: string,
         videoId: string,
-        extractPersonOnly: boolean,
-        headOnlyHiding: boolean,
-        hidingStrategy: number,
-        headOnlyMasking: boolean,
-        maskCreationStrategy: number,
-        detailedFingers: boolean,
-        detailedFaceMesh: boolean
+        runData: RunParams
     ): Promise<void> => {
         await sendApiRequest({
             url: 'jobs/create',
             method: 'post',
             data: {
                 id,
+                run_data: runData,
                 video_id: videoId,
-                extract_person_only: extractPersonOnly,
-                head_only_hiding: headOnlyHiding,
-                hiding_strategy: hidingStrategy,
-                head_only_masking: headOnlyMasking,
-                mask_creation_strategy: maskCreationStrategy,
-                detailed_fingers: detailedFingers,
-                detailed_facemesh: detailedFaceMesh
             }
         });
     },

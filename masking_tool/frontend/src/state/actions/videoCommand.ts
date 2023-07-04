@@ -1,4 +1,5 @@
 import {createAction} from 'redux-actions';
+import { RunParams } from '../types/Run';
 
 const createVideoCommand = <T>(type: string) => createAction<T>('_C/VD/' + type);
 
@@ -8,13 +9,7 @@ export interface FetchVideoListPayload {
 export interface MaskVideoPayload {
     id: string;
     videoId: string;
-    extractPersonOnly: boolean;
-    headOnlyHiding: boolean;
-    hidingStrategy: number;
-    headOnlyMasking: boolean;
-    maskCreationStrategy: number;
-    detailedFingers: boolean;
-    detailedFaceMesh: boolean;
+    runData: RunParams
 }
 
 const VideoCommand = {

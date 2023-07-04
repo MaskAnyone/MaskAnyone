@@ -10,13 +10,7 @@ const onMaskVideo = function*(payload: MaskVideoPayload) {
             Api.createBasicMaskingJob,
             payload.id,
             payload.videoId,
-            payload.extractPersonOnly,
-            payload.headOnlyHiding,
-            payload.hidingStrategy,
-            payload.headOnlyMasking,
-            payload.maskCreationStrategy,
-            payload.detailedFingers,
-            payload.detailedFaceMesh
+            payload.runData
         );
 
         yield put(Command.Job.fetchJobList({}));

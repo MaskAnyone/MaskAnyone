@@ -52,15 +52,7 @@ def create_job(run_params: RunParams):
     job_manager.create_new_job(
         run_params.id,
         run_params.video_id,
-        {
-            'extract_person_only': run_params.extract_person_only,
-            'head_only_hiding': run_params.head_only_hiding,
-            'hiding_strategy': run_params.hiding_strategy,
-            'head_only_masking': run_params.head_only_masking,
-            'mask_creation_strategy': run_params.mask_creation_strategy,
-            'detailed_fingers': run_params.detailed_fingers,
-            'detailed_facemesh': run_params.detailed_facemesh
-        }
+        run_params.run_data
     )
 
 

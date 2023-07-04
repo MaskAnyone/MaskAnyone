@@ -1,4 +1,4 @@
-import {Box, Grid} from "@mui/material";
+import {Box, FormControl, FormControlLabel, Grid, Radio, RadioGroup} from "@mui/material";
 import Config from "../../config";
 import {useEffect, useRef, useState} from "react";
 import PoseRenderer3D from "./PoseRenderer3D";
@@ -10,9 +10,9 @@ interface DoubleVideoProps {
 }
 
 enum views {
-    video,
-    blendshapes3D,
-    skeleton3D
+    video = "video",
+    blendshapes3D = "blendshapes3D",
+    skeleton3D = "skeleton3D"
 }
 
 const DoubleVideo = (props: DoubleVideoProps) => {
@@ -72,9 +72,22 @@ const DoubleVideo = (props: DoubleVideoProps) => {
                     </video>
                 </Grid>
                 <Grid item xs={6}>
-                    {props.selectedResult && displaySelectedView()}
+                    {displaySelectedView()}
                 </Grid>
                 <Grid item xs={12}>
+                    <Grid container>
+                        <Grid item xs={6}></Grid>
+                        <Grid item xs={6} sx={{textAlign: "center"}}>
+                            { (
+                            <FormControl>
+                            <RadioGroup row value={view} onChange={(e,v) => setView(views[v as keyof typeof views])}>
+                            <FormControlLabel value={views.video} control={<Radio />} label="Show Masked Video" />
+                                <FormControlLabel value={views.skeleton3D} control={<Radio />} label="Show 3D Skeleton" />
+                                <FormControlLabel value={views.blendshapes3D} control={<Radio />} label="Show animated 3D Face" />
+                            </RadioGroup>
+                            </FormControl>)}
+                        </Grid>
+                    </Grid>
                 </Grid>
             </Grid>
         </Box>

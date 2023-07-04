@@ -7,8 +7,9 @@ import { Preset, RunParams } from "../../state/types/Run";
 import { maskingMethods } from "../../util/maskingMethods";
 
 interface PresetSelectionProps {
-    onPresetSelect: (runParams: RunParams) => void
+    onPresetSelect: (preset: Preset) => void
     onCustomModeRequested: () => void
+    selectedPreset?: Preset
 }
 
  const mockPresets: Preset[] = [
@@ -176,11 +177,10 @@ interface PresetSelectionProps {
 
 const PresetSelection = (props: PresetSelectionProps) => {
     const [presets, setPresets] = useState(mockPresets)
-    const [selected, setSelected] = useState<string | undefined>()
+    const {selectedPreset} = props
 
     const onPresetClicked = (preset: Preset) => {
-        setSelected(preset.name)
-        props.onPresetSelect(preset.runParams)
+        props.onPresetSelect(preset)
     }
 
     return(
@@ -190,7 +190,7 @@ const PresetSelection = (props: PresetSelectionProps) => {
                             <Grid item xs={4}>
                                 <PresetItem
                                     name={preset.name}
-                                    selected={selected==preset.name}
+                                    selected={selectedPreset? selectedPreset.name==preset.name : false}
                                     previewImagePath={preset.previewImagePath}
                                     description={preset.detailText}
                                     onClick={() => onPresetClicked(preset)}

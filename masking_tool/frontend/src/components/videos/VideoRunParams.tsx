@@ -1,11 +1,10 @@
 import { Grid, FormGroup, FormControlLabel, Switch, Button, MenuItem, Select, Box, SelectChangeEvent, InputLabel, FormControl, Tab, Tabs, IconButton, Divider } from "@mui/material"
 import { useEffect, useState } from "react";
-import {useDispatch, useSelector} from "react-redux";
+import {useDispatch} from "react-redux";
 import Command from "../../state/actions/command";
 import { v4 as uuidv4 } from 'uuid';
 import PresetSelection from "./PresetSelection";
-import TabPanel from "./ParamTabPanel";
-import { Strategy, RunParams } from "../../state/types/Run";
+import { Strategy, RunParams, Preset } from "../../state/types/Run";
 import MasksIcon from '@mui/icons-material/Masks';
 import TuneIcon from '@mui/icons-material/Tune';
 import ParamterTabOverview from "./ParameterTabOverview";
@@ -30,10 +29,10 @@ const initialRunParams: RunParams = {
 }
 
 const VideoRunParams = (props: VideoRunParamsProps) => {
-
+    const dispatch = useDispatch();
     const [presetView, setPresetView] = useState(true)
     const [runParams, setRunParams] = useState<RunParams>(initialRunParams)
-    const [presetSelected, setPresetSelected] = useState(false)
+    const [selectedPreset, setSelectedPreset] = useState<Preset>()
 
     const initRunParams = () => {
         const newRunParams = initialRunParams
@@ -60,14 +59,14 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
         initRunParams()
     }, [])
 
-    const onPresetSelected = (runParams: RunParams) => {
+    const onPresetSelected = (preset: Preset) => {
         setRunParams(runParams)
-        setPresetSelected(true)
+        setSelectedPreset(preset)
     }
 
     const onCustomModeRequested = () => {
         setPresetView(false)
-        setPresetSelected(false)
+        setSelectedPreset(undefined)
     }
 
     const maskVideo = () => {
@@ -75,17 +74,11 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
             return;
         }
 
-        /*dispatch(Command.Video.maskVideo({
+        dispatch(Command.Video.maskVideo({
             id: uuidv4(),
             videoId: props.videoId,
-            extractPersonOnly,
-            headOnlyHiding,
-            hidingStrategy,
-            headOnlyMasking,
-            maskCreationStrategy,
-            detailedFingers,
-            detailedFaceMesh
-        })); */
+            runData: runParams
+        }));
     };
 
     return (
@@ -93,14 +86,14 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
             {presetView ? 
                 <Box sx={{ flexGrow: 1, padding: "20px 40px" }}>
                     <Grid container>
-                        <PresetSelection onPresetSelect={onPresetSelected} onCustomModeRequested={onCustomModeRequested}/>
+                        <PresetSelection selectedPreset={selectedPreset} onPresetSelect={onPresetSelected} onCustomModeRequested={onCustomModeRequested}/>
                         <Grid container xs={12}>
                                 <Grid item xs={12}>
                                     <Box
                                         display="flex"
                                         justifyContent="flex-end" 
                                         alignItems="flex-end"
-                                        visibility={presetSelected? "visible": "hidden"}
+                                        visibility={selectedPreset? "visible": "hidden"}
                                         paddingTop={"22px"}>
                                         <Button
                                             variant={'contained'}
@@ -112,6 +105,7 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
                                         <Button
                                             variant={'contained'}
                                             startIcon={<MasksIcon />}
+                                            onClick={() => maskVideo()}
                                             children={'Mask Video'}
                                         />
                                     </Box>
@@ -128,8 +122,8 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
                         </IconButton>
                         Presets
                         </Grid>
-                        <Grid container xs={12}>
-                            <ParamterTabOverview runParams={runParams} onParamsChange={setRunParams}/>
+                        <Grid item xs={12}>
+                            <ParamterTabOverview onRunClicked={maskVideo} runParams={runParams} onParamsChange={setRunParams}/>
                         </Grid>
                     </Grid>
                 </Box>
