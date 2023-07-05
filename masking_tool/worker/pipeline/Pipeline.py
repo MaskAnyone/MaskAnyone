@@ -2,6 +2,8 @@ from functools import reduce
 from utils.drawing_utils import hider_reducer, overlay_frames
 from utils.video_utils import setup_video_processing
 
+import cv2
+
 
 class Pipeline:
     def __init__(self, runParams: dict):
@@ -25,10 +27,12 @@ class Pipeline:
             if not ret:
                 break
 
+            frame_timestamp_ms = int(video_cap.get(cv2.CAP_PROP_POS_MSEC))
+
             # Detect all relevant body/video parts (as pixelMasks)
             detection_results = [] # detectionResultObject = {type, mask} - depending on type result will be handled differently by hider
             for detector in self.detectors:
-                detection_result = detector.detect(frame)
+                detection_result = detector.detect(frame, frame_timestamp_ms)
                 detection_results.append(*detection_result)
 
             # frame with all detected parts hidden respectively
