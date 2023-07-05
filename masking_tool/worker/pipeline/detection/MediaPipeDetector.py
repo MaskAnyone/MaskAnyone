@@ -1,10 +1,10 @@
-from typing import List, Literal
+from typing import List
 import os
 import cv2
 import mediapipe as mp
 import numpy as np
 
-from pipeline.BaseDetector import BaseDetector
+from masking_tool.worker.pipeline.detection.BaseDetector import BaseDetector
 from pipeline.PipelineTypes import PartToDetect
 
 standard_model_path = os.path.join("models", "pose_landmarker_heavy.task")
@@ -21,7 +21,7 @@ class  MediaPipeDetector(BaseDetector):
         self.model_path = model_path
         self.init_mp_model()
 
-    def reorder_parts_to_detect(self, parts_to_detect: dict) -> List[PartToDetect]:
+    def reorder_parts_to_detect(self) -> List[PartToDetect]:
         background_part = next((part for part in self.parts_to_detect if part.part_name == "background"), None)
         if background_part:
             index = self.parts_to_detect.index(background_part)

@@ -5,14 +5,11 @@ import numpy as np
 
 
 class  BaseDetector:
-    def __init__(self, parts_to_detect: dict):
+    def __init__(self, parts_to_detect: List[PartToDetect]):
         self.silhouette_methods: PartDetectionMethods = {} # the specific models for each part (e.g head_model etc)
         self.boundingbox_methods: PartDetectionMethods = {}
         self.parts_to_detect: List[PartToDetect] = self.init_parts_to_detect(parts_to_detect) # the order in which
         self.current_results: List[DetectionResult] = []
-
-    def init_parts_to_detect(self, parts_to_detect: dict) -> List[PartToDetect]:
-        return [{"part_name": key, "detection_type": parts_to_detect[key]} for key in parts_to_detect]
 
     def detect(self, frame: np.ndarray, timestamp_ms: int) -> List[DetectionResult]:
         # Runs the adequate detection method for each body part.
