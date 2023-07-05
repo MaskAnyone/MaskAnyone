@@ -14,8 +14,8 @@ export const maskingMethods: MaskingMethods = {
                 parameterSchema: blurFormSchemaSubject,
                 uiSchema: blurFormSchemaSubjectUI,
                 defaultValues: {
-                    subjectDetection: "Silhouette",
-                    detectionModel: "MediaPipe",
+                    subjectDetection: "silhouette",
+                    detectionModel: "mediapipe",
                     kernelSize: 23,
                     extraPixels: 0
                 }
@@ -26,8 +26,8 @@ export const maskingMethods: MaskingMethods = {
                 parameterSchema: blackoutFormSchemaSubject,
                 uiSchema: blackoutFormSchemaSubjectUI,
                 defaultValues: {
-                    subjectDetection: "Silhouette",
-                    detectionModel: "MediaPipe",
+                    subjectDetection: "silhouette",
+                    detectionModel: "mediapipe",
                     color: "#000",
                     extraPixels: 0
 
@@ -71,8 +71,8 @@ export const maskingMethods: MaskingMethods = {
                 parameterSchema: blurFormSchemaSubject,
                 uiSchema: blurFormSchemaSubjectUI,
                 defaultValues: {
-                    subjectDetection: "Silhouette",
-                    detectionModel: "MediaPipe",
+                    subjectDetection: "silhouette",
+                    detectionModel: "mediapipe",
                     kernelSize: 23,
                     extraPixels: 0
                 }
@@ -83,8 +83,8 @@ export const maskingMethods: MaskingMethods = {
                 parameterSchema: blackoutFormSchemaSubject,
                 uiSchema: blackoutFormSchemaSubjectUI,
                 defaultValues: {
-                    subjectDetection: "Silhouette",
-                    detectionModel: "MediaPipe",
+                    subjectDetection: "silhouette",
+                    detectionModel: "mediapipe",
                     color: "#000",
                     extraPixels: 0
 

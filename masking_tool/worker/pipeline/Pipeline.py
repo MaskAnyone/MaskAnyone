@@ -4,7 +4,7 @@ from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 from pipeline.detection.YoloDetector import YoloDetector
 from pipeline.detection.MediaPipeDetector import MediaPipeDetector
 from utils.drawing_utils import overlay_frames
-from pipeline.hiding import Hider, hide_frame_part
+from pipeline.hiding import Hider
 from pipeline.PipelineTypes import DetectionResult, HidingStategies, PartToDetect
 from utils.video_utils import setup_video_processing
 
@@ -25,7 +25,7 @@ class Pipeline:
         vid_masking_params = run_params["videoMasking"]
         for video_part in vid_masking_params:
             video_part_params = vid_masking_params[video_part]
-            if "hidingStrategy" in video_part:
+            if "hidingStrategy" in video_part_params and video_part_params["hidingStrategy"]["key"] != "none":
                 hiding_strategies[video_part] = video_part_params["hidingStrategy"]["key"]
                 hiding_params = video_part_params["hidingStrategy"]["params"]
                 if "detectionModel" not in hiding_params or "subjectDetection" not in hiding_params:
@@ -37,12 +37,12 @@ class Pipeline:
                 if not detection_model_name in required_detectors:
                     required_detectors[detection_model_name] = []
                 
-                parts_to_detect: List[PartToDetect] = {
+                part_to_detect: PartToDetect = {
                     "part_name": video_part,
                     "detection_type": detection_type
                     # could be extended with fine grained paramters for detection
                 }
-                required_detectors[detection_model_name] = parts_to_detect
+                required_detectors[detection_model_name].append(part_to_detect)
             
             # @ToDo implement masking similar to detection/hiding
             """if "maskingStrategy" in video_part:
@@ -73,7 +73,7 @@ class Pipeline:
             params = required_detectors["mediapipe"]
             self.detectors.append(YoloDetector(params))
 
-    def init_maskers(required_maskers: dict):
+    def init_maskers(self, required_maskers: dict):
         pass
         
     def run(self, video_id: str):
@@ -95,14 +95,14 @@ class Pipeline:
                 detection_result = detector.detect(frame, frame_timestamp_ms)
                 detection_results.append(*detection_result)
 
-            print("Detection completed", detection_result)
+            print("Detection completed", detection_results)
 
             # applies the hiding method on each detected part of the frame and combines them into one frame
             hidden_frame = frame
-            for detection_result in detection_result:
+            for detection_result in detection_results:
                 hidden_frame = self.hider.hide(hidden_frame, detection_result)
 
-            print("Masking completed", detection_result)
+            print("Hiding completed!")
 
             # Extracts the masks for each desired bodypart
             mask_results = [] # mask results have to be drawn on a black frame in order to be combined correctly
@@ -110,8 +110,12 @@ class Pipeline:
                 mask_result = mask_creator.extract_mask(frame)
                 mask_results.append(*mask_result)
 
+            print("Masking completed")
+
             out_frame = overlay_frames(hidden_frame, mask_results)
             out.write(out_frame)
+
+            print("Output written to local results directory on worker")
         
         out.release()
         video_cap.release()

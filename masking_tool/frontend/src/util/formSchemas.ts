@@ -6,8 +6,8 @@ export const blurFormSchemaSubject: RJSFSchema = {
     subjectDetection: {
       type: 'string',
       title: 'Subject Detection (Localization) Method',
-      enum: ['Silhouette', 'BoundingBox'],
-      default: 'Silhouette',
+      enum: ['silhouette', 'boundingbox'],
+      default: 'silhouette',
       description: 'Bounding box lays a bounding box over the subject for hiding, while silhouette hides the subject within its exact contours only.'
     },
     kernelSize: { type: 'integer', title: 'Kernel Size', default: 23, description: 'The Kernelsize for a Gaussion Filter'},
@@ -18,25 +18,25 @@ export const blurFormSchemaSubject: RJSFSchema = {
       oneOf: [
         {
           properties: {
-            subjectDetection: {enum: ['Silhouette']},
+            subjectDetection: {enum: ['silhouette']},
             detectionModel: {
               title: 'AI-Model for Subject Detection',
               description: 'Pre-trained models that detects (localizes) the subject in the video.',
               type: 'string',
-              enum: ['MediaPipe', 'Yolo'],
-              default: 'MediaPipe',
+              enum: ['mediapipe', 'yolo'],
+              default: 'mediapipe',
             },
           }
         },
         {
           properties: {
-            subjectDetection: {enum: ['BoundingBox']},
+            subjectDetection: {enum: ['boundingBox']},
             detectionModel: {
               title: 'AI-Model for Subject Detection',
               description: 'Pre-trained models that detects (localizes) the subject in the video.',
               type: 'string',
-              enum: [ 'Yolo'],
-              default: 'Yolo',
+              enum: [ 'yolo'],
+              default: 'yolo',
             },
           }
         }
@@ -54,8 +54,8 @@ export const blackoutFormSchemaSubject: RJSFSchema = {
   properties: {
     subjectDetection: {
       type: 'string',
-      enum: ['Silhouette', 'BoundingBox'],
-      default: 'Silhouette',
+      enum: ['silhouette', 'boundingbox'],
+      default: 'silhouette',
       description: 'Bounding box lays a bounding box over the subject for hiding, while silhouette hides the subject within its exact contours only.'
     },
     color: { type: 'string', title: 'Masking color', default: "#000", description: 'The color with which the background should be overlayed and hidden.'},
@@ -66,25 +66,25 @@ export const blackoutFormSchemaSubject: RJSFSchema = {
       oneOf: [
         {
           properties: {
-            subjectDetection: {enum: ['Silhouette']},
+            subjectDetection: {enum: ['silhouette']},
             detectionModel: {
               title: 'AI-Model for Subject Detection',
               description: 'Pre-trained models that detect (localize) the subject in the video.',
               type: 'string',
-              enum: ['MediaPipe', 'Yolo'],
-              default: 'MediaPipe',
+              enum: ['mediapipe', 'yolo'],
+              default: 'mediapipe',
             },
           }
         },
         {
           properties: {
-            subjectDetection: {enum: ['BoundingBox']},
+            subjectDetection: {enum: ['boundingbox']},
             detectionModel: {
               title: 'AI-Model for Subject Detection',
               description: 'Pre-trained models that detect (localize) the subject in the video.',
               type: 'string',
-              enum: [ 'Yolo'],
-              default: 'Yolo',
+              enum: [ 'yolo'],
+              default: 'yolo',
             },
           }
         }

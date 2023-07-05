@@ -11,7 +11,7 @@ class DetectionResult(TypedDict):
     mask: np.ndarray
 
 class PartDetectionMethods(TypedDict):
-    part_name: Callable[...]
+    part_name: Any # callable
 
 class PartToDetect(TypedDict):
     part_name: str

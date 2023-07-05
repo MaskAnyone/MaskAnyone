@@ -38,7 +38,6 @@ def handle_job(job):
 
 
 while True:
-    print("in worker")
     job = fetch_next_job()
 
     if job is None:

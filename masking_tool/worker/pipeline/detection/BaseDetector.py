@@ -8,7 +8,7 @@ class  BaseDetector:
     def __init__(self, parts_to_detect: List[PartToDetect]):
         self.silhouette_methods: PartDetectionMethods = {} # the specific models for each part (e.g head_model etc)
         self.boundingbox_methods: PartDetectionMethods = {}
-        self.parts_to_detect: List[PartToDetect] = self.init_parts_to_detect(parts_to_detect) # the order in which
+        self.parts_to_detect: List[PartToDetect] = parts_to_detect
         self.current_results: List[DetectionResult] = []
 
     def detect(self, frame: np.ndarray, timestamp_ms: int) -> List[DetectionResult]:
