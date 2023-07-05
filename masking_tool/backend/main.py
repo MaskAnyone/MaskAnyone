@@ -164,7 +164,7 @@ async def upload_video(video_id, request: Request):
     video_path = os.path.join(VIDEOS_BASE_PATH, video_id + '.mp4')
 
     video_content = await request.body()
-
+    print(os.path.exists("videos"))
     file = open(video_path, 'wb')
     file.write(video_content)
     file.close()

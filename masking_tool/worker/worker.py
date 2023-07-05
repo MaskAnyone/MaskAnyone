@@ -1,11 +1,9 @@
 from backend_client import BackendClient
 from local_data_manager import LocalDataManager
-from config import VIDEOS_BASE_PATH
 from pipeline.Pipeline import Pipeline
 from video_manager import VideoManager
 import time
 import sys
-import os
 from utils.app_utils import init_directories
 
 DATA_BASE_DIR = 'local_data'
@@ -30,9 +28,9 @@ def handle_job(job):
     video_id = job['video_id']
     video_manager.load_original_video(video_id)
 
-    video_path = os.path.join(VIDEOS_BASE_PATH, video_id + '.mp4')
+
     masking_pipeline = Pipeline(job['data'])
-    masking_pipeline.run(video_path)
+    masking_pipeline.run(video_id)
 
     video_manager.upload_result_video(video_id)
     video_manager.upload_result_video_preview_image(video_id)
@@ -40,6 +38,7 @@ def handle_job(job):
 
 
 while True:
+    print("in worker")
     job = fetch_next_job()
 
     if job is None:
