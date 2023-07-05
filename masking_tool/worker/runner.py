@@ -39,7 +39,7 @@ def create_person_mask(video_path: str, masking_strategy: MaskingStrategy, head_
         return masker.mask(video_path, background_video_path, detailed_facemesh, True, detailed_fingers)
 
 
-def run_masking(video_id, run_params: RunParams) -> str:
+def run_masking(video_id, run_params: dict) -> str:
     background_video = None
     video_path = os.path.join(video_base_path, video_id + '.mp4')
     if run_params.extract_person_only:
@@ -47,7 +47,7 @@ def run_masking(video_id, run_params: RunParams) -> str:
     else:
         background_video = hide_person(video_path,
                                        run_params.hiding_strategy,
-                                       run_params.head_only_hiding)      
+                                       run_params.head_only_hiding)
     video_person_masked_path = create_person_mask(video_path,
                                                   run_params.mask_creation_strategy,
                                                   run_params.head_only_masking, 

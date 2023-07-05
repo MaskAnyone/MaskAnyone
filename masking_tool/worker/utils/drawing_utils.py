@@ -3,6 +3,13 @@ import os
 import numpy as np
 import cv2
 
+def overlay_frames(base_frame, frames_to_overlay):
+    # Adds all the frames_to_overlay on the base_frame
+    pass
+
+def hider_reducer(detection_result_a, detection_result_b):
+    pass
+
 
 def create_black_bg(video_path: str) -> str:
     cap = cv2.VideoCapture(video_path)
