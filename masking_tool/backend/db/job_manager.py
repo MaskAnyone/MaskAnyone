@@ -37,8 +37,7 @@ class JobManager:
         jobs = []
 
         try:
-            cursor.execute("BEGIN")
-            cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+            cursor.execute("BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ")
             cursor.execute(
                 "SELECT * FROM jobs WHERE status=%(status)s LIMIT 1", {"status": "open"}
             )
