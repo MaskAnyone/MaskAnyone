@@ -138,6 +138,8 @@ async def upload_result_video(video_id: str, result_video_id: str, request: Requ
     file.write(video_content)
     file.close()
 
+    result_video_manager.create_result_video(result_video_id, video_id, video_id)
+
 
 @router.get("/{video_id}/results/{result_video_id}/preview")
 def get_result_preview_for_video(video_id: str, result_video_id: str):
