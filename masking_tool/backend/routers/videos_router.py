@@ -1,5 +1,6 @@
 import os
 import cv2
+import base64
 
 from fastapi import APIRouter, Request
 
@@ -41,7 +42,6 @@ def request_video_upload(params: RequestVideoUploadParams):
         )
 
     video_manager.add_pending_video(params.video_id, params.video_name)
-    # video_path = os.path.join(VIDEOS_BASE_PATH, params.video_id + '.mp4')
 
     return {}
 
@@ -71,6 +71,8 @@ def finalize_video_upload(params: FinalizeVideoUploadParams):
         + chr((h >> 24) & 0xFF)
     )
 
+    capture.release()
+
     video_manager.set_video_to_valid(
         params.video_id,
         {
@@ -96,6 +98,31 @@ async def upload_video(video_id, request: Request):
     file.close()
 
 
+@router.get("/{video_id}/results")
+def get_results_for_video(video_id: str):
+    results_path = os.path.join(RESULT_BASE_PATH, video_id)
+
+    if not os.path.exists(results_path):
+        result_videos = []
+    else:
+        result_videos = [
+            p for p in os.listdir(results_path) if os.path.splitext(p)[1] != ".png"
+        ]
+
+    return {"results": result_videos}
+
+
+@router.get("/{video_id}/results/{result_video_id}")
+def get_result_video_stream(video_id: str, result_video_id: str, request: Request):
+    video_path = os.path.join(RESULT_BASE_PATH, video_id, video_id + ".mp4")
+    if not os.path.exists(video_path):
+        raise HTTPException(status_code=404, detail="Requested result video not found.")
+
+    return range_requests_response(
+        request, file_path=video_path, content_type="video/mp4"
+    )
+
+
 @router.post("/{video_id}/results/{result_video_id}")
 async def upload_result_video(video_id: str, result_video_id: str, request: Request):
     result_dir = os.path.join(RESULT_BASE_PATH, video_id)
@@ -109,6 +136,18 @@ async def upload_result_video(video_id: str, result_video_id: str, request: Requ
     file = open(video_path, "wb")
     file.write(video_content)
     file.close()
+
+
+@router.get("/{video_id}/results/{result_video_id}/preview")
+def get_result_preview_for_video(video_id: str, result_video_id: str):
+    image_path = os.path.join(RESULT_BASE_PATH, video_id, video_id + ".png")
+
+    if not os.path.exists(image_path):
+        raise HTTPException(status_code=404, detail="Preview Image not found")
+    with open(image_path, "rb") as f:
+        base64image = base64.b64encode(f.read())
+
+    return {"image": base64image}
 
 
 @router.post("/{video_id}/results/{result_video_id}/preview")
