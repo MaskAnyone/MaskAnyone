@@ -89,32 +89,6 @@ CREATE TABLE public.videos (
 ALTER TABLE public.videos OWNER TO dev;
 
 --
--- Data for Name: jobs; Type: TABLE DATA; Schema: public; Owner: dev
---
-
-COPY public.jobs (id, video_id, type, status, data, created_at, started_at, finished_at) FROM stdin;
-\.
-
-
---
--- Data for Name: result_videos; Type: TABLE DATA; Schema: public; Owner: dev
---
-
-COPY public.result_videos (id, video_id, job_id, video_info) FROM stdin;
-\.
-
-
---
--- Data for Name: videos; Type: TABLE DATA; Schema: public; Owner: dev
---
-
-COPY public.videos (id, name, status, video_info) FROM stdin;
-96e9e676-51ac-4af5-9952-3ad371669ddc	ted_kid.mp4	valid	{"fps": 30, "codec": "avc1", "duration": 7.006966666666666, "frame_count": 210, "frame_width": 1920, "frame_height": 1080}
-c466648e-7a51-4bf9-b876-0f7ee59ea0ad	sample.mp4	valid	{"fps": 30, "codec": "avc1", "duration": 17.266000000000002, "frame_count": 518, "frame_width": 1280, "frame_height": 720}
-\.
-
-
---
 -- Name: jobs jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: dev
 --
 

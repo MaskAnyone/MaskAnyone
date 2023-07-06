@@ -1,2 +1,8 @@
-.venv/
-results/
+
+data/*
+!data/results
+!data/videos
+data/results/*
+data/videos/*
+!data/results/.gitkeep
+!data/videos/.gitkeep

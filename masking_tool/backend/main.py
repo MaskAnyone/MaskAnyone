@@ -7,7 +7,6 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import FileResponse
 from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 from utils.request_utils import range_requests_response
-from utils.app_utils import clear_temp_dir, init_directories
 
 from models import RunParams, RequestVideoUploadParams, FinalizeVideoUploadParams
 
@@ -16,14 +15,7 @@ from db.job_manager import JobManager
 from db.db_connection import DBConnection
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    init_directories()
-    yield
-    clear_temp_dir()
-
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 video_manager = VideoManager(DBConnection())
 job_manager = JobManager(DBConnection())
