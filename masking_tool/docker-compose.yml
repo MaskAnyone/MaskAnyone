@@ -1,0 +1,73 @@
+version: '3'
+
+services:
+  nginx:
+    build: ./docker/nginx
+    ports:
+      - 443:443
+    restart: "on-failure"
+    #volumes:
+    #  - .:/var/www
+
+  python:
+    build:
+      context: ./docker/python
+    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+    environment:
+      - TIMEOUT=600
+    env_file:
+      - ./app.env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - postgres
+
+  python-worker:
+    build:
+      context: ./docker/python
+    command: "python worker.py"
+    env_file:
+      - ./app.env
+    volumes:
+      - ./worker:/app
+    #deploy:
+    #  resources:
+    #    reservations:
+    #      devices:
+    #        - driver: nvidia
+    #          capabilities: [ gpu ]
+
+  postgres:
+    build:
+      context: ./docker/postgres
+    env_file:
+      - ./app.env
+    volumes:
+      - ./docker/postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
+      - data-postgres:/var/lib/postgresql/data
+
+  pgadmin:
+    build:
+      context: ./docker/pgadmin
+    ports:
+      - "5433:443"
+    environment:
+      PGADMIN_ENABLE_TLS: "True"
+      PGADMIN_DEFAULT_EMAIL: "dev@dev.dev"
+      PGADMIN_DEFAULT_PASSWORD: "dev"
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    depends_on:
+      - postgres
+
+  yarn:
+    build:
+      context: ./docker/yarn
+    command: "yarn start"
+    volumes:
+      - ./frontend:/app
+
+
+volumes:
+  data-postgres:
+    driver: local
