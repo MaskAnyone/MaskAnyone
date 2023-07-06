@@ -26,8 +26,11 @@ class Pipeline:
         for video_part in vid_masking_params:
             video_part_params = vid_masking_params[video_part]
             if "hidingStrategy" in video_part_params and video_part_params["hidingStrategy"]["key"] != "none":
-                hiding_strategies[video_part] = video_part_params["hidingStrategy"]["key"]
                 hiding_params = video_part_params["hidingStrategy"]["params"]
+                hiding_strategies[video_part] = {
+                    "key": video_part_params["hidingStrategy"]["key"],
+                    "params": hiding_params
+                }
                 if "detectionModel" not in hiding_params or "subjectDetection" not in hiding_params:
                     raise Exception(f"Detection Model/Detection Type not specified for hiding of {video_part}")
                 
@@ -95,27 +98,26 @@ class Pipeline:
                 detection_result = detector.detect(frame, frame_timestamp_ms)
                 detection_results.append(*detection_result)
 
-            print("Detection completed", detection_results)
+            print("Detection completed")
 
             # applies the hiding method on each detected part of the frame and combines them into one frame
             hidden_frame = frame
             for detection_result in detection_results:
-                hidden_frame = self.hider.hide(hidden_frame, detection_result)
+                hidden_frame = self.hider.hide_frame_part(hidden_frame, detection_result)
 
             print("Hiding completed!")
 
             # Extracts the masks for each desired bodypart
             mask_results = [] # mask results have to be drawn on a black frame in order to be combined correctly
-            for mask_creator in self.mask_creators:
-                mask_result = mask_creator.extract_mask(frame)
+            for mask_extractor in self.mask_extractors:
+                mask_result = mask_extractor.extract_mask(frame)
                 mask_results.append(*mask_result)
 
             print("Masking completed")
 
             out_frame = overlay_frames(hidden_frame, mask_results)
             out.write(out_frame)
-
-            print("Output written to local results directory on worker")
         
         out.release()
         video_cap.release()
+        print("Finished processing video")

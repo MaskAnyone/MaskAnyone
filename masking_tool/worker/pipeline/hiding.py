@@ -9,13 +9,13 @@ class Hider():
         self.hiding_strategies: HidingStategies = hiding_strategies
 
     def hide_frame_part(self, base_image: np.ndarray, detection_result: DetectionResult) -> np.ndarray:
-        hiding_strategy = self.hiding_strategies[detection_result.part_name]
-        if hiding_strategy.name == "blur":
-            result = self.hide_blur(base_image, detection_result.mask, hiding_strategy.params)
-        elif hiding_strategy.name == "blackout":
-            result = self.hide_blackout(base_image, detection_result.mask, hiding_strategy.params)
+        hiding_strategy = self.hiding_strategies[detection_result["part_name"]]
+        if hiding_strategy["key"] == "blur":
+            result = self.hide_blur(base_image, detection_result["mask"], hiding_strategy["params"])
+        elif hiding_strategy["key"] == "blackout":
+            result = self.hide_blackout(base_image, detection_result["mask"], hiding_strategy["params"])
         else:
-            raise Exception(f"Invalid hiding strategy specified for {detection_result.part_name}")
+            raise Exception(f"Invalid hiding strategy specified for {detection_result['part_name']}")
         return result
 
     def hide_blur(self, base_image: np.ndarray, mask: np.ndarray, params: dict) -> np.ndarray:

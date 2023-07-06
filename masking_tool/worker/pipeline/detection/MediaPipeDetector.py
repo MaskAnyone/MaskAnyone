@@ -49,7 +49,7 @@ class  MediaPipeDetector(BaseDetector):
 
         results = self.model.detect_for_video(mp_image, timestamp_ms)
 
-        output_image = 255 * np.ones(mp_image.shape(mp_image.height, mp_image.width, mp_image.channels))
+        output_image = 255 * np.ones((mp_image.height, mp_image.width, mp_image.channels))
         if results.segmentation_masks:
             for segmentation_mask in results.segmentation_masks:
                 mask = segmentation_mask.numpy_view()

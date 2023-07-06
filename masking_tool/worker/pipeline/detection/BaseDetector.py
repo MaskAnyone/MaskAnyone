@@ -18,8 +18,12 @@ class  BaseDetector:
 
         self.current_results= []
         for part_to_detect in self.parts_to_detect:
-            part_result: np.ndarray = self.detect_part(frame, part_to_detect.part_name, part_to_detect.detection_type, timestamp_ms)
-            self.current_results.append({"part_name": part_to_detect.part_name, "detection_type": part_to_detect.detection_type, "mask": part_result})
+            part_result: np.ndarray = self.detect_part(frame, part_to_detect["part_name"], part_to_detect["detection_type"], timestamp_ms)
+            self.current_results.append({
+                "part_name": part_to_detect["part_name"],
+                "detection_type": part_to_detect["detection_type"],
+                "mask": part_result
+            })
         return self.current_results
 
     def detect_part(self, frame: np.ndarray, part_name: str, type: DetectionType, timestamp_ms: int) -> np.ndarray:
