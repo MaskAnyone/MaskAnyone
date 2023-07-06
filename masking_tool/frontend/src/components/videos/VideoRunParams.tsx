@@ -87,7 +87,7 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
                 <Box component="div" sx={{ flexGrow: 1, padding: "20px 40px" }}>
                     <Grid container>
                         <PresetSelection selectedPreset={selectedPreset} onPresetSelect={onPresetSelected} onCustomModeRequested={onCustomModeRequested} />
-                        <Grid container xs={12}>
+                        <Grid container>
                             <Grid item xs={12}>
                                 <Box
                                     display="flex"

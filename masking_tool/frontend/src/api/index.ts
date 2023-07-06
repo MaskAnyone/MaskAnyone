@@ -20,21 +20,23 @@ const Api = {
 
         return result.data;
     },
-    fetchVideoResults: async (original_video_name: string): Promise<string[]> => {
+    fetchVideoResults: async (videoId: string): Promise<string[]> => {
         const result = await sendApiRequest({
-            url: `results/${original_video_name}`,
+            url: `videos/${videoId}/results`,
             method: 'get'
-        })
+        });
+
         return result.data.results
     },
     fetchResultPreview: async (
-        original_video_name: string,
-        result_video_name: string
+        video_id: string,
+        result_video_id: string
     ): Promise<any[]> => {
         const result = await sendApiRequest({
-            url: `results/preview/${original_video_name}/${result_video_name}`,
+            url: `videos/${video_id}/results/${result_video_id}/preview`,
             method: 'get'
-        })
+        });
+
         return result.data.image
     },
     fetchJobs: async (): Promise<ApiFetchJobsResponse> => {

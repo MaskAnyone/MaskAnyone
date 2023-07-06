@@ -24,16 +24,18 @@ const DoubleVideo = (props: DoubleVideoProps) => {
     const [view, setView] = useState<views>(views.video)
 
     const displaySelectedView = () => {
-         if(view==views.video) {
+        console.log(props.selectedResult);
+        if (view === views.video && props.selectedResult) {
             return (
-            <video controls={false} key={resultPath} style={{width: '100%'}} ref={video2Ref}>
-                <source src={resultPath} type={'video/mp4'} key={resultPath} />
-            </video>)
-         }
-        if(view==views.blendshapes3D) {
+                <video controls={false} key={resultPath} style={{width: '100%'}} ref={video2Ref}>
+                    <source src={resultPath} type={'video/mp4'} key={resultPath} />
+                </video>
+            );
+        }
+        if (view === views.blendshapes3D) {
             return (<BlendshapesRenderer3D />)
-         }
-        if(view==views.skeleton3D) {
+        }
+        if (view === views.skeleton3D) {
             return <PoseRenderer3D />
         }
     }
