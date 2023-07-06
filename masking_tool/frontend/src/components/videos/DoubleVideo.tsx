@@ -7,7 +7,7 @@ import BlendshapesRenderer3D from "./BlendshapesRenderer3D";
 
 interface DoubleVideoProps {
     videoId: string;
-    selectedResult: string | undefined
+    resultVideoId?: string;
 }
 
 enum views {
@@ -20,12 +20,11 @@ const DoubleVideo = (props: DoubleVideoProps) => {
     const video1Ref = useRef<HTMLVideoElement>(null);
     const video2Ref = useRef<HTMLVideoElement>(null);
     const originalPath = Config.api.baseUrl + '/videos/' + props.videoId;
-    const resultPath = Config.api.baseUrl + '/results/result/' + props.videoId + '/' + props.selectedResult;
+    const resultPath = originalPath + '/results/' + props.resultVideoId;
     const [view, setView] = useState<views>(views.video)
 
     const displaySelectedView = () => {
-        console.log(props.selectedResult);
-        if (view === views.video && props.selectedResult) {
+        if (view === views.video && props.resultVideoId) {
             return (
                 <video controls={false} key={resultPath} style={{width: '100%'}} ref={video2Ref}>
                     <source src={resultPath} type={'video/mp4'} key={resultPath} />

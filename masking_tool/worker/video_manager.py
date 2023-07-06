@@ -19,18 +19,18 @@ class VideoManager:
             os.path.join("original", video_id + ".mp4"), video_data
         )
 
-    def upload_result_video(self, video_id: str):
+    def upload_result_video(self, video_id: str, result_video_id: str):
         video_data = self.__local_data_manager.read_binary(
             os.path.join("results", video_id + ".mp4")
         )
-        self.__backend_client.upload_result_video(video_id, video_id, video_data)
+        self.__backend_client.upload_result_video(video_id, result_video_id, video_data)
 
-    def upload_result_video_preview_image(self, video_id: str):
+    def upload_result_video_preview_image(self, video_id: str, result_video_id: str):
         image_data = self.__local_data_manager.read_binary(
             os.path.join("results", video_id + ".png")
         )
         self.__backend_client.upload_result_video_preview_image(
-            video_id, video_id, image_data
+            video_id, result_video_id, image_data
         )
 
     def cleanup_result_video_files(self, video_id: str):

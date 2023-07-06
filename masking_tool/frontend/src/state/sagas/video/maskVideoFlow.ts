@@ -10,6 +10,7 @@ const onMaskVideo = function*(payload: MaskVideoPayload) {
             Api.createBasicMaskingJob,
             payload.id,
             payload.videoId,
+            payload.resultVideoId,
             payload.runData
         );
 

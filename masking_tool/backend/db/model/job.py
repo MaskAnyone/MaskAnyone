@@ -5,6 +5,7 @@ from dataclasses import dataclass
 class Job:
     id: str
     video_id: str
+    result_video_id: str
     type: str
     status: str
     data: dict

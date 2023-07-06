@@ -1,6 +1,6 @@
 import axios, {AxiosRequestConfig, AxiosResponse} from 'axios';
 import Config from "../config";
-import {ApiFetchJobsResponse, ApiFetchVideosResponse} from "./types";
+import {ApiFetchJobsResponse, ApiFetchResultVideosResponse, ApiFetchVideosResponse} from "./types";
 import { RunParams } from '../state/types/Run';
 
 const configuredAxios = axios.create({
@@ -20,13 +20,13 @@ const Api = {
 
         return result.data;
     },
-    fetchVideoResults: async (videoId: string): Promise<string[]> => {
+    fetchVideoResults: async (videoId: string): Promise<ApiFetchResultVideosResponse> => {
         const result = await sendApiRequest({
             url: `videos/${videoId}/results`,
             method: 'get'
         });
 
-        return result.data.results
+        return result.data;
     },
     fetchResultPreview: async (
         video_id: string,
@@ -37,7 +37,7 @@ const Api = {
             method: 'get'
         });
 
-        return result.data.image
+        return result.data.image;
     },
     fetchJobs: async (): Promise<ApiFetchJobsResponse> => {
         const result = await sendApiRequest({
@@ -50,6 +50,7 @@ const Api = {
     createBasicMaskingJob: async (
         id: string,
         videoId: string,
+        resultVideoId: string,
         runData: RunParams
     ): Promise<void> => {
         await sendApiRequest({
@@ -59,6 +60,7 @@ const Api = {
                 id,
                 run_data: runData,
                 video_id: videoId,
+                result_video_id: resultVideoId
             }
         });
     },

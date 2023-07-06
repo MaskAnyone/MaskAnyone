@@ -4,6 +4,7 @@ import {fetchVideoListFlow} from "./sagas/video/fetchVideoListFlow";
 import {maskVideoFlow} from "./sagas/video/maskVideoFlow";
 import {fetchJobListFlow} from "./sagas/job/fetchJobListFlow";
 import {enqueueNotificationFlow} from "./sagas/notification/enqueueNotificationFlow";
+import {fetchResultVideoListFlow} from "./sagas/video/fetchResultVideoListFlow";
 
 /**
  * Prevents the root saga from terminating entirely due to some error in another saga
@@ -35,6 +36,7 @@ const makeRestartable = (saga: any) => {
 const sagas: any[] = [
     fetchVideoListFlow,
     maskVideoFlow,
+    fetchResultVideoListFlow,
 
     uploadFilesFlow,
     uploadProgressWatcherFlow,

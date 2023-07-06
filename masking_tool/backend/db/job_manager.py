@@ -19,12 +19,13 @@ class JobManager:
 
         return result
 
-    def create_new_job(self, id: str, video_id: str, data: dict):
+    def create_new_job(self, id: str, video_id: str, result_video_id: str, data: dict):
         self.__db_connection.execute(
-            "INSERT INTO jobs (id, video_id, type, status, data, created_at) VALUES (%(id)s, %(video_id)s, %(type)s, %(status)s, %(data)s, current_timestamp)",
+            "INSERT INTO jobs (id, video_id, result_video_id, type, status, data, created_at) VALUES (%(id)s, %(video_id)s, %(result_video_id)s, %(type)s, %(status)s, %(data)s, current_timestamp)",
             {
                 "id": id,
                 "video_id": video_id,
+                "result_video_id": result_video_id,
                 "type": "basic_masking",
                 "status": "open",
                 "data": json.dumps(data),

@@ -13,6 +13,9 @@ class BackendClient:
     def mark_job_as_finished(self, job_id: str):
         requests.post("http://python:8000/jobs/" + job_id + "/finish")
 
+    def mark_job_as_failed(self, job_id: str):
+        requests.post("http://python:8000/jobs/" + job_id + "/fail")
+
     def upload_result_video(self, video_id: str, result_video_id: str, content):
         requests.post(
             "http://python:8000/videos/" + video_id + "/results/" + result_video_id,

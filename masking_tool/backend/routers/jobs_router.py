@@ -23,6 +23,7 @@ def create_job(run_params: RunParams):
     job_manager.create_new_job(
         run_params.id,
         run_params.video_id,
+        run_params.result_video_id,
         run_params.run_data
     )
 
@@ -37,4 +38,9 @@ def fetch_next_job():
 @router.post("/{job_id}/finish")
 def finish_job(job_id: str):
     job_manager.mark_job_as_finished(job_id)
+
+@router.post("/{job_id}/fail")
+def fail_job(job_id: str):
+    job_manager.mark_job_as_failed(job_id)
+
 

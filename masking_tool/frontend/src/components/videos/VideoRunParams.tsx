@@ -77,7 +77,8 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
         dispatch(Command.Video.maskVideo({
             id: uuidv4(),
             videoId: props.videoId,
-            runData: runParams
+            resultVideoId: uuidv4(),
+            runData: runParams,
         }));
     };
 

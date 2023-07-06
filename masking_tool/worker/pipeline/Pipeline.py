@@ -7,6 +7,7 @@ from utils.drawing_utils import overlay_frames
 from pipeline.hiding import Hider
 from pipeline.PipelineTypes import DetectionResult, HidingStategies, PartToDetect
 from utils.video_utils import setup_video_processing
+from utils.app_utils import save_preview_image
 
 import cv2
 
@@ -133,3 +134,5 @@ class Pipeline:
         out.release()
         video_cap.release()
         print("Finished processing video")
+
+        save_preview_image(video_out_path)

@@ -18,6 +18,7 @@ def fetch_next_job():
         return backend_client.fetch_next_job()
     except Exception as error:
         print("Error while fetching next job")
+        print(error)
 
     return None
 
@@ -31,8 +32,9 @@ def handle_job(job):
     masking_pipeline = Pipeline(job["data"])
     masking_pipeline.run(video_id)
 
-    video_manager.upload_result_video(video_id)
-    video_manager.upload_result_video_preview_image(video_id)
+    result_video_id = job["result_video_id"]
+    video_manager.upload_result_video(video_id, result_video_id)
+    video_manager.upload_result_video_preview_image(video_id, result_video_id)
     video_manager.cleanup_result_video_files(video_id)
 
 
@@ -48,7 +50,7 @@ while True:
         except Exception as error:
             print("Handling job with id " + job["id"] + " failed")
             print(error)
-            # @todo: mark job as failed in backend
+            backend_client.mark_job_as_failed(job["id"])
 
     sys.stdout.flush()  # Flush log output
     time.sleep(10)  #

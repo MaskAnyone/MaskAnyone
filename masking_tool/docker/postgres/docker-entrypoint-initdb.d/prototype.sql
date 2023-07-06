@@ -49,6 +49,7 @@ SET default_table_access_method = heap;
 CREATE TABLE public.jobs (
     id uuid NOT NULL,
     video_id uuid NOT NULL,
+    result_video_id uuid NOT NULL,
     type character varying NOT NULL,
     status character varying NOT NULL,
     data jsonb NOT NULL,
@@ -102,6 +103,14 @@ ALTER TABLE ONLY public.jobs
 
 ALTER TABLE ONLY public.result_videos
     ADD CONSTRAINT result_videos_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: jobs unique_result_video_id; Type: CONSTRAINT; Schema: public; Owner: dev
+--
+
+ALTER TABLE ONLY public.jobs
+    ADD CONSTRAINT unique_result_video_id UNIQUE (result_video_id);
 
 
 --

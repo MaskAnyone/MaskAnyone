@@ -1,13 +1,16 @@
 import os
 import cv2
 
-from config import RESULT_BASE_PATH
+from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 
 
 def init_directories():
     print("Initializing directories")
     if not os.path.exists(RESULT_BASE_PATH):
         os.mkdir(RESULT_BASE_PATH)
+
+    if not os.path.exists(VIDEOS_BASE_PATH):
+        os.mkdir(VIDEOS_BASE_PATH)
 
     temp_dir_path = os.path.join(RESULT_BASE_PATH, "temp")
     if not os.path.exists(temp_dir_path):

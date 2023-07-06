@@ -15,6 +15,15 @@ export interface ApiFetchVideosResponse {
     }[];
 }
 
+export interface ApiFetchResultVideosResponse {
+    result_videos: {
+        id: string;
+        video_id: string;
+        job_id: string;
+        video_info: any; //@todo
+    }[];
+}
+
 export interface ApiFetchJobsResponse {
     jobs: {
         id: string;
