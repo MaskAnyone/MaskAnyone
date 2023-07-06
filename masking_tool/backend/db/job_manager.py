@@ -11,7 +11,7 @@ class JobManager:
         result = []
 
         job_data_list = self.__db_connection.select_all(
-            'SELECT * FROM jobs ORDER BY created_at DESC'
+            "SELECT * FROM jobs ORDER BY created_at DESC"
         )
 
         for job_data in job_data_list:
@@ -21,8 +21,14 @@ class JobManager:
 
     def create_new_job(self, id: str, video_id: str, data: dict):
         self.__db_connection.execute(
-            'INSERT INTO jobs (id, video_id, type, status, data, created_at) VALUES (%(id)s, %(video_id)s, %(type)s, %(status)s, %(data)s, current_timestamp)',
-            {'id': id, 'video_id': video_id, 'type': 'basic_masking', 'status': 'open', 'data': json.dumps(data)}
+            "INSERT INTO jobs (id, video_id, type, status, data, created_at) VALUES (%(id)s, %(video_id)s, %(type)s, %(status)s, %(data)s, current_timestamp)",
+            {
+                "id": id,
+                "video_id": video_id,
+                "type": "basic_masking",
+                "status": "open",
+                "data": json.dumps(data),
+            },
         )
 
     def fetch_next_job(self):
@@ -31,23 +37,22 @@ class JobManager:
         jobs = []
 
         try:
-            cursor.execute('BEGIN')
-            cursor.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
+            cursor.execute("BEGIN")
+            cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
             cursor.execute(
-                'SELECT * FROM jobs WHERE status=%(status)s LIMIT 1',
-                {'status': 'open'}
+                "SELECT * FROM jobs WHERE status=%(status)s LIMIT 1", {"status": "open"}
             )
             jobs = cursor.fetchall()
 
             if len(jobs) > 0:
                 cursor.execute(
-                    'UPDATE jobs SET status=%(status)s, started_at=current_timestamp WHERE id=%(id)s',
-                    {'status': 'running', 'id': jobs[0][0]}
+                    "UPDATE jobs SET status=%(status)s, started_at=current_timestamp WHERE id=%(id)s",
+                    {"status": "running", "id": jobs[0][0]},
                 )
 
-            cursor.execute('COMMIT')
+            cursor.execute("COMMIT")
         except Exception as error:
-            cursor.execute('ROLLBACK')
+            cursor.execute("ROLLBACK")
             raise error
         finally:
             cursor.close()
@@ -56,12 +61,12 @@ class JobManager:
 
     def mark_job_as_finished(self, job_id: str):
         self.__db_connection.execute(
-            'UPDATE jobs SET status=%(status)s, finished_at=current_timestamp WHERE id=%(id)s',
-            {'status': 'finished', 'id': job_id}
+            "UPDATE jobs SET status=%(status)s, finished_at=current_timestamp WHERE id=%(id)s",
+            {"status": "finished", "id": job_id},
         )
 
     def mark_job_as_failed(self, job_id: str):
         self.__db_connection.execute(
-            'UPDATE jobs SET status=%(status)s, finished_at=current_timestamp WHERE id=%(id)s',
-            {'status': 'failed', 'id': job_id}
+            "UPDATE jobs SET status=%(status)s, finished_at=current_timestamp WHERE id=%(id)s",
+            {"status": "failed", "id": job_id},
         )

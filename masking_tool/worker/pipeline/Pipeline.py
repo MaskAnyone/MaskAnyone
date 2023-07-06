@@ -25,28 +25,36 @@ class Pipeline:
         vid_masking_params = run_params["videoMasking"]
         for video_part in vid_masking_params:
             video_part_params = vid_masking_params[video_part]
-            if "hidingStrategy" in video_part_params and video_part_params["hidingStrategy"]["key"] != "none":
+            if (
+                "hidingStrategy" in video_part_params
+                and video_part_params["hidingStrategy"]["key"] != "none"
+            ):
                 hiding_params = video_part_params["hidingStrategy"]["params"]
                 hiding_strategies[video_part] = {
                     "key": video_part_params["hidingStrategy"]["key"],
-                    "params": hiding_params
+                    "params": hiding_params,
                 }
-                if "detectionModel" not in hiding_params or "subjectDetection" not in hiding_params:
-                    raise Exception(f"Detection Model/Detection Type not specified for hiding of {video_part}")
-                
+                if (
+                    "detectionModel" not in hiding_params
+                    or "subjectDetection" not in hiding_params
+                ):
+                    raise Exception(
+                        f"Detection Model/Detection Type not specified for hiding of {video_part}"
+                    )
+
                 detection_model_name = hiding_params["detectionModel"]
                 detection_type = hiding_params["subjectDetection"]
 
                 if not detection_model_name in required_detectors:
                     required_detectors[detection_model_name] = []
-                
+
                 part_to_detect: PartToDetect = {
                     "part_name": video_part,
                     "detection_type": detection_type
                     # could be extended with fine grained paramters for detection
                 }
                 required_detectors[detection_model_name].append(part_to_detect)
-            
+
             # @ToDo implement masking similar to detection/hiding
             """if "maskingStrategy" in video_part:
                 masking_model_name = None
@@ -65,7 +73,7 @@ class Pipeline:
 
         self.init_detectors(required_detectors)
         self.init_maskers(required_maskers)
-        
+
         self.hider = Hider(hiding_strategies)
 
     def init_detectors(self, required_detectors: dict):
@@ -78,11 +86,11 @@ class Pipeline:
 
     def init_maskers(self, required_maskers: dict):
         pass
-        
+
     def run(self, video_id: str):
         print(f"Running job on video {video_id}")
-        video_in_path = os.path.join(VIDEOS_BASE_PATH, video_id + '.mp4')
-        video_out_path = os.path.join(RESULT_BASE_PATH, video_id + '.mp4')
+        video_in_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
+        video_out_path = os.path.join(RESULT_BASE_PATH, video_id + ".mp4")
         video_cap, out = setup_video_processing(video_in_path, video_out_path)
 
         while True:
@@ -103,12 +111,16 @@ class Pipeline:
             # applies the hiding method on each detected part of the frame and combines them into one frame
             hidden_frame = frame
             for detection_result in detection_results:
-                hidden_frame = self.hider.hide_frame_part(hidden_frame, detection_result)
+                hidden_frame = self.hider.hide_frame_part(
+                    hidden_frame, detection_result
+                )
 
             print("Hiding completed!")
 
             # Extracts the masks for each desired bodypart
-            mask_results = [] # mask results have to be drawn on a black frame in order to be combined correctly
+            mask_results = (
+                []
+            )  # mask results have to be drawn on a black frame in order to be combined correctly
             for mask_extractor in self.mask_extractors:
                 mask_result = mask_extractor.extract_mask(frame)
                 mask_results.append(*mask_result)
@@ -117,7 +129,7 @@ class Pipeline:
 
             out_frame = overlay_frames(hidden_frame, mask_results)
             out.write(out_frame)
-        
+
         out.release()
         video_cap.release()
         print("Finished processing video")

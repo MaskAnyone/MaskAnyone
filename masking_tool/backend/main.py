@@ -33,53 +33,46 @@ job_manager = JobManager(DBConnection())
 def get_videos():
     videos = video_manager.fetch_videos()
 
-    return {
-        'videos': videos
-    }
+    return {"videos": videos}
 
 
-@app.get('/videos/{video_id}')
+@app.get("/videos/{video_id}")
 def get_video_stream(video_id, request: Request):
-    video_path = os.path.join(VIDEOS_BASE_PATH, video_id + '.mp4')
+    video_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
 
     return range_requests_response(
         request, file_path=video_path, content_type="video/mp4"
     )
 
 
-@app.post('/jobs/create')
+@app.post("/jobs/create")
 def create_job(run_params: RunParams):
-    job_manager.create_new_job(
-        run_params.id,
-        run_params.video_id,
-        run_params.run_data
-    )
+    job_manager.create_new_job(run_params.id, run_params.video_id, run_params.run_data)
 
 
-@app.get('/jobs/next')
+@app.get("/jobs/next")
 def fetch_next_job():
     job = job_manager.fetch_next_job()
 
-    return {
-        'job': job
-    }
+    return {"job": job}
 
 
-@app.post('/jobs/{job_id}/finish')
+@app.post("/jobs/{job_id}/finish")
 def finish_job(job_id: str):
     job_manager.mark_job_as_finished(job_id)
 
 
-@app.get('/jobs')
+@app.get("/jobs")
 def fetch_jobs():
     jobs = job_manager.fetch_jobs()
 
-    return {
-        'jobs': jobs
-    }
+    return {"jobs": jobs}
 
-@app.get('/results/result/{original_video_name}/{result_video_name}')
-def get_result_video_stream(original_video_name: str, result_video_name: str, request: Request):
+
+@app.get("/results/result/{original_video_name}/{result_video_name}")
+def get_result_video_stream(
+    original_video_name: str, result_video_name: str, request: Request
+):
     video_path = os.path.join(RESULT_BASE_PATH, original_video_name, result_video_name)
     if not os.path.exists(video_path):
         raise HTTPException(status_code=404, detail="Requested result video not found.")
@@ -89,23 +82,25 @@ def get_result_video_stream(original_video_name: str, result_video_name: str, re
     )
 
 
-@app.get('/results/{original_video_name}')
+@app.get("/results/{original_video_name}")
 def get_results_for_video(original_video_name: str):
     results_path = os.path.join(RESULT_BASE_PATH, original_video_name)
     if not os.path.exists(results_path):
         result_videos = []
     else:
-        result_videos = [p for p in os.listdir(results_path) if os.path.splitext(p)[1] != ".png"]
+        result_videos = [
+            p for p in os.listdir(results_path) if os.path.splitext(p)[1] != ".png"
+        ]
     return {"results": result_videos}
 
 
-@app.get('/results/preview/{original_video_name}/{result_video_name}')
+@app.get("/results/preview/{original_video_name}/{result_video_name}")
 def get_result_preview_for_video(original_video_name: str, result_video_name: str):
     preview_file = os.path.splitext(result_video_name)[0] + ".png"
     image_path = os.path.join(RESULT_BASE_PATH, original_video_name, preview_file)
     if not os.path.exists(image_path):
         raise HTTPException(status_code=404, detail="Preview Image not found")
-    with open(image_path, 'rb') as f:
+    with open(image_path, "rb") as f:
         base64image = base64.b64encode(f.read())
     return {"image": base64image}
 
@@ -114,12 +109,11 @@ def get_result_preview_for_video(original_video_name: str, result_video_name: st
 @app.post("/videos/upload/request")
 def request_video_upload(params: RequestVideoUploadParams):
     if video_manager.has_video_with_name(params.video_name):
-        raise HTTPException(status_code=400, detail="A video with this name exists already")
+        raise HTTPException(
+            status_code=400, detail="A video with this name exists already"
+        )
 
-    video_manager.add_pending_video(
-        params.video_id,
-        params.video_name
-    )
+    video_manager.add_pending_video(params.video_id, params.video_name)
     # video_path = os.path.join(VIDEOS_BASE_PATH, params.video_id + '.mp4')
 
     return {}
@@ -128,10 +122,12 @@ def request_video_upload(params: RequestVideoUploadParams):
 # Not really needed right now but for future extension
 @app.post("/videos/upload/finalize")
 def finalize_video_upload(params: FinalizeVideoUploadParams):
-    video_path = os.path.join(VIDEOS_BASE_PATH, params.video_id + '.mp4')
+    video_path = os.path.join(VIDEOS_BASE_PATH, params.video_id + ".mp4")
 
     if not os.path.exists(video_path):
-        raise HTTPException(status_code=400, detail="A video with this name does not exist")
+        raise HTTPException(
+            status_code=400, detail="A video with this name does not exist"
+        )
 
     capture = cv2.VideoCapture(video_path)
 
@@ -142,18 +138,23 @@ def finalize_video_upload(params: FinalizeVideoUploadParams):
     duration = frame_count / fps
 
     h = int(capture.get(cv2.CAP_PROP_FOURCC))
-    codec = chr(h & 0xff) + chr((h >> 8) & 0xff) + chr((h >> 16) & 0xff) + chr((h >> 24) & 0xff)
+    codec = (
+        chr(h & 0xFF)
+        + chr((h >> 8) & 0xFF)
+        + chr((h >> 16) & 0xFF)
+        + chr((h >> 24) & 0xFF)
+    )
 
     video_manager.set_video_to_valid(
         params.video_id,
         {
-            'frame_width': frame_width,
-            'frame_height': frame_height,
-            'fps': round(fps),
-            'frame_count': round(frame_count),
-            'duration': duration,
-            'codec': codec,
-        }
+            "frame_width": frame_width,
+            "frame_height": frame_height,
+            "fps": round(fps),
+            "frame_count": round(frame_count),
+            "duration": duration,
+            "codec": codec,
+        },
     )
 
     return {}
@@ -161,41 +162,42 @@ def finalize_video_upload(params: FinalizeVideoUploadParams):
 
 @app.post("/videos/upload/{video_id}")
 async def upload_video(video_id, request: Request):
-    video_path = os.path.join(VIDEOS_BASE_PATH, video_id + '.mp4')
+    video_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
 
     video_content = await request.body()
     print(os.path.exists("videos"))
-    file = open(video_path, 'wb')
+    file = open(video_path, "wb")
     file.write(video_content)
     file.close()
 
 
-@app.post('/videos/{video_id}/results/{result_video_id}')
+@app.post("/videos/{video_id}/results/{result_video_id}")
 async def upload_result_video(video_id: str, result_video_id: str, request: Request):
     result_dir = os.path.join(RESULT_BASE_PATH, video_id)
     if not os.path.exists(result_dir):
         os.mkdir(result_dir)
 
-    video_path = os.path.join(result_dir, video_id + '.mp4')
+    video_path = os.path.join(result_dir, video_id + ".mp4")
 
     video_content = await request.body()
 
-    file = open(video_path, 'wb')
+    file = open(video_path, "wb")
     file.write(video_content)
     file.close()
 
 
-@app.post('/videos/{video_id}/results/{result_video_id}/preview')
-async def upload_result_video_preview_image(video_id: str, result_video_id: str, request: Request):
+@app.post("/videos/{video_id}/results/{result_video_id}/preview")
+async def upload_result_video_preview_image(
+    video_id: str, result_video_id: str, request: Request
+):
     result_dir = os.path.join(RESULT_BASE_PATH, video_id)
     if not os.path.exists(result_dir):
         os.mkdir(result_dir)
 
-    image_path = os.path.join(result_dir, video_id + '.png')
+    image_path = os.path.join(result_dir, video_id + ".png")
 
     image_content = await request.body()
 
-    file = open(image_path, 'wb')
+    file = open(image_path, "wb")
     file.write(image_content)
     file.close()
-
