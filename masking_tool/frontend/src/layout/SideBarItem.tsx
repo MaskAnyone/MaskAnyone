@@ -1,19 +1,17 @@
 import {useLocation} from "react-router";
 import {Badge, Box, Button, ListItem, ListItemText} from "@mui/material";
 import {Link} from "react-router-dom";
+import Config from "../config";
 
 const styles = {
     item: {
         display: 'flex',
-        width: 'calc(100% - 20px)',
     },
     icon: {
-        width: '20px',
-        height: '20px',
+        width: '64px',
+        height: '36px',
         display: 'flex',
         alignItems: 'center',
-        marginRight: 2,
-        marginLeft: 1,
     },
     button: (theme: any) => ({
         color: '#66788A',
@@ -37,7 +35,7 @@ interface SideBarItemProps {
     url: string;
     title: string;
     subtitle: string;
-    icon: any;
+    videoId: string;
     badge: number;
 }
 
@@ -49,12 +47,17 @@ const SideBarItem = (props: SideBarItemProps) => {
             <Button
                 sx={styles.button}
                 className={location.pathname.startsWith(props.url) ? 'active' : ''}
-                children={(<>
-                    <Box component="div" sx={styles.icon}>{props.icon}</Box>
-                    <Badge badgeContent={props.badge} max={9} color={'secondary'} sx={{ '& .MuiBadge-badge': { marginTop: 1 } }}>
-                        <ListItemText primary={props.title} secondary={props.subtitle} />
-                    </Badge>
-                </>)}
+                children={(
+                    <Box component="div" sx={{ display: 'flex', alignItems: 'center' }}>
+                        <img
+                            style={{ width: '64px', objectFit: 'cover', marginRight: '8px', borderRadius: '4px' }}
+                            src={Config.api.baseUrl + '/videos/' + props.videoId + '/preview'}
+                        />
+                        <Badge badgeContent={props.badge} max={9} color={'secondary'} sx={{ '& .MuiBadge-badge': { marginTop: 1 } }}>
+                            <ListItemText primary={props.title} secondary={props.subtitle} />
+                        </Badge>
+                    </Box>
+                )}
                 component={Link}
                 to={props.url}
             />
