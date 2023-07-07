@@ -59,6 +59,19 @@ class JobManager:
 
         return None if len(jobs) < 1 else Job(*jobs[0])
 
+    def fetch_job_by_result_video_id(self, result_video_id: str) -> Job:
+        job_data_list = self.__db_connection.select_all(
+            "SELECT * FROM jobs WHERE result_video_id=%(result_video_id)s",
+            {'result_video_id': result_video_id}
+        )
+
+        if len(job_data_list) < 1:
+            raise Exception('Could not find job for result video ' + result_video_id)
+
+        return Job(*job_data_list[0])
+
+
+
     def mark_job_as_finished(self, job_id: str):
         self.__db_connection.execute(
             "UPDATE jobs SET status=%(status)s, finished_at=current_timestamp WHERE id=%(id)s",
