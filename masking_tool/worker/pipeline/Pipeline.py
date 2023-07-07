@@ -5,7 +5,12 @@ from pipeline.detection.YoloDetector import YoloDetector
 from pipeline.detection.MediaPipeDetector import MediaPipeDetector
 from utils.drawing_utils import overlay_frames
 from pipeline.hiding import Hider
-from pipeline.PipelineTypes import DetectionResult, HidingStategies, PartToDetect
+from pipeline.PipelineTypes import (
+    DetectionResult,
+    HidingStategies,
+    PartToDetect,
+    PartToMask,
+)
 from utils.video_utils import setup_video_processing
 from utils.app_utils import save_preview_image
 
@@ -56,21 +61,19 @@ class Pipeline:
                 }
                 required_detectors[detection_model_name].append(part_to_detect)
 
-            # @ToDo implement masking similar to detection/hiding
             """if "maskingStrategy" in video_part:
-                masking_model_name = None
-                masking_type = None
-                masking_params = {}
+                masking_model_name = video_part["maskingStrategy"]["maskingModel"]
+                masking_method = video_part["maskingStrategy"]["key"]
+                masking_params = video_part["maskingStrategy"]["params"]
                 if not masking_model_name in required_maskers:
                     required_maskers[masking_model_name] = []
-                
+
                 parts_to_detect: List[PartToMask] = {
                     "part_name": video_part,
-                    "masking_type": masking_type,
-                    "params": masking_params
-                    # could be extended with fine grained paramters for detection
+                    "masking_method": masking_method,
+                    "params": masking_params,
                 }
-                required_maskers[masking_model_name] = parts_to_detect"""
+                required_maskers[masking_model_name].append(parts_to_detect)"""
 
         self.init_detectors(required_detectors)
         self.init_maskers(required_maskers)
@@ -82,7 +85,7 @@ class Pipeline:
             params = required_detectors["mediapipe"]
             self.detectors.append(MediaPipeDetector(params))
         if "yolo" in required_detectors:
-            params = required_detectors["mediapipe"]
+            params = required_detectors["yolo"]
             self.detectors.append(YoloDetector(params))
 
     def init_maskers(self, required_maskers: dict):

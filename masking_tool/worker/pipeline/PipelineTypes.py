@@ -28,3 +28,18 @@ class HidingStrategy(TypedDict):
 
 class HidingStategies(TypedDict):
     part_name: HidingStrategy
+
+
+class PartToMask(TypedDict):
+    part_name: str
+    masking_method: str
+    masking_params: dict
+
+
+class MaskExtractionResult(TypedDict):
+    part_name: str
+    extracted_mask: np.ndarray
+
+
+class PartMaskingMethods(TypedDict):
+    part_name: Any  # callable
