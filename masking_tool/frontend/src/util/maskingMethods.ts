@@ -2,7 +2,7 @@ import { MaskingMethods } from "../state/types/RunParamRendering";
 import { blackoutFormSchemaBG, blackoutFormSchemaSubject, blackoutFormSchemaSubjectUI, blurFormSchemaBG, blurFormSchemaSubject, blurFormSchemaSubjectUI, faceMeshFormSchema, skeletonFormSchema } from "./formSchemas";
 
 export const maskingMethods: MaskingMethods = {
-    head : {
+    head: {
         hidingMethods: {
             none: {
                 name: "None",
@@ -118,6 +118,8 @@ export const maskingMethods: MaskingMethods = {
                 description: "Gaussian Blurring",
                 parameterSchema: blurFormSchemaBG,
                 defaultValues: {
+                    subjectDetection: "silhouette",
+                    detectionModel: "mediapipe",
                     kernelSize: 23,
                 }
             },
@@ -126,6 +128,8 @@ export const maskingMethods: MaskingMethods = {
                 description: "Hiding the subject with the selected color",
                 parameterSchema: blackoutFormSchemaBG,
                 defaultValues: {
+                    subjectDetection: "silhouette",
+                    detectionModel: "mediapipe",
                     color: "#000",
                 }
             },

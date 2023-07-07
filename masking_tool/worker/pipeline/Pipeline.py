@@ -93,6 +93,7 @@ class Pipeline:
         video_in_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
         video_out_path = os.path.join(RESULT_BASE_PATH, video_id + ".mp4")
         video_cap, out = setup_video_processing(video_in_path, video_out_path)
+        is_first_frame = True
 
         while True:
             ret, frame = video_cap.read()
@@ -100,6 +101,8 @@ class Pipeline:
                 break
 
             frame_timestamp_ms = int(video_cap.get(cv2.CAP_PROP_POS_MSEC))
+            if not is_first_frame and frame_timestamp_ms == 0:
+                continue
 
             # Detect all relevant body/video parts (as pixelMasks)
             detection_results: List[DetectionResult] = []
@@ -130,6 +133,7 @@ class Pipeline:
 
             out_frame = overlay_frames(hidden_frame, mask_results)
             out.write(out_frame)
+            is_first_frame = False
 
         out.release()
         video_cap.release()
