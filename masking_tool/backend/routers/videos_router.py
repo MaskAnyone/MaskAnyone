@@ -123,23 +123,6 @@ def get_result_video_stream(video_id: str, result_video_id: str, request: Reques
     )
 
 
-@router.post("/{video_id}/results/{result_video_id}")
-async def upload_result_video(video_id: str, result_video_id: str, request: Request):
-    result_dir = os.path.join(RESULT_BASE_PATH, video_id)
-    if not os.path.exists(result_dir):
-        os.mkdir(result_dir)
-
-    video_path = os.path.join(result_dir, result_video_id + ".mp4")
-
-    video_content = await request.body()
-
-    file = open(video_path, "wb")
-    file.write(video_content)
-    file.close()
-
-    result_video_manager.create_result_video(result_video_id, video_id, video_id)
-
-
 @router.get("/{video_id}/results/{result_video_id}/preview")
 def get_result_preview_for_video(video_id: str, result_video_id: str):
     image_path = os.path.join(RESULT_BASE_PATH, video_id, result_video_id + ".png")
@@ -153,19 +136,3 @@ def get_result_preview_for_video(video_id: str, result_video_id: str):
 
     return Response(content=image_content, media_type="image/png")
 
-
-@router.post("/{video_id}/results/{result_video_id}/preview")
-async def upload_result_video_preview_image(
-    video_id: str, result_video_id: str, request: Request
-):
-    result_dir = os.path.join(RESULT_BASE_PATH, video_id)
-    if not os.path.exists(result_dir):
-        os.mkdir(result_dir)
-
-    image_path = os.path.join(result_dir, result_video_id + ".png")
-
-    image_content = await request.body()
-
-    file = open(image_path, "wb")
-    file.write(image_content)
-    file.close()

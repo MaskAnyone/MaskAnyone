@@ -27,20 +27,3 @@ def create_job(run_params: RunParams):
         run_params.run_data
     )
 
-
-@router.get("/next")
-def fetch_next_job():
-    job = job_manager.fetch_next_job()
-
-    return {"job": job}
-
-
-@router.post("/{job_id}/finish")
-def finish_job(job_id: str):
-    job_manager.mark_job_as_finished(job_id)
-
-@router.post("/{job_id}/fail")
-def fail_job(job_id: str):
-    job_manager.mark_job_as_failed(job_id)
-
-
