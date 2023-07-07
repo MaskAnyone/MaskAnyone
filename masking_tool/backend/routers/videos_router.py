@@ -1,6 +1,5 @@
 import os
 import cv2
-import base64
 
 from fastapi import APIRouter, Request, Response, HTTPException
 
