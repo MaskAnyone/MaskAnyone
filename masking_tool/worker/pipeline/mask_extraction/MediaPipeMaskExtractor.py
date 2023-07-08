@@ -20,21 +20,32 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
         self.models = {}
         self.init_models()
 
+    def reorder_parts_to_mask(self):
+        # Sets face to be processes last, so that if body result is available it can be used for simple
+        face_part = self.get_part_to_mask("face")
+        if face_part:
+            index = self.parts_to_detect.index(face_part)
+            self.parts_to_detect.pop(index)
+            self.parts_to_detect.append(face_part)
+
     def init_models(self):
         BaseOptions = mp.tasks.BaseOptions
         VisionRunningMode = mp.tasks.vision.RunningMode
-        FaceLandmarker = mp.tasks.vision.FaceLandmarker
-        FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
         PoseLandmarker = mp.tasks.vision.PoseLandmarker
         PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
 
+        body_part = self.get_part_to_mask("body")
         pose_options = PoseLandmarkerOptions(
             base_options=BaseOptions(model_asset_path=pose_model_path),
             running_mode=VisionRunningMode.VIDEO,
-            output_segmentation_masks=True,
+            output_segmentation_masks=False,
             num_poses=2,
         )
+        self.models["pose"] = PoseLandmarker.create_from_options(pose_options)
 
+        face_part = self.get_part_to_mask("face")
+        FaceLandmarker = mp.tasks.vision.FaceLandmarker
+        FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
         face_options = FaceLandmarkerOptions(
             base_options=BaseOptions(model_asset_path=face_model_path),
             running_mode=VisionRunningMode.VIDEO,
@@ -42,17 +53,62 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
             output_facial_transformation_matrixes=True,
             num_faces=2,
         )
-
-        self.models["pose"] = PoseLandmarker.create_from_options(pose_options)
         self.models["faceMesh"] = FaceLandmarker.create_from_options(face_options)
 
-    def mask_body(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
+    def compute_pose_landmarks(self, frame: np.ndarray, timestamp_ms: int):
         frame_mp = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
         pose_result = self.models["pose"].detect_for_video(frame_mp, timestamp_ms)
-        pose_landmarks_list = pose_result.pose_landmarks
-        output_image = np.zeros(
-            (frame_mp.height, frame_mp.width, frame_mp.channels), dtype=np.uint8
+        return pose_result.pose_landmarks
+
+    def is_face_required(self):
+        return any(
+            part["part_name"] == "face" and part["masking_method"] == "skeleton"
+            for part in self.parts_to_mask
         )
+
+    def mask_body(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
+        pose_landmarks_list = self.compute_pose_landmarks(frame, timestamp_ms)
+        if not self.is_face_required():
+            pose_landmarks_list = [lms[11:] for lms in pose_landmarks_list]
+
+        output_image = np.zeros(frame.shape, dtype=np.uint8)
+        output_image = self.draw_pose_landmarks(output_image, pose_landmarks_list)
+        return output_image
+
+    def mask_face(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
+        face_part = self.get_part_to_mask("face")
+        if face_part["masking_method"] == "skeleton":
+            return self.mask_face_simple(frame, timestamp_ms)
+        elif face_part["masking_method"] == "faceMesh":
+            return self.mask_face_mesh(frame, timestamp_ms)
+        else:
+            raise Exception("Invalid face masking method specified")
+
+    def mask_face_simple(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
+        body_result = self.get_part_to_mask("body")
+
+        if body_result:
+            return
+
+        pose_landmarks_list = self.mask_body(frame, timestamp_ms)
+        face_landmarks_list = [lms[:11] for lms in pose_landmarks_list]
+        output_image = np.zeros((frame.shape), dtype=np.uint8)
+        output_image = self.draw_pose_landmarks(output_image, face_landmarks_list)
+        return output_image
+
+    def compute_face_landmarks(self, frame: np.ndarray, timestamp_ms: int):
+        frame_mp = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
+        face_result = self.models["faceMesh"].detect_for_video(frame_mp, timestamp_ms)
+        return face_result.face_landmarks
+
+    def mask_face_mesh(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
+        face_landmarks_list = self.compute_face_landmarks(frame, timestamp_ms)
+
+        output_image = np.zeros(frame.shape, dtype=np.uint8)
+        output_image = self.draw_face_mesh_landmarks(output_image, face_landmarks_list)
+        return output_image
+
+    def draw_pose_landmarks(self, output_image, pose_landmarks_list):
         for idx in range(len(pose_landmarks_list)):
             pose_landmarks = pose_landmarks_list[idx]
 
@@ -72,20 +128,41 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
                 solutions.pose.POSE_CONNECTIONS,
                 solutions.drawing_styles.get_default_pose_landmarks_style(),
             )
-
         return output_image
 
-    def mask_face(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
-        face_part = self.parts_to_mask
-        if face_part["masking_method"] == "skeleton":
-            return self.mask_face_simple(frame, timestamp_ms)
-        elif face_part["masking_method"] == "faceMesh":
-            return self.mask_face_mash(frame, timestamp_ms)
-        else:
-            raise Exception("Invalid face masking method specified")
+    def draw_face_mesh_landmarks(self, output_image, face_landmarks_list):
+        for idx in range(len(face_landmarks_list)):
+            face_landmarks = face_landmarks_list[idx]
 
-    def mask_face_simple(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
-        pass
+            face_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
+            face_landmarks_proto.landmark.extend(
+                [
+                    landmark_pb2.NormalizedLandmark(
+                        x=landmark.x, y=landmark.y, z=landmark.z
+                    )
+                    for landmark in face_landmarks
+                ]
+            )
 
-    def mask_face_detail(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
-        pass
+            solutions.drawing_utils.draw_landmarks(
+                image=output_image,
+                landmark_list=face_landmarks_proto,
+                connections=mp.solutions.face_mesh.FACEMESH_TESSELATION,
+                landmark_drawing_spec=None,
+                connection_drawing_spec=mp.solutions.drawing_styles.get_default_face_mesh_tesselation_style(),
+            )
+            solutions.drawing_utils.draw_landmarks(
+                image=output_image,
+                landmark_list=face_landmarks_proto,
+                connections=mp.solutions.face_mesh.FACEMESH_CONTOURS,
+                landmark_drawing_spec=None,
+                connection_drawing_spec=mp.solutions.drawing_styles.get_default_face_mesh_contours_style(),
+            )
+            solutions.drawing_utils.draw_landmarks(
+                image=output_image,
+                landmark_list=face_landmarks_proto,
+                connections=mp.solutions.face_mesh.FACEMESH_IRISES,
+                landmark_drawing_spec=None,
+                connection_drawing_spec=mp.solutions.drawing_styles.get_default_face_mesh_iris_connections_style(),
+            )
+        return output_image

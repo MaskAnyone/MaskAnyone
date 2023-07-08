@@ -123,7 +123,7 @@ class Pipeline:
             detection_results: List[DetectionResult] = []
             for detector in self.detectors:
                 detection_result = detector.detect(frame, frame_timestamp_ms)
-                detection_results.append(*detection_result)
+                detection_results.extend(detection_result)
 
             # applies the hiding method on each detected part of the frame and combines them into one frame
             hidden_frame = frame
@@ -138,7 +138,7 @@ class Pipeline:
             )  # mask results have to be drawn on a black frame in order to be combined correctly
             for mask_extractor in self.mask_extractors:
                 mask_result = mask_extractor.extract_mask(frame, frame_timestamp_ms)
-                mask_results.append(*mask_result)
+                mask_results.extend(mask_result)
 
             out_frame = overlay_frames(hidden_frame, mask_results)
             out.write(out_frame)

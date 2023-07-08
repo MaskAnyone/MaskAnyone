@@ -13,7 +13,7 @@ class BaseDetector:
     def __init__(self, parts_to_detect: List[PartToDetect]):
         self.silhouette_methods: PartDetectionMethods = (
             {}
-        )  # the specific models for each part (e.g head_model etc)
+        )  # the specific models for each part (e.g face model etc)
         self.boundingbox_methods: PartDetectionMethods = {}
         self.parts_to_detect: List[PartToDetect] = parts_to_detect
         self.current_results: List[DetectionResult] = []

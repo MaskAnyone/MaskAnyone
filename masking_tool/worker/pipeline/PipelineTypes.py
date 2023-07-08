@@ -43,3 +43,9 @@ class MaskExtractionResult(TypedDict):
 
 class PartMaskingMethods(TypedDict):
     part_name: Any  # callable
+
+
+class MaskingResult(TypedDict):
+    part_name: str
+    masking_method: DetectionType
+    mask: np.ndarray

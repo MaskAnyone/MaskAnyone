@@ -2,7 +2,7 @@ import { MaskingMethods } from "../state/types/RunParamRendering";
 import { blackoutFormSchemaBG, blackoutFormSchemaSubject, blackoutFormSchemaSubjectUI, blurFormSchemaBG, blurFormSchemaSubject, blurFormSchemaSubjectUI, faceMeshFormSchema, skeletonFormSchema } from "./formSchemas";
 
 export const maskingMethods: MaskingMethods = {
-    head: {
+    face: {
         hidingMethods: {
             none: {
                 name: "None",

@@ -27,7 +27,7 @@ const mockPresets: Preset[] = [
                         params: {}
                     }
                 },
-                "head": {
+                "face": {
                     hidingStrategy: {
                         key: "blur",
                         params: maskingMethods["body"].hidingMethods!["blur"].defaultValues!
@@ -70,13 +70,13 @@ const mockPresets: Preset[] = [
                         params: maskingMethods["body"].maskingMethods!["skeleton"].defaultValues!
                     }
                 },
-                "head": {
+                "face": {
                     hidingStrategy: {
                         key: "blackout",
-                        params: maskingMethods["head"].hidingMethods["blackout"].defaultValues!
+                        params: maskingMethods["face"].hidingMethods["blackout"].defaultValues!
                     }, maskingStrategy: {
                         key: "skeleton",
-                        params: maskingMethods["head"].maskingMethods!["skeleton"].defaultValues!
+                        params: maskingMethods["face"].maskingMethods!["skeleton"].defaultValues!
                     }
                 },
                 "background": {
@@ -143,7 +143,7 @@ const mockPresets: Preset[] = [
                         params: {}
                     }
                 },
-                "head": {
+                "face": {
                     hidingStrategy: {
                         key: "none",
                         params: {}

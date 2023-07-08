@@ -193,8 +193,9 @@ export const skeletonFormSchema: RJSFSchema = {
     maskingModel: { title: 'The model that should be used for creating a skeleton.', type: 'string', default: 'mediapipe', enum: ['mediapipe'] },
     num_poses: { type: 'number', title: 'Num Subjects', default: 1, description: 'The maximum number of subjects which can be detected' },
     confidence: { type: 'number', title: 'Confidence', default: 1, description: 'The minimum confidence score for the detection to be considered successful.' },
+    timeseries: { type: 'boolean', title: 'Save output as timeseries in CSV', default: false },
   },
-};
+}
 
 export const faceMeshFormSchema: RJSFSchema = {
   type: 'object',
@@ -202,5 +203,6 @@ export const faceMeshFormSchema: RJSFSchema = {
     maskingModel: { title: 'The model that should be used for creating a face mesh.', type: 'string', default: 'mediapipe', enum: ['mediapipe'] },
     num_faces: { type: 'number', title: 'Num Subjects', default: 1, description: 'The maximum number of faces which can be detected' },
     confidence: { type: 'number', title: 'Confidence', default: 1, description: 'The minimum confidence score for the face detection to be considered successful.' },
+    timeseries: { type: 'boolean', title: 'Save output as timeseries in CSV', default: false },
   },
 };

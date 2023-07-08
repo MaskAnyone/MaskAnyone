@@ -20,12 +20,12 @@ class YoloDetector(BaseDetector):
         self.reorder_parts_to_detect()
         self.silhouette_methods = {
             "body": self.detect_body_silhouette,
-            "head": self.detect_head_silhouette,
+            "face": self.detect_face_silhouette,
             "background": self.detect_background_silhouette,
         }
         self.boundingbox_methods = {
             "body": self.detect_body_bbox,
-            "head": self.detect_head_bbox,
+            "face": self.detect_face_bbox,
             "background": self.detect_background_bbox,
         }
         self.models = {}
@@ -55,8 +55,8 @@ class YoloDetector(BaseDetector):
             ]
         ):
             self.models["silhouette"] = YOLO(seg_model_path)
-        if any([True for part in self.parts_to_detect if part["part_name"] == "head"]):
-            self.models["head"] = YOLO(face_bbox_model_path)
+        if any([True for part in self.parts_to_detect if part["part_name"] == "face"]):
+            self.models["face"] = YOLO(face_bbox_model_path)
 
     def detect_body_bbox(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
         # Returns the segmentation mask for the body [black / white]
@@ -70,9 +70,9 @@ class YoloDetector(BaseDetector):
                 )
         return output_image
 
-    def detect_head_bbox(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
+    def detect_face_bbox(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
         # Returns the segmentation mask for the body [black / white]
-        results = self.models["head"].predict(frame)
+        results = self.models["face"].predict(frame)
         output_image = 255 * np.ones((frame.shape))
         for result in results:
             for box in result.boxes:
@@ -100,18 +100,18 @@ class YoloDetector(BaseDetector):
                 frame = overlay_segmask(frame, seg, (0, 0, 0), 1)
         return output_image
 
-    def detect_head_silhouette(
+    def detect_face_silhouette(
         self, frame: np.ndarray, timestamp_ms: int
     ) -> np.ndarray:
         # Returns the segmentation mask for the body [black / white]
-        results_head = self.models["head"].predict(frame)
+        results_face = self.models["face"].predict(frame)
         results_seg = self.models["silhouette"].predict(frame, classes=[0])
         seg_masks = results_seg[0].masks
         output_image = 255 * np.ones((frame.shape))
         h, w, _ = frame.shape
 
         # @ToDo only use silhouette part that is whitihn detected bbox
-        for result in results_head:
+        for result in results_face:
             for box in result.boxes:
                 x1, y1, x2, y2 = [int(val) for val in box.xyxy[0].tolist()]
                 output_image = cv2.rectangle(
