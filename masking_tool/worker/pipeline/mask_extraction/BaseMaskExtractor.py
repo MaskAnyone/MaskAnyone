@@ -5,15 +5,15 @@ import numpy as np
 
 
 class BaseMaskExtractor:
-    def __init__(self):
-        self.parts_to_mask: List[PartToMask] = []
+    def __init__(self, parts_to_mask: List[PartToMask]):
+        self.parts_to_mask: List[PartToMask] = parts_to_mask
         self.part_methods = {}
 
-    def extract(
+    def extract_mask(
         self, frame: np.ndarray, timestamp_ms: int
     ) -> List[MaskExtractionResult]:
         results = []
         for part in self.parts_to_mask:
-            part_result = self.part_methods[part](frame, timestamp_ms)
+            part_result = self.part_methods[part["part_name"]](frame, timestamp_ms)
             results.append(part_result)
         return results

@@ -44,6 +44,7 @@ export const maskingMethods: MaskingMethods = {
                 description: "Displays a basic skeleton containing landmarks for eyes, nose and mouth in the video.",
                 parameterSchema: skeletonFormSchema,
                 defaultValues: {
+                    maskingModel: "mediapipe",
                     num_poses: 1,
                     confidence: 1
                 }
@@ -53,6 +54,7 @@ export const maskingMethods: MaskingMethods = {
                 description: "Displays a detailed facemesh containing 478 Landmarks",
                 parameterSchema: faceMeshFormSchema,
                 defaultValues: {
+                    maskingModel: "mediapipe",
                     num_faces: 1,
                     confidence: 1
                 }
@@ -101,6 +103,7 @@ export const maskingMethods: MaskingMethods = {
                 description: "Displays a skeleton containing landmarks for eyes, nose and mouth in the video.",
                 parameterSchema: skeletonFormSchema,
                 defaultValues: {
+                    maskingModel: "mediapipe",
                     num_poses: 1,
                     confidence: 1
                 }

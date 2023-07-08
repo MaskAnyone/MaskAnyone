@@ -66,7 +66,6 @@ class MediaPipeDetector(BaseDetector):
         )
         if results.segmentation_masks:
             for segmentation_mask in results.segmentation_masks:
-                cv2.imwrite
                 mask = segmentation_mask.numpy_view()
                 seg_mask = np.repeat(mask[:, :, np.newaxis], 3, axis=2)
 

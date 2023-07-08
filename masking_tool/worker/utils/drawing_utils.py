@@ -6,8 +6,11 @@ import cv2
 
 def overlay_frames(base_image: np.ndarray, mask_images: List[np.ndarray]):
     for mask_image in mask_images:
-        base_image += mask_image
-    return base_image
+        mask = cv2.cvtColor(mask_image, cv2.COLOR_BGR2GRAY)
+        mask = cv2.threshold(mask, 1, 255, cv2.THRESH_BINARY)[1]
+        masked_actual_image = cv2.bitwise_and(base_image, base_image, mask=255 - mask)
+        result = cv2.bitwise_or(masked_actual_image, mask_image)
+    return result
 
 
 def overlay_segmask(image, mask, color, alpha, resize=None):
