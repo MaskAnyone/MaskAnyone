@@ -1,6 +1,5 @@
 import {Box, Drawer, Fab, List} from "@mui/material";
 import SideBarItem from "./SideBarItem";
-import VideocamIcon from '@mui/icons-material/Videocam';
 import {useDispatch, useSelector} from "react-redux";
 import Selector from "../state/selector";
 import UploadIcon from '@mui/icons-material/Upload';
@@ -61,7 +60,7 @@ const SideBar = (props: SideBarProps) => {
                                 url={`/videos/${video.id}`}
                                 title={`${video.name} (${Math.round(video.videoInfo.duration)}s)`}
                                 subtitle={`${video.videoInfo.frameWidth}x${video.videoInfo.frameHeight}, ${video.videoInfo.fps} FPS`}
-                                icon={<VideocamIcon />}
+                                videoId={video.id}
                                 badge={videoJobsRecord[video.id] || 0}
                             />
                         ))}

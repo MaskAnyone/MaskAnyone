@@ -5,6 +5,8 @@ from fastapi import APIRouter, Request, Response, HTTPException
 
 from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 from utils.request_utils import range_requests_response
+from utils.preview_image_utils import aspect_preserving_resize_and_crop
+from utils.video_utils import extract_codec_from_capture
 from models import RunParams, RequestVideoUploadParams, FinalizeVideoUploadParams
 from db.video_manager import VideoManager
 from db.result_video_manager import ResultVideoManager
@@ -36,6 +38,20 @@ def get_video_stream(video_id, request: Request):
     )
 
 
+@router.get("/{video_id}/preview")
+def get_preview_for_video(video_id: str):
+    image_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".jpg")
+
+    if not os.path.exists(image_path):
+        raise HTTPException(status_code=404, detail="Preview Image not found")
+
+    with open(image_path, "rb") as f:
+        image_content = f.read()
+        f.close()
+
+    return Response(content=image_content, media_type="image/jpeg")
+
+
 @router.post('/upload/request')
 def request_video_upload(params: RequestVideoUploadParams):
     if video_manager.has_video_with_name(params.video_name):
@@ -65,13 +81,13 @@ def finalize_video_upload(params: FinalizeVideoUploadParams):
     frame_count = capture.get(cv2.CAP_PROP_FRAME_COUNT)
     duration = frame_count / fps
 
-    h = int(capture.get(cv2.CAP_PROP_FOURCC))
-    codec = (
-        chr(h & 0xFF)
-        + chr((h >> 8) & 0xFF)
-        + chr((h >> 16) & 0xFF)
-        + chr((h >> 24) & 0xFF)
-    )
+    codec = extract_codec_from_capture(capture)
+
+    video_preview_image_path = os.path.join(VIDEOS_BASE_PATH, params.video_id + '.jpg')
+    capture.set(cv2.CAP_PROP_POS_FRAMES, int(frame_count / 2))
+    _, frame = capture.read()
+    preview_image = aspect_preserving_resize_and_crop(frame, 80, 60)
+    cv2.imwrite(video_preview_image_path, preview_image)
 
     capture.release()
 
