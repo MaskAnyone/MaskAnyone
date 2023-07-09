@@ -8,15 +8,16 @@ import mediapipe as mp
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
 
-from pipeline.PipelineTypes import PartToMask
+from pipeline.PipelineTypes import Params3D, PartToMask
 
 face_model_path = os.path.join("models", "face_landmarker.task")
 pose_model_path = os.path.join("models", "pose_landmarker_heavy.task")
 
 
 class MediaPipeMaskExtractor(BaseMaskExtractor):
-    def __init__(self, parts_to_mask: List[PartToMask]):
+    def __init__(self, parts_to_mask: List[PartToMask], params_3d: Params3D):
         super().__init__(parts_to_mask)
+        self.params_3d = params_3d
         self.part_methods = {"body": self.mask_body, "face": self.mask_face}
         self.models = {}
         self.timeseries = {"body": [], "face": []}
@@ -24,7 +25,48 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
             "body": create_header_mp("body"),
             "face": create_header_mp("face"),
         }
+        self.model_3d_only_parts = []
+        self.handle_3d_options()
         self.init_models()
+
+    def handle_3d_options(self):
+        if self.params_3d["skeleton"] and not self.get_part_to_mask("body"):
+            self.model_3d_only_parts.append("body")
+            self.parts_to_mask.append(
+                {
+                    "part_name": "body",
+                    "save_timeseries": "true",
+                    "params": {"numPoses": 1, "confidence": 0.5},
+                    "masking_method": "skeleton",
+                }
+            )
+        elif self.params_3d["skeleton"] and self.get_part_to_mask("body"):
+            body_part = self.get_part_to_mask("body")
+            body_part["save_timeseries"] = True
+
+        if self.params_3d["blendshapes"] and not self.get_part_to_mask("face"):
+            self.model_3d_only_parts.append("body")
+            self.parts_to_mask.append(
+                {
+                    "part_name": "face",
+                    "save_timeseries": "true",
+                    "params": {"numPoses": 1, "confidence": 0.5},
+                    "masking_method": "faceMesh",
+                }
+            )
+        elif self.params_3d["blendshapes"] and self.get_part_to_mask("face"):
+            body_part = self.get_part_to_mask("body")
+            if body_part["masking_method"] != "faceMesh":
+                self.parts_to_mask.append(
+                    {
+                        "part_name": "face",
+                        "save_timeseries": "true",
+                        "params": {"numPoses": 1, "confidence": 0.5},
+                        "masking_method": "faceMesh",
+                    }
+                )
+            else:
+                body_part["save_timeseries"] = True
 
     def reorder_parts_to_mask(self):
         # Sets face to be processes last, so that if body result is available it can be used for simple face
@@ -90,39 +132,38 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
             for lm in landmarks_to_hide:
                 lm.visibility = 0.0
 
-        output_image = np.zeros(frame.shape, dtype=np.uint8)
-        output_image = self.draw_pose_landmarks(output_image, pose_landmarks_list)
+                self.store_ts("body", pose_landmarks_list, timestamp_ms)
 
-        self.timeseries["body"] = list_positions_mp(pose_landmarks_list)
-        self.timeseries["body"].insert(0, timestamp_ms)
-
-        return output_image
+        if not "body" in self.model_3d_only_parts:
+            output_image = np.zeros(frame.shape, dtype=np.uint8)
+            output_image = self.draw_pose_landmarks(output_image, pose_landmarks_list)
+            return output_image
+        return
 
     def mask_face(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
         face_part = self.get_part_to_mask("face")
         if face_part["masking_method"] == "skeleton":
-            return self.mask_face_simple(frame, timestamp_ms)
+            return self.mask_face_skeleton(frame, timestamp_ms)
         elif face_part["masking_method"] == "faceMesh":
             return self.mask_face_mesh(frame, timestamp_ms)
         else:
             raise Exception("Invalid face masking method specified")
 
-    def mask_face_simple(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
+    def mask_face_skeleton(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
         body_result = self.get_part_to_mask("body")
 
         if body_result:
+            # face skeleton was already computed and is part of body mask
             return
 
-        landmarks_to_hide = [lms[:11] for lms in body_result]
+        body_result = self.compute_pose_landmarks(frame, timestamp_ms)
+        landmarks_to_hide = [lms[11:] for lms in body_result]
         landmarks_to_hide = [lm for lms in landmarks_to_hide for lm in lms]
         for lm in landmarks_to_hide:
             lm.visibility = 0.0
 
         output_image = np.zeros((frame.shape), dtype=np.uint8)
         output_image = self.draw_pose_landmarks(output_image, landmarks_to_hide)
-        self.timeseries["body"] = list_positions_mp(body_result)
-        self.timeseries["body"].insert(0, timestamp_ms)
-
         return output_image
 
     def compute_face_landmarks(self, frame: np.ndarray, timestamp_ms: int):
@@ -130,14 +171,26 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
         face_result = self.models["faceMesh"].detect_for_video(frame_mp, timestamp_ms)
         return face_result.face_landmarks
 
+    def store_blendshapes(self):
+        pass
+
     def mask_face_mesh(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
         face_landmarks_list = self.compute_face_landmarks(frame, timestamp_ms)
+        self.store_ts("face", face_landmarks_list, timestamp_ms)
+        if self.params_3d["blendshapes"]:
+            self.save_blendshapes()
 
-        output_image = np.zeros(frame.shape, dtype=np.uint8)
-        output_image = self.draw_face_mesh_landmarks(output_image, face_landmarks_list)
-        self.timeseries["face"] = list_positions_mp(face_landmarks_list)
-        self.timeseries["face"].insert(0, timestamp_ms)
-        return output_image
+        if not "face" in self.model_3d_only_parts:
+            output_image = np.zeros(frame.shape, dtype=np.uint8)
+            output_image = self.draw_face_mesh_landmarks(
+                output_image, face_landmarks_list
+            )
+            return output_image
+        return
+
+    def store_ts(self, video_part, landmarks, timestamp_ms):
+        self.timeseries[video_part] = list_positions_mp(landmarks)
+        self.timeseries[video_part].insert(0, timestamp_ms)
 
     def draw_pose_landmarks(self, output_image, pose_landmarks_list):
         for idx in range(len(pose_landmarks_list)):

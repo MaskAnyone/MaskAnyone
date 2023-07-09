@@ -31,7 +31,6 @@ class BaseDetector:
                 part_to_detect["detection_type"],
                 timestamp_ms,
             )
-            print("xx")
             self.current_results.append(
                 {
                     "part_name": part_to_detect["part_name"],
@@ -39,7 +38,6 @@ class BaseDetector:
                     "mask": part_result,
                 }
             )
-            print("yy")
         return self.current_results
 
     def detect_part(

@@ -34,7 +34,7 @@ class HidingStategies(TypedDict):
 class PartToMask(TypedDict):
     part_name: str
     masking_method: str
-    masking_params: dict
+    params: dict
     save_timeseries: bool
 
 
@@ -46,3 +46,12 @@ class MaskingResult(TypedDict):
     part_name: str
     mask: np.ndarray
     timeseries: Optional[np.ndarray]
+
+
+class Params3D(TypedDict):
+    blender: bool
+    blenderParams: dict
+    blendshapes: bool
+    blendshapesParams: dict
+    skeleton: bool
+    skeletonParams: dict

@@ -12,6 +12,7 @@ from pipeline.PipelineTypes import (
     DetectionResult,
     HidingStategies,
     MaskingResult,
+    Params3D,
     PartToDetect,
     PartToMask,
 )
@@ -31,6 +32,8 @@ class Pipeline:
 
         required_detectors = {}
         required_maskers = {}
+
+        self.model_3d_only = False
 
         # extract arguments from request and create initialization arguments for maskers, detectors and hider
         vid_masking_params = run_params["videoMasking"]
@@ -89,23 +92,34 @@ class Pipeline:
                     }
                     required_maskers[masking_model_name].append(part_to_mask)
 
+        params_3d: Params3D = run_params["threeDModelCreation"]
+
         self.init_detectors(required_detectors)
-        self.init_maskers(required_maskers)
+        self.init_maskers(required_maskers, params_3d)
 
         self.hider = Hider(hiding_strategies)
 
     def init_detectors(self, required_detectors: dict):
         if "mediapipe" in required_detectors:
-            params = required_detectors["mediapipe"]
-            self.detectors.append(MediaPipeDetector(params))
+            parts_to_detect = required_detectors["mediapipe"]
+            self.detectors.append(MediaPipeDetector(parts_to_detect))
         if "yolo" in required_detectors:
-            params = required_detectors["yolo"]
-            self.detectors.append(YoloDetector(params))
+            parts_to_detect = required_detectors["yolo"]
+            self.detectors.append(YoloDetector(parts_to_detect))
 
-    def init_maskers(self, required_maskers: dict):
-        if "mediapipe" in required_maskers:
-            params = required_maskers["mediapipe"]
-            self.mask_extractors.append(MediaPipeMaskExtractor(params))
+    def init_maskers(self, required_maskers: dict, params_3d: Params3D):
+        if not required_maskers and not self.detectors:
+            self.model_3d_only = True
+        if (
+            "mediapipe" in required_maskers
+            or params_3d["blendshapes"]
+            or params_3d["skeleton"]
+        ):
+            if "mediapipe" in required_maskers:
+                params = required_maskers["mediapipe"]
+            else:
+                params = []
+            self.mask_extractors.append(MediaPipeMaskExtractor(params, params_3d))
 
     def init_ts_file_handlers(self, video_id: str):
         for mask_extractor in self.mask_extractors:
@@ -121,9 +135,6 @@ class Pipeline:
                     )
 
                     self.ts_file_handlers[part_to_mask["part_name"]] = file_handle
-
-    def requires_timeseries_out(self):
-        return True
 
     def write_timeseries(self, masking_results: List[MaskingResult]):
         for masking_result in masking_results:
@@ -145,6 +156,10 @@ class Pipeline:
         is_first_frame = True
 
         self.init_ts_file_handlers(video_id)
+
+        if not self.detectors and not self.mask_extractors:
+            # Nothing to do
+            return
 
         while True:
             ret, frame = video_cap.read()
@@ -179,8 +194,9 @@ class Pipeline:
                 mask_results.extend([result["mask"] for result in masking_results])
                 self.write_timeseries(masking_results)
 
-            out_frame = overlay_frames(hidden_frame, mask_results)
-            out.write(out_frame)
+            if not self.model_3d_only:
+                out_frame = overlay_frames(hidden_frame, mask_results)
+                out.write(out_frame)
             is_first_frame = False
 
         self.close_ts_file_handles()
@@ -188,4 +204,5 @@ class Pipeline:
         video_cap.release()
         print(f"Finished processing video {video_id}")
 
-        save_preview_image(video_out_path)
+        if not self.model_3d_only:
+            save_preview_image(video_out_path)

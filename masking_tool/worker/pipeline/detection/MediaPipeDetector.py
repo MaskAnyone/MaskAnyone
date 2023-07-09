@@ -11,16 +11,14 @@ standard_model_path = os.path.join("models", "pose_landmarker_heavy.task")
 
 
 class MediaPipeDetector(BaseDetector):
-    def __init__(
-        self, parts_to_detect: List[PartToDetect], model_path: str = standard_model_path
-    ):
+    def __init__(self, parts_to_detect: List[PartToDetect]):
         super().__init__(parts_to_detect)
         self.reorder_parts_to_detect()
         self.silhouette_methods = {
             "body": self.detect_body_silhouette,
             "background": self.detect_background_silhouette,
         }
-        self.model_path = model_path
+        self.model_path = standard_model_path
         self.init_mp_model()
 
     def reorder_parts_to_detect(self) -> List[PartToDetect]:
