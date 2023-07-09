@@ -21,16 +21,16 @@ class VideoManager:
 
     def upload_result_video(self, video_id: str, result_video_id: str):
         path = os.path.join("results", video_id + ".mp4")
-        if not os.path.exists(path):
-            return
-        video_data = self.__local_data_manager.read_binary(path)
+        video_data = None
+        if os.path.exists(path):
+            video_data = self.__local_data_manager.read_binary(path)
         self.__backend_client.upload_result_video(video_id, result_video_id, video_data)
 
     def upload_result_video_preview_image(self, video_id: str, result_video_id: str):
         path = os.path.join("results", video_id + ".png")
-        if not os.path.exists(path):
-            return
-        image_data = self.__local_data_manager.read_binary(path)
+        image_data = None
+        if os.path.exists(path):
+            image_data = self.__local_data_manager.read_binary(path)
         self.__backend_client.upload_result_video_preview_image(
             video_id, result_video_id, image_data
         )

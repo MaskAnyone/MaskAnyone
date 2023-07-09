@@ -21,6 +21,7 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
         self.part_methods = {"body": self.mask_body, "face": self.mask_face}
         self.models = {}
         self.timeseries = {"body": [], "face": []}
+        self.current_blendshapes = []
         self.ts_headers = {
             "body": create_header_mp("body"),
             "face": create_header_mp("face"),
@@ -166,19 +167,31 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
         output_image = self.draw_pose_landmarks(output_image, landmarks_to_hide)
         return output_image
 
-    def compute_face_landmarks(self, frame: np.ndarray, timestamp_ms: int):
+    def compute_face_results(self, frame: np.ndarray, timestamp_ms: int):
         frame_mp = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
         face_result = self.models["faceMesh"].detect_for_video(frame_mp, timestamp_ms)
-        return face_result.face_landmarks
+        return face_result
 
-    def store_blendshapes(self):
-        pass
+    def store_blendshapes(self, blendshapes, transformation_matrixes):
+        # @ToDo currently only supporting one detected person
+        processed_blendshapes = {
+            entry.category_name: entry.score for entry in blendshapes[0]
+        }
+        processed_matrices = transformation_matrixes[0].flatten("F").tolist()
+        self.current_blendshapes = {
+            "blendshapes": processed_blendshapes,
+            "transformationMatrices": processed_matrices,
+        }
 
     def mask_face_mesh(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
-        face_landmarks_list = self.compute_face_landmarks(frame, timestamp_ms)
+        face_results = self.compute_face_results(frame, timestamp_ms)
+        face_landmarks_list = face_results.face_landmarks
         self.store_ts("face", face_landmarks_list, timestamp_ms)
         if self.params_3d["blendshapes"]:
-            self.save_blendshapes()
+            self.store_blendshapes(
+                face_results.face_blendshapes,
+                face_results.facial_transformation_matrixes,
+            )
 
         if not "face" in self.model_3d_only_parts:
             output_image = np.zeros(frame.shape, dtype=np.uint8)

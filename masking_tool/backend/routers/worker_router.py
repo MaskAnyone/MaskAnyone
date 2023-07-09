@@ -21,7 +21,7 @@ result_mp_kinematics_manager = ResultMpKinematicsManager(db_connection)
 job_manager = JobManager(db_connection)
 
 router = APIRouter(
-    prefix='/worker',
+    prefix="/worker",
 )
 
 
@@ -42,7 +42,7 @@ def fail_job(job_id: str):
     job_manager.mark_job_as_failed(job_id)
 
 
-@router.get('/videos/{video_id}')
+@router.get("/videos/{video_id}")
 def get_video_stream(video_id, request: Request):
     video_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
 
@@ -71,11 +71,15 @@ async def upload_result_video(video_id: str, result_video_id: str, request: Requ
     video_info = extract_video_info_from_capture(video_path, capture)
     capture.release()
 
-    result_video_manager.create_result_video(result_video_id, video_id, job.id, video_info)
+    result_video_manager.create_result_video(
+        result_video_id, video_id, job.id, video_info
+    )
 
 
 @router.post("/videos/{video_id}/results/{result_video_id}/preview")
-async def upload_result_video_preview_image(video_id: str, result_video_id: str, request: Request):
+async def upload_result_video_preview_image(
+    video_id: str, result_video_id: str, request: Request
+):
     result_dir = os.path.join(RESULT_BASE_PATH, video_id)
     if not os.path.exists(result_dir):
         os.mkdir(result_dir)
@@ -90,12 +94,11 @@ async def upload_result_video_preview_image(video_id: str, result_video_id: str,
 
 
 @router.post("/videos/{video_id}/results/{result_video_id}/mp_kinematics")
-async def upload_result_mp_kinematics(video_id: str, result_video_id: str, request: Request):
+async def upload_result_mp_kinematics(
+    video_id: str, result_video_id: str, request: Request
+):
     job = job_manager.fetch_job_by_result_video_id(result_video_id)
 
     result_mp_kinematics_manager.create_result_mp_kinematics_entry(
-        str(uuid.uuid4()),
-        result_video_id,
-        job.id,
-        await request.json()
+        str(uuid.uuid4()), result_video_id, job.id, await request.json()
     )

@@ -9,6 +9,7 @@ class BaseMaskExtractor:
         self.parts_to_mask: List[PartToMask] = parts_to_mask
         self.part_methods = {}
         self.current_results: List[MaskingResult] = []
+        self.current_blendshapes = {}
         self.timeseries = {}
         self.ts_headers = {}
 
@@ -26,8 +27,10 @@ class BaseMaskExtractor:
         return results
 
     def get_ts_header(self, part_name: str):
-        print(self.ts_headers)
         return self.ts_headers[part_name]
+
+    def get_newest_blendshapes(self):
+        return self.current_blendshapes
 
     def get_part_to_mask(self, part_name: str) -> PartToMask:
         return next(

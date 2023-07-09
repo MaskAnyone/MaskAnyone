@@ -1,7 +1,12 @@
 import os
 import cv2
 
-from config import RESULT_BASE_PATH, TS_BASE_PATH, VIDEOS_BASE_PATH
+from config import (
+    BLENDSHAPES_BASE_PATH,
+    RESULT_BASE_PATH,
+    TS_BASE_PATH,
+    VIDEOS_BASE_PATH,
+)
 
 
 def init_directories():
@@ -14,6 +19,9 @@ def init_directories():
 
     if not os.path.exists(TS_BASE_PATH):
         os.mkdir(TS_BASE_PATH)
+
+    if not os.path.exists(BLENDSHAPES_BASE_PATH):
+        os.mkdir(BLENDSHAPES_BASE_PATH)
 
     temp_dir_path = os.path.join(RESULT_BASE_PATH, "temp")
     if not os.path.exists(temp_dir_path):

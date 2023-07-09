@@ -1,7 +1,13 @@
 import csv
 import os
 from typing import List
-from config import RESULT_BASE_PATH, TS_BASE_PATH, VIDEOS_BASE_PATH
+from config import (
+    BLENDSHAPES_BASE_PATH,
+    RESULT_BASE_PATH,
+    TS_BASE_PATH,
+    VIDEOS_BASE_PATH,
+)
+import json
 from pipeline.mask_extraction.MediaPipeMaskExtractor import MediaPipeMaskExtractor
 
 from pipeline.detection.YoloDetector import YoloDetector
@@ -34,6 +40,7 @@ class Pipeline:
         required_maskers = {}
 
         self.model_3d_only = False
+        self.blendshapes_file_handle = None
 
         # extract arguments from request and create initialization arguments for maskers, detectors and hider
         vid_masking_params = run_params["videoMasking"]
@@ -136,6 +143,12 @@ class Pipeline:
 
                     self.ts_file_handlers[part_to_mask["part_name"]] = file_handle
 
+    def init_blendshapes_file_handle(self, video_id: str):
+        file_path = os.path.join(BLENDSHAPES_BASE_PATH, f"{video_id}.json")
+        file_handle = open(file_path, "w+", newline="")
+        self.blendshapes_file_handle = file_handle
+        file_handle.write("[")
+
     def write_timeseries(self, masking_results: List[MaskingResult]):
         for masking_result in masking_results:
             if not "timeseries" in masking_result:
@@ -148,6 +161,15 @@ class Pipeline:
         for key in self.ts_file_handlers:
             self.ts_file_handlers[key].close()
 
+    def close_bs_file_handle(self):
+        self.blendshapes_file_handle.write("]")
+        self.blendshapes_file_handle.close()
+
+    def write_blendshapes(self, blendshapes_dict):
+        if blendshapes_dict:
+            json_string = json.dumps(blendshapes_dict)
+            self.blendshapes_file_handle.write(json_string + ",")
+
     def run(self, video_id: str):
         print(f"Running job on video {video_id}")
         video_in_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
@@ -156,6 +178,7 @@ class Pipeline:
         is_first_frame = True
 
         self.init_ts_file_handlers(video_id)
+        self.init_blendshapes_file_handle(video_id)
 
         if not self.detectors and not self.mask_extractors:
             # Nothing to do
@@ -178,7 +201,7 @@ class Pipeline:
                 detection_results.extend(detection_result)
 
             # applies the hiding method on each detected part of the frame and combines them into one frame
-            hidden_frame = frame
+            hidden_frame = frame.copy()
             for detection_result in detection_results:
                 hidden_frame = self.hider.hide_frame_part(
                     hidden_frame, detection_result
@@ -193,6 +216,7 @@ class Pipeline:
                 )
                 mask_results.extend([result["mask"] for result in masking_results])
                 self.write_timeseries(masking_results)
+                self.write_blendshapes(mask_extractor.get_newest_blendshapes())
 
             if not self.model_3d_only:
                 out_frame = overlay_frames(hidden_frame, mask_results)
@@ -200,6 +224,7 @@ class Pipeline:
             is_first_frame = False
 
         self.close_ts_file_handles()
+        self.close_bs_file_handle()
         out.release()
         video_cap.release()
         print(f"Finished processing video {video_id}")

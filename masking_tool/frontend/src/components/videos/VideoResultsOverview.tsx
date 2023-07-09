@@ -1,9 +1,9 @@
 import { Box, Divider, Grid, Paper, Tooltip, Typography, styled } from "@mui/material";
 import HelpIcon from '@mui/icons-material/Help';
-import {useSelector} from "react-redux";
+import { useSelector } from "react-redux";
 import Selector from "../../state/selector";
 import Config from "../../config";
-import {useNavigate} from "react-router";
+import { useNavigate } from "react-router";
 import Paths from "../../paths";
 
 interface VideoResultsProps {
@@ -34,10 +34,10 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
 
     return (
         <>
-            <Divider style={{marginTop: "20px"}}/>
-            <Box component="div" sx={{bgcolor: 'background.paper'}}>
-                <div style={{display: "flex", alignItems: "center", marginTop: "20px"}}>
-                    <Typography variant={"h6"} style={{marginRight: "10px"}}>Processed Results</Typography>
+            <Divider style={{ marginTop: "20px" }} />
+            <Box component="div" sx={{ bgcolor: 'background.paper' }}>
+                <div style={{ display: "flex", alignItems: "center", marginTop: "20px" }}>
+                    <Typography variant={"h6"} style={{ marginRight: "10px" }}>Processed Results</Typography>
                     <Tooltip title=" Click on a result to run it next to the original video">
                         <HelpIcon />
                     </Tooltip>
@@ -46,10 +46,10 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
                     {resultVideos.map(resultVideo => {
                         return (
                             <Grid item xs={4} key={resultVideo.id}>
-                                <Item elevation={3} onClick={() => selectResultVideo(resultVideo.id)} style={resultVideo.id === props.resultVideoId ? {background: "#3498db"} : {}}>
+                                <Item elevation={3} onClick={() => selectResultVideo(resultVideo.id)} style={resultVideo.id === props.resultVideoId ? { background: "#3498db" } : {}}>
                                     <img
                                         src={`${Config.api.baseUrl}/videos/${resultVideo.videoId}/results/${resultVideo.id}/preview`}
-                                        style={{maxHeight: '200px', maxWidth: "100%" }}
+                                        style={{ maxHeight: '200px', maxWidth: "100%" }}
                                     />
                                     <h4>{resultVideo.id}</h4>
                                 </Item>
