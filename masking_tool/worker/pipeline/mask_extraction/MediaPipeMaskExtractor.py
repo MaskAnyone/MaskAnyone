@@ -66,8 +66,6 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
                         "masking_method": "faceMesh",
                     }
                 )
-            else:
-                body_part["save_timeseries"] = True
 
     def reorder_parts_to_mask(self):
         # Sets face to be processes last, so that if body result is available it can be used for simple face
