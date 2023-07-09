@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import MaskIcon from '@mui/icons-material/Masks';
 import {useSelector} from "react-redux";
 import Selector from "../state/selector";
+import Paths from "../paths";
 
 const styles = {
     appBar: (theme: any) => ({
@@ -58,13 +59,13 @@ const TopBar = (props: TopBarProps) => {
                 <Button
                     sx={styles.navigationButton}
                     component={Link}
-                    to={'/runs'}
+                    to={Paths.runs}
                     children={<Badge badgeContent={activeJobCount} max={9} color={'secondary'}>Runs</Badge>}
                 />
                 <Button
                     sx={styles.navigationButton}
                     component={Link}
-                    to={'/presets'}
+                    to={Paths.presets}
                     children={'Presets'}
                 />
             </Box>

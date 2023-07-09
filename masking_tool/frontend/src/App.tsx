@@ -7,6 +7,7 @@ import RunsPage from './pages/RunsPage';
 import PresetsPage from './pages/PresetsPage';
 import Command from "./state/actions/command";
 import {useDispatch} from "react-redux";
+import Paths from "./paths";
 
 const App = () => {
     const dispatch = useDispatch();
@@ -20,11 +21,12 @@ const App = () => {
         <CssBaseline />
         <Routes>
             <Route path={'/'} element={<PageLayout />}>
-                <Route path={'/videos'} element={<VideosPage />} />
-                <Route path={'/videos/:videoId'} element={<VideosPage />} />
-                <Route path={'/runs'} element={<RunsPage />} />
-                <Route path={'/presets'} element={<PresetsPage />} />
-                <Route index={true} element={<Navigate to={'/videos'} replace={true} />} />
+                <Route path={Paths.videos} element={<VideosPage />} />
+                <Route path={Paths.videoDetails} element={<VideosPage />} />
+                <Route path={Paths.resultVideoDetails} element={<VideosPage />} />
+                <Route path={Paths.runs} element={<RunsPage />} />
+                <Route path={Paths.presets} element={<PresetsPage />} />
+                <Route index={true} element={<Navigate to={Paths.videos} replace={true} />} />
             </Route>
         </Routes>
     </>);

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request, Response, HTTPException
 from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 from utils.request_utils import range_requests_response
 from utils.preview_image_utils import aspect_preserving_resize_and_crop
-from utils.video_utils import extract_codec_from_capture
+from utils.video_utils import extract_video_info_from_capture
 from models import RunParams, RequestVideoUploadParams, FinalizeVideoUploadParams
 from db.video_manager import VideoManager
 from db.result_video_manager import ResultVideoManager
@@ -75,32 +75,20 @@ def finalize_video_upload(params: FinalizeVideoUploadParams):
 
     capture = cv2.VideoCapture(video_path)
 
-    frame_width = round(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = round(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = capture.get(cv2.CAP_PROP_FPS)
     frame_count = capture.get(cv2.CAP_PROP_FRAME_COUNT)
-    duration = frame_count / fps
-
-    codec = extract_codec_from_capture(capture)
-
     video_preview_image_path = os.path.join(VIDEOS_BASE_PATH, params.video_id + '.jpg')
     capture.set(cv2.CAP_PROP_POS_FRAMES, int(frame_count / 2))
     _, frame = capture.read()
     preview_image = aspect_preserving_resize_and_crop(frame, 80, 60)
     cv2.imwrite(video_preview_image_path, preview_image)
 
+    video_info = extract_video_info_from_capture(video_path, capture)
+
     capture.release()
 
     video_manager.set_video_to_valid(
         params.video_id,
-        {
-            "frame_width": frame_width,
-            "frame_height": frame_height,
-            "fps": round(fps),
-            "frame_count": round(frame_count),
-            "duration": duration,
-            "codec": codec,
-        },
+        video_info,
     )
 
     return {}

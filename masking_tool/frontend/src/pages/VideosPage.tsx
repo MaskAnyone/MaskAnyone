@@ -9,8 +9,7 @@ import Command from "../state/actions/command";
 
 const VideosPage = () => {
     const dispatch = useDispatch();
-    const { videoId } = useParams<{ videoId: string }>();
-    const [selectedResultId, setSelectedResultId] = useState<string>();
+    const { videoId, resultVideoId } = useParams<{ videoId: string, resultVideoId: string }>();
 
     useEffect(() => {
         if (videoId) {
@@ -22,8 +21,8 @@ const VideosPage = () => {
         <Box component="div">
             {videoId && (<VideoRunParams videoId={videoId} />)}
             <Divider style={{marginBottom: "15px"}}/>
-            {videoId && <DoubleVideo videoId={videoId} resultVideoId={selectedResultId} />}
-            {videoId && <VideoResultsOverview key={videoId} videoId={videoId} updateSelectedResult={setSelectedResultId} />}
+            {videoId && <DoubleVideo videoId={videoId} resultVideoId={resultVideoId} />}
+            {videoId && <VideoResultsOverview key={videoId} videoId={videoId} resultVideoId={resultVideoId} />}
         </Box>
     );
 };

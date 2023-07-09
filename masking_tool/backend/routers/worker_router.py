@@ -11,6 +11,7 @@ from db.result_mp_kinematics_manager import ResultMpKinematicsManager
 from db.db_connection import DBConnection
 from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 from utils.request_utils import range_requests_response
+from utils.video_utils import extract_video_info_from_capture
 
 
 db_connection = DBConnection()
@@ -66,7 +67,11 @@ async def upload_result_video(video_id: str, result_video_id: str, request: Requ
 
     job = job_manager.fetch_job_by_result_video_id(result_video_id)
 
-    result_video_manager.create_result_video(result_video_id, video_id, job.id)
+    capture = cv2.VideoCapture(video_path)
+    video_info = extract_video_info_from_capture(video_path, capture)
+    capture.release()
+
+    result_video_manager.create_result_video(result_video_id, video_id, job.id, video_info)
 
 
 @router.post("/videos/{video_id}/results/{result_video_id}/preview")

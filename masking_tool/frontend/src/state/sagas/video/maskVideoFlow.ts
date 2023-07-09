@@ -17,7 +17,7 @@ const onMaskVideo = function*(payload: MaskVideoPayload) {
         yield put(Command.Job.fetchJobList({}));
 
         yield put(Command.Notification.enqueueNotification({
-            severity: 'info',
+            severity: 'success',
             message: 'Video masking process started',
         }));
     } catch (e) {

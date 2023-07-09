@@ -16,6 +16,7 @@ import {useSelector} from "react-redux";
 import Selector from "../state/selector";
 import {Job} from "../state/types/Job";
 import {Link} from "react-router-dom";
+import Paths from "../paths";
 
 const statusColors: { [status: string] : "info"|"success"|"error" } = {
     'running': 'info',
@@ -203,7 +204,7 @@ const RunsPage = () => {
                     sx={{ cursor: 'pointer' }}
                   >
                     <TableCell>
-                      <MuiLink component={Link} to={`/videos/${row.videoId}`}>
+                      <MuiLink component={Link} to={Paths.makeVideoDetailsUrl(row.videoId)}>
                         {videos.find(video => video.id === row.videoId)?.name}
                       </MuiLink>
                     </TableCell>

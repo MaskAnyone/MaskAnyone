@@ -1,37 +1,36 @@
-import { useEffect, useState } from "react";
 import { Box, Divider, Grid, Paper, Tooltip, Typography, styled } from "@mui/material";
 import HelpIcon from '@mui/icons-material/Help';
 import {useSelector} from "react-redux";
 import Selector from "../../state/selector";
 import Config from "../../config";
+import {useNavigate} from "react-router";
+import Paths from "../../paths";
 
 interface VideoResultsProps {
     videoId: string;
-    updateSelectedResult: (resultVideoId: string) => void
+    resultVideoId?: string;
 }
 
+const Item = styled(Paper)(() => ({
+    backgroundColor: '#bdc3c7',
+    padding: 8,
+    textAlign: 'center',
+    color: 'black',
+    cursor: "pointer",
+    '&:hover': {
+        background: "#3498db",
+    }
+}));
+
 const VideoResultsOverview = (props: VideoResultsProps) => {
+    const navigate = useNavigate();
     const resultVideoLists = useSelector(Selector.Video.resultVideoLists);
-    const [selectedResultId, setSelectedResultId] = useState<string>();
 
     const resultVideos = resultVideoLists[props.videoId] || [];
 
-    useEffect(() => {
-        if (selectedResultId) {
-            props.updateSelectedResult(selectedResultId);
-        }
-    }, [selectedResultId])
-
-    const Item = styled(Paper)(() => ({
-        backgroundColor: '#bdc3c7',
-        padding: 8,
-        textAlign: 'center',
-        color: 'black',
-        cursor: "pointer",
-        '&:hover': {
-            background: "#3498db",
-        }
-    }));
+    const selectResultVideo = (resultVideoId: string) => {
+        navigate(Paths.makeResultVideoDetailsUrl(props.videoId, resultVideoId));
+    };
 
     return (
         <>
@@ -47,7 +46,7 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
                     {resultVideos.map(resultVideo => {
                         return (
                             <Grid item xs={4} key={resultVideo.id}>
-                                <Item elevation={3} onClick={() => setSelectedResultId(resultVideo.id)} style={resultVideo.id === selectedResultId ? {background: "#3498db"} : {}}>
+                                <Item elevation={3} onClick={() => selectResultVideo(resultVideo.id)} style={resultVideo.id === props.resultVideoId ? {background: "#3498db"} : {}}>
                                     <img
                                         src={`${Config.api.baseUrl}/videos/${resultVideo.videoId}/results/${resultVideo.id}/preview`}
                                         style={{maxHeight: '200px', maxWidth: "100%" }}
