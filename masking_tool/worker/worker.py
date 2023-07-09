@@ -35,6 +35,7 @@ def handle_job(job):
     result_video_id = job["result_video_id"]
     video_manager.upload_result_video(video_id, result_video_id)
     video_manager.upload_result_video_preview_image(video_id, result_video_id)
+    video_manager.upload_result_kinematics(video_id, result_video_id)
     video_manager.cleanup_result_video_files(video_id)
 
 

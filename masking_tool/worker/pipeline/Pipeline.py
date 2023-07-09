@@ -133,33 +133,29 @@ class Pipeline:
             for part_to_mask in mask_extractor.parts_to_mask:
                 if part_to_mask["save_timeseries"]:
                     file_path = os.path.join(
-                        TS_BASE_PATH, f"{part_to_mask['part_name']}_{video_id}.csv"
+                        TS_BASE_PATH, f"{part_to_mask['part_name']}_{video_id}.json"
                     )
                     file_handle = open(file_path, "w+", newline="")
-                    writer = csv.writer(file_handle)
-                    writer.writerow(
-                        mask_extractor.get_ts_header(part_to_mask["part_name"])
-                    )
-
+                    file_handle.write("[")
                     self.ts_file_handlers[part_to_mask["part_name"]] = file_handle
 
     def init_blendshapes_file_handle(self, video_id: str):
         file_path = os.path.join(BLENDSHAPES_BASE_PATH, f"{video_id}.json")
         file_handle = open(file_path, "w+", newline="")
-        self.blendshapes_file_handle = file_handle
         file_handle.write("[")
+        self.blendshapes_file_handle = file_handle
 
-    def write_timeseries(self, masking_results: dict):
-        print(self.ts_file_handlers)
-        for part_name in masking_results:
-            print("x11")
+    def write_timeseries(self, timeseries: dict, first: bool):
+        for part_name in timeseries:
             file_handle = self.ts_file_handlers[part_name]
-            print("x22")
-            writer = csv.writer(file_handle)
-            writer.writerow(masking_results[part_name])
+            if not first:
+                file_handle.write(",")
+            json_string = json.dumps(timeseries[part_name])
+            file_handle.write(json_string)
 
     def close_ts_file_handles(self):
         for key in self.ts_file_handlers:
+            self.ts_file_handlers[key].write("]")
             self.ts_file_handlers[key].close()
 
     def close_bs_file_handle(self):
@@ -196,14 +192,12 @@ class Pipeline:
             if not is_first_frame and frame_timestamp_ms == 0:
                 continue
 
-            print("0")
             # Detect all relevant body/video parts (as pixelMasks)
             detection_results: List[DetectionResult] = []
             for detector in self.detectors:
                 detection_result = detector.detect(frame, frame_timestamp_ms)
 
                 detection_results.extend(detection_result)
-            print("a")
 
             # applies the hiding method on each detected part of the frame and combines them into one frame
             hidden_frame = frame.copy()
@@ -211,7 +205,6 @@ class Pipeline:
                 hidden_frame = self.hider.hide_frame_part(
                     hidden_frame, detection_result
                 )
-            print("b")
 
             # Extracts the masks for each desired bodypart
             mask_results = []
@@ -220,16 +213,13 @@ class Pipeline:
                 masking_results: List[MaskingResult] = mask_extractor.extract_mask(
                     frame, frame_timestamp_ms
                 )
-                print(mask_extractor.parts_to_mask)
                 mask_results.extend([result["mask"] for result in masking_results])
-                print([res["part_name"] for res in masking_results])
-                print("c")
-                self.write_timeseries(mask_extractor.get_newest_timeseries())
-                print("d")
+                self.write_timeseries(
+                    mask_extractor.get_newest_timeseries(), is_first_frame
+                )
                 self.write_blendshapes(
                     mask_extractor.get_newest_blendshapes(), is_first_frame
                 )
-                print("e")
 
             if not self.model_3d_only:
                 out_frame = overlay_frames(hidden_frame, mask_results)

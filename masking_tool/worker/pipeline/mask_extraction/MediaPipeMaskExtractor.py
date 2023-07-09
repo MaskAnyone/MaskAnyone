@@ -197,7 +197,6 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
             )
 
         if not "face" in self.model_3d_only_parts:
-            print("shoudl draw")
             output_image = np.zeros(frame.shape, dtype=np.uint8)
             output_image = self.draw_face_mesh_landmarks(
                 output_image, face_landmarks_list
@@ -206,8 +205,9 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
         return
 
     def store_ts(self, video_part, landmarks, timestamp_ms):
-        self.timeseries[video_part] = list_positions_mp(landmarks)
-        self.timeseries[video_part].insert(0, timestamp_ms)
+        self.timeseries[video_part] = list_positions_mp(
+            landmarks, video_part, timestamp_ms
+        )
 
     def draw_pose_landmarks(self, output_image, pose_landmarks_list):
         for idx in range(len(pose_landmarks_list)):

@@ -1,4 +1,5 @@
 import os
+import json
 
 
 class LocalDataManager:
@@ -11,6 +12,10 @@ class LocalDataManager:
             os.makedirs(self.__base_dir)
             os.makedirs(os.path.join(self.__base_dir, "original"))
             os.makedirs(os.path.join(self.__base_dir, "results"))
+            os.makedirs(os.path.join(self.__base_dir, "timeseries"))
+
+    def path_exists(self, path):
+        return os.path.exists(os.path.join(self.__base_dir, path))
 
     def write_binary(self, file_path: str, content):
         file = open(os.path.join(self.__base_dir, file_path), "wb")
@@ -22,6 +27,11 @@ class LocalDataManager:
         content = file.read()
         file.close()
         return content
+
+    def read_json(self, file_path: str):
+        with open(os.path.join(self.__base_dir, file_path), "r") as f:
+            content = json.load(f)
+            return content
 
     def delete_file(self, file_path: str):
         os.remove(os.path.join(self.__base_dir, file_path))

@@ -2,6 +2,8 @@ from backend_client import BackendClient
 from local_data_manager import LocalDataManager
 import os
 
+from config import TS_BASE_PATH
+
 
 class VideoManager:
     __backend_client: BackendClient
@@ -22,18 +24,31 @@ class VideoManager:
     def upload_result_video(self, video_id: str, result_video_id: str):
         path = os.path.join("results", video_id + ".mp4")
         video_data = None
-        if os.path.exists(path):
+        if self.__local_data_manager.path_exists(path):
             video_data = self.__local_data_manager.read_binary(path)
-        self.__backend_client.upload_result_video(video_id, result_video_id, video_data)
+            self.__backend_client.upload_result_video(
+                video_id, result_video_id, video_data
+            )
 
     def upload_result_video_preview_image(self, video_id: str, result_video_id: str):
         path = os.path.join("results", video_id + ".png")
         image_data = None
-        if os.path.exists(path):
+        if self.__local_data_manager.path_exists(path):
             image_data = self.__local_data_manager.read_binary(path)
-        self.__backend_client.upload_result_video_preview_image(
-            video_id, result_video_id, image_data
-        )
+            self.__backend_client.upload_result_video_preview_image(
+                video_id, result_video_id, image_data
+            )
+
+    def upload_result_kinematics(self, video_id: str, result_video_id):
+        possible_timeseries = ["body", "face"]
+        for part in possible_timeseries:
+            path = os.path.join("timeseries", part + "_" + video_id + ".json")
+            data = None
+            if self.__local_data_manager.path_exists(path):
+                data = self.__local_data_manager.read_json(path)
+                self.__backend_client.upload_result_mp_kinematics(
+                    video_id, result_video_id, data, part
+                )
 
     def cleanup_result_video_files(self, video_id: str):
         result_path = os.path.join("results", video_id + ".mp4")

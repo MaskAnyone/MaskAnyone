@@ -1,4 +1,4 @@
-import csv
+import json
 from typing import Literal
 
 markersbody = [
@@ -107,15 +107,18 @@ def create_header_mp(part_name: Literal["body", "face"]):
         raise Exception("Invalid part name specified for ts header creation")
 
 
-def list_positions_mp(landmark_results):
-    output = []
+def list_positions_mp(
+    landmark_results, type: Literal["face", "body"], timestamp_ms: int
+):
+    keys = markersbody if type == "body" else facemarks
+    output_obj = {}
     for result in landmark_results:
-        for landmark in result:
-            output.append(landmark.x)
-            output.append(landmark.y)
-            output.append(landmark.z)
+        output_obj["time"] = timestamp_ms
+        for i, landmark in enumerate(result):
+            lm = {"x": landmark.x, "y": landmark.y, "z": landmark.z}
             if hasattr(landmark, "visibility"):
-                output.append(landmark.visibility)
+                lm["visibility"] = landmark.visibility
             if hasattr(landmark, "presence"):
-                output.append(landmark.presence)
-    return output
+                lm["presence"] = landmark.presence
+            output_obj[keys[i]] = json.dumps(lm)
+    return output_obj
