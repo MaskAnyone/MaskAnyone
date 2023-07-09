@@ -43,11 +43,15 @@ class MediaPipeDetector(BaseDetector):
         PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
         VisionRunningMode = mp.tasks.vision.RunningMode
 
+        # @ToDo currently only working for body
+        detection_params = self.get_part_to_detect("body")["detection_params"]
+
         options = PoseLandmarkerOptions(
             base_options=BaseOptions(model_asset_path=self.model_path),
             running_mode=VisionRunningMode.VIDEO,
             output_segmentation_masks=True,
-            num_poses=2,
+            num_poses=detection_params["numPoses"],
+            min_pose_detection_confidence=detection_params["confidence"],
         )
 
         self.model = PoseLandmarker.create_from_options(options)

@@ -29,14 +29,14 @@ class Hider:
     def hide_blur(
         self, base_image: np.ndarray, mask: np.ndarray, params: dict
     ) -> np.ndarray:
-        # ToDo use params, maybe also specify them as a specifiy type
-        blurred_image = cv2.GaussianBlur(base_image, (23, 23), 30)
+        blurred_image = cv2.GaussianBlur(
+            base_image, (int(params["kernelSize"]), int(params["kernelSize"])), 30
+        )
         base_image[mask == 0] = blurred_image[mask == 0]
         return base_image
 
     def hide_blackout(
         self, base_image: np.ndarray, mask: np.ndarray, params: dict
     ) -> np.ndarray:
-        # ToDo use params, maybe also specify them as a specifiy type
-        base_image[mask == 0] = 0
+        base_image[mask == 0] = int(params["color"])
         return base_image

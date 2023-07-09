@@ -1,4 +1,4 @@
-from typing import Any, Callable, Literal, TypedDict
+from typing import Any, Callable, Literal, Optional, TypedDict
 import numpy as np
 
 DetectorModels = Literal["mediapipe", "yolo"]
@@ -19,6 +19,7 @@ class PartDetectionMethods(TypedDict):
 class PartToDetect(TypedDict):
     part_name: str
     detection_type: DetectionType
+    detection_params: dict
 
 
 class HidingStrategy(TypedDict):
@@ -34,11 +35,7 @@ class PartToMask(TypedDict):
     part_name: str
     masking_method: str
     masking_params: dict
-
-
-class MaskExtractionResult(TypedDict):
-    part_name: str
-    extracted_mask: np.ndarray
+    save_timeseries: bool
 
 
 class PartMaskingMethods(TypedDict):
@@ -47,5 +44,5 @@ class PartMaskingMethods(TypedDict):
 
 class MaskingResult(TypedDict):
     part_name: str
-    masking_method: DetectionType
     mask: np.ndarray
+    timeseries: Optional[np.ndarray]

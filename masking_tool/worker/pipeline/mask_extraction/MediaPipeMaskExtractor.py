@@ -1,5 +1,6 @@
 from typing import List
 import numpy as np
+from utils.timeseries import create_header_mp, list_positions_mp
 from pipeline.mask_extraction.BaseMaskExtractor import BaseMaskExtractor
 import os
 
@@ -18,10 +19,15 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
         super().__init__(parts_to_mask)
         self.part_methods = {"body": self.mask_body, "face": self.mask_face}
         self.models = {}
+        self.timeseries = {"body": [], "face": []}
+        self.ts_headers = {
+            "body": create_header_mp("body"),
+            "face": create_header_mp("face"),
+        }
         self.init_models()
 
     def reorder_parts_to_mask(self):
-        # Sets face to be processes last, so that if body result is available it can be used for simple
+        # Sets face to be processes last, so that if body result is available it can be used for simple face
         face_part = self.get_part_to_mask("face")
         if face_part:
             index = self.parts_to_detect.index(face_part)
@@ -35,25 +41,35 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
         PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
 
         body_part = self.get_part_to_mask("body")
-        pose_options = PoseLandmarkerOptions(
-            base_options=BaseOptions(model_asset_path=pose_model_path),
-            running_mode=VisionRunningMode.VIDEO,
-            output_segmentation_masks=False,
-            num_poses=2,
-        )
-        self.models["pose"] = PoseLandmarker.create_from_options(pose_options)
-
         face_part = self.get_part_to_mask("face")
-        FaceLandmarker = mp.tasks.vision.FaceLandmarker
-        FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
-        face_options = FaceLandmarkerOptions(
-            base_options=BaseOptions(model_asset_path=face_model_path),
-            running_mode=VisionRunningMode.VIDEO,
-            output_face_blendshapes=True,
-            output_facial_transformation_matrixes=True,
-            num_faces=2,
-        )
-        self.models["faceMesh"] = FaceLandmarker.create_from_options(face_options)
+        pose_params = None
+        if body_part:
+            pose_params = body_part["params"]
+        elif face_part and face_part["masking_method"] == "skeleton":
+            pose_params = face_part["params"]
+        if pose_params:
+            pose_options = PoseLandmarkerOptions(
+                base_options=BaseOptions(model_asset_path=pose_model_path),
+                running_mode=VisionRunningMode.VIDEO,
+                output_segmentation_masks=False,
+                num_poses=pose_params["numPoses"],
+                min_pose_detection_confidence=pose_params["confidence"],
+            )
+            self.models["pose"] = PoseLandmarker.create_from_options(pose_options)
+
+        if face_part and face_part["masking_method"] == "faceMesh":
+            face_params = face_part["params"]
+            FaceLandmarker = mp.tasks.vision.FaceLandmarker
+            FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
+            face_options = FaceLandmarkerOptions(
+                base_options=BaseOptions(model_asset_path=face_model_path),
+                running_mode=VisionRunningMode.VIDEO,
+                output_face_blendshapes=True,
+                output_facial_transformation_matrixes=True,
+                num_faces=face_params["numPoses"],
+                min_face_detection_confidence=face_params["confidence"],
+            )
+            self.models["faceMesh"] = FaceLandmarker.create_from_options(face_options)
 
     def compute_pose_landmarks(self, frame: np.ndarray, timestamp_ms: int):
         frame_mp = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
@@ -69,10 +85,17 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
     def mask_body(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
         pose_landmarks_list = self.compute_pose_landmarks(frame, timestamp_ms)
         if not self.is_face_required():
-            pose_landmarks_list = [lms[11:] for lms in pose_landmarks_list]
+            landmarks_to_hide = [lms[:11] for lms in pose_landmarks_list]
+            landmarks_to_hide = [lm for lms in landmarks_to_hide for lm in lms]
+            for lm in landmarks_to_hide:
+                lm.visibility = 0.0
 
         output_image = np.zeros(frame.shape, dtype=np.uint8)
         output_image = self.draw_pose_landmarks(output_image, pose_landmarks_list)
+
+        self.timeseries["body"] = list_positions_mp(pose_landmarks_list)
+        self.timeseries["body"].insert(0, timestamp_ms)
+
         return output_image
 
     def mask_face(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
@@ -90,10 +113,16 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
         if body_result:
             return
 
-        pose_landmarks_list = self.mask_body(frame, timestamp_ms)
-        face_landmarks_list = [lms[:11] for lms in pose_landmarks_list]
+        landmarks_to_hide = [lms[:11] for lms in body_result]
+        landmarks_to_hide = [lm for lms in landmarks_to_hide for lm in lms]
+        for lm in landmarks_to_hide:
+            lm.visibility = 0.0
+
         output_image = np.zeros((frame.shape), dtype=np.uint8)
-        output_image = self.draw_pose_landmarks(output_image, face_landmarks_list)
+        output_image = self.draw_pose_landmarks(output_image, landmarks_to_hide)
+        self.timeseries["body"] = list_positions_mp(body_result)
+        self.timeseries["body"].insert(0, timestamp_ms)
+
         return output_image
 
     def compute_face_landmarks(self, frame: np.ndarray, timestamp_ms: int):
@@ -106,6 +135,8 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
 
         output_image = np.zeros(frame.shape, dtype=np.uint8)
         output_image = self.draw_face_mesh_landmarks(output_image, face_landmarks_list)
+        self.timeseries["face"] = list_positions_mp(face_landmarks_list)
+        self.timeseries["face"].insert(0, timestamp_ms)
         return output_image
 
     def draw_pose_landmarks(self, output_image, pose_landmarks_list):
@@ -116,7 +147,10 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
             pose_landmarks_proto.landmark.extend(
                 [
                     landmark_pb2.NormalizedLandmark(
-                        x=landmark.x, y=landmark.y, z=landmark.z
+                        x=landmark.x,
+                        y=landmark.y,
+                        z=landmark.z,
+                        visibility=landmark.visibility,
                     )
                     for landmark in pose_landmarks
                 ]
@@ -138,7 +172,10 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
             face_landmarks_proto.landmark.extend(
                 [
                     landmark_pb2.NormalizedLandmark(
-                        x=landmark.x, y=landmark.y, z=landmark.z
+                        x=landmark.x,
+                        y=landmark.y,
+                        z=landmark.z,
+                        visibility=landmark.visibility,
                     )
                     for landmark in face_landmarks
                 ]

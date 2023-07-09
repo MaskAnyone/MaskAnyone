@@ -14,10 +14,16 @@ export const maskingMethods: MaskingMethods = {
                 parameterSchema: blurFormSchemaSubject,
                 uiSchema: blurFormSchemaSubjectUI,
                 defaultValues: {
-                    subjectDetection: "silhouette",
-                    detectionModel: "mediapipe",
-                    kernelSize: 23,
-                    extraPixels: 0
+                    subjectDetection: "boundingbox",
+                    detectionModel: "yolo",
+                    detectionParams: {
+                        numPoses: 1,
+                        confidence: 0.5
+                    },
+                    hidingParams: {
+                        kernelSize: 23,
+                        extraPixels: 0
+                    }
                 }
             },
             blackout: {
@@ -26,11 +32,16 @@ export const maskingMethods: MaskingMethods = {
                 parameterSchema: blackoutFormSchemaSubject,
                 uiSchema: blackoutFormSchemaSubjectUI,
                 defaultValues: {
-                    subjectDetection: "silhouette",
-                    detectionModel: "mediapipe",
-                    color: "#000",
-                    extraPixels: 0
-
+                    subjectDetection: "boundingbox",
+                    detectionModel: "yolo",
+                    detectionParams: {
+                        numPoses: 1,
+                        confidence: 0.5
+                    },
+                    hidingParams: {
+                        color: 0,
+                        extraPixels: 0
+                    }
                 }
             },
         },
@@ -45,8 +56,9 @@ export const maskingMethods: MaskingMethods = {
                 parameterSchema: skeletonFormSchema,
                 defaultValues: {
                     maskingModel: "mediapipe",
-                    num_poses: 1,
-                    confidence: 1
+                    numPoses: 1,
+                    confidence: 0.5,
+                    timeseries: false
                 }
             },
             faceMesh: {
@@ -55,8 +67,9 @@ export const maskingMethods: MaskingMethods = {
                 parameterSchema: faceMeshFormSchema,
                 defaultValues: {
                     maskingModel: "mediapipe",
-                    num_faces: 1,
-                    confidence: 1
+                    numPoses: 1,
+                    confidence: 0.5,
+                    timeseries: false
                 }
             },
         },
@@ -75,8 +88,14 @@ export const maskingMethods: MaskingMethods = {
                 defaultValues: {
                     subjectDetection: "silhouette",
                     detectionModel: "mediapipe",
-                    kernelSize: 23,
-                    extraPixels: 0
+                    detectionParams: {
+                        numPoses: 1,
+                        confidence: 0.5
+                    },
+                    hidingParams: {
+                        kernelSize: 23,
+                        extraPixels: 0
+                    }
                 }
             },
             blackout: {
@@ -87,8 +106,14 @@ export const maskingMethods: MaskingMethods = {
                 defaultValues: {
                     subjectDetection: "silhouette",
                     detectionModel: "mediapipe",
-                    color: "#000",
-                    extraPixels: 0
+                    detectionParams: {
+                        numPoses: 1,
+                        confidence: 0.5
+                    },
+                    hidingParams: {
+                        color: 0,
+                        extraPixels: 0
+                    }
 
                 }
             },
@@ -104,8 +129,9 @@ export const maskingMethods: MaskingMethods = {
                 parameterSchema: skeletonFormSchema,
                 defaultValues: {
                     maskingModel: "mediapipe",
-                    num_poses: 1,
-                    confidence: 1
+                    numPoses: 1,
+                    confidence: 0.5,
+                    timeseries: false
                 }
             },
         },
@@ -123,7 +149,13 @@ export const maskingMethods: MaskingMethods = {
                 defaultValues: {
                     subjectDetection: "silhouette",
                     detectionModel: "mediapipe",
-                    kernelSize: 23,
+                    detectionParams: {
+                        numPoses: 1,
+                        confidence: 0.5
+                    },
+                    hidingParams: {
+                        kernelSize: 23,
+                    }
                 }
             },
             blackout: {
@@ -133,7 +165,13 @@ export const maskingMethods: MaskingMethods = {
                 defaultValues: {
                     subjectDetection: "silhouette",
                     detectionModel: "mediapipe",
-                    color: "#000",
+                    detectionParams: {
+                        numPoses: 1,
+                        confidence: 0.5
+                    },
+                    hidingParams: {
+                        color: 0,
+                    }
                 }
             },
         },

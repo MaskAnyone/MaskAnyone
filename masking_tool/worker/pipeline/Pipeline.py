@@ -1,6 +1,7 @@
+import csv
 import os
 from typing import List
-from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
+from config import RESULT_BASE_PATH, TS_BASE_PATH, VIDEOS_BASE_PATH
 from pipeline.mask_extraction.MediaPipeMaskExtractor import MediaPipeMaskExtractor
 
 from pipeline.detection.YoloDetector import YoloDetector
@@ -10,6 +11,7 @@ from pipeline.hiding import Hider
 from pipeline.PipelineTypes import (
     DetectionResult,
     HidingStategies,
+    MaskingResult,
     PartToDetect,
     PartToMask,
 )
@@ -24,6 +26,7 @@ class Pipeline:
         # Detectors and Mask creators are stateful
         self.detectors = []
         self.mask_extractors = []
+        self.ts_file_handlers = {}
         hiding_strategies: HidingStategies = {}
 
         required_detectors = {}
@@ -37,42 +40,44 @@ class Pipeline:
                 "hidingStrategy" in video_part_params
                 and video_part_params["hidingStrategy"]["key"] != "none"
             ):
-                hiding_params = video_part_params["hidingStrategy"]["params"]
+                hiding_settings = video_part_params["hidingStrategy"]["params"]
+                hiding_params = hiding_settings["hidingParams"]
                 hiding_strategies[video_part] = {
                     "key": video_part_params["hidingStrategy"]["key"],
                     "params": hiding_params,
                 }
                 if (
-                    "detectionModel" not in hiding_params
-                    or "subjectDetection" not in hiding_params
+                    "detectionModel" not in hiding_settings
+                    or "subjectDetection" not in hiding_settings
                 ):
                     raise Exception(
                         f"Detection Model/Detection Type not specified for hiding of {video_part}"
                     )
 
-                detection_model_name = hiding_params["detectionModel"]
-                detection_type = hiding_params["subjectDetection"]
+                detection_model_name = hiding_settings["detectionModel"]
+                detection_type = hiding_settings["subjectDetection"]
+                detection_params = hiding_settings["detectionParams"]
 
                 if not detection_model_name in required_detectors:
                     required_detectors[detection_model_name] = []
 
                 part_to_detect: PartToDetect = {
                     "part_name": video_part,
-                    "detection_type": detection_type
-                    # could be extended with fine grained paramters for detection
+                    "detection_type": detection_type,
+                    "detection_params": detection_params,
                 }
                 required_detectors[detection_model_name].append(part_to_detect)
 
-            print(video_part_params)
             if "maskingStrategy" in video_part_params:
                 if (
                     "maskingStrategy" in video_part_params
                     and video_part_params["maskingStrategy"]["key"] != "none"
                 ):
-                    print("masking found")
                     masking_method = video_part_params["maskingStrategy"]["key"]
                     masking_params = video_part_params["maskingStrategy"]["params"]
                     masking_model_name = masking_params["maskingModel"]
+                    save_timeseries = masking_params["timeseries"]
+
                     if not masking_model_name in required_maskers:
                         required_maskers[masking_model_name] = []
 
@@ -80,13 +85,12 @@ class Pipeline:
                         "part_name": video_part,
                         "masking_method": masking_method,
                         "params": masking_params,
+                        "save_timeseries": save_timeseries,
                     }
                     required_maskers[masking_model_name].append(part_to_mask)
 
         self.init_detectors(required_detectors)
         self.init_maskers(required_maskers)
-
-        print("finished maskers init", required_maskers)
 
         self.hider = Hider(hiding_strategies)
 
@@ -103,12 +107,44 @@ class Pipeline:
             params = required_maskers["mediapipe"]
             self.mask_extractors.append(MediaPipeMaskExtractor(params))
 
+    def init_ts_file_handlers(self, video_id: str):
+        for mask_extractor in self.mask_extractors:
+            for part_to_mask in mask_extractor.parts_to_mask:
+                if part_to_mask["save_timeseries"]:
+                    file_path = os.path.join(
+                        TS_BASE_PATH, f"{part_to_mask['part_name']}_{video_id}.csv"
+                    )
+                    file_handle = open(file_path, "w+", newline="")
+                    writer = csv.writer(file_handle)
+                    writer.writerow(
+                        mask_extractor.get_ts_header(part_to_mask["part_name"])
+                    )
+
+                    self.ts_file_handlers[part_to_mask["part_name"]] = file_handle
+
+    def requires_timeseries_out(self):
+        return True
+
+    def write_timeseries(self, masking_results: List[MaskingResult]):
+        for masking_result in masking_results:
+            if not masking_result["timeseries"]:
+                continue
+            file_handle = self.ts_file_handlers[masking_result["part_name"]]
+            writer = csv.writer(file_handle)
+            writer.writerow(masking_result["timeseries"])
+
+    def close_ts_file_handles(self):
+        for key in self.ts_file_handlers:
+            self.ts_file_handlers[key].close()
+
     def run(self, video_id: str):
         print(f"Running job on video {video_id}")
         video_in_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
         video_out_path = os.path.join(RESULT_BASE_PATH, video_id + ".mp4")
         video_cap, out = setup_video_processing(video_in_path, video_out_path)
         is_first_frame = True
+
+        self.init_ts_file_handlers(video_id)
 
         while True:
             ret, frame = video_cap.read()
@@ -123,6 +159,7 @@ class Pipeline:
             detection_results: List[DetectionResult] = []
             for detector in self.detectors:
                 detection_result = detector.detect(frame, frame_timestamp_ms)
+
                 detection_results.extend(detection_result)
 
             # applies the hiding method on each detected part of the frame and combines them into one frame
@@ -133,17 +170,20 @@ class Pipeline:
                 )
 
             # Extracts the masks for each desired bodypart
-            mask_results = (
-                []
-            )  # mask results have to be drawn on a black frame in order to be combined correctly
+            mask_results = []
+
             for mask_extractor in self.mask_extractors:
-                mask_result = mask_extractor.extract_mask(frame, frame_timestamp_ms)
-                mask_results.extend(mask_result)
+                masking_results: List[MaskingResult] = mask_extractor.extract_mask(
+                    frame, frame_timestamp_ms
+                )
+                mask_results.extend([result["mask"] for result in masking_results])
+                self.write_timeseries(masking_results)
 
             out_frame = overlay_frames(hidden_frame, mask_results)
             out.write(out_frame)
             is_first_frame = False
 
+        self.close_ts_file_handles()
         out.release()
         video_cap.release()
         print(f"Finished processing video {video_id}")

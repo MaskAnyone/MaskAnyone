@@ -31,6 +31,7 @@ class BaseDetector:
                 part_to_detect["detection_type"],
                 timestamp_ms,
             )
+            print("xx")
             self.current_results.append(
                 {
                     "part_name": part_to_detect["part_name"],
@@ -38,6 +39,7 @@ class BaseDetector:
                     "mask": part_result,
                 }
             )
+            print("yy")
         return self.current_results
 
     def detect_part(
@@ -69,3 +71,9 @@ class BaseDetector:
                 f"Detection model does not support bounding-box detection for video_part: {part_name}"
             )
         return self.boundingbox_methods[part_name](frame, timestamp_ms)
+
+    def get_part_to_detect(self, part_name: str) -> PartToDetect:
+        return next(
+            (part for part in self.parts_to_detect if part["part_name"] == part_name),
+            None,
+        )

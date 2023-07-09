@@ -54,8 +54,12 @@ class YoloDetector(BaseDetector):
                 if part["detection_type"] == "silhouette"
             ]
         ):
+            detection_params = self.get_part_to_detect("body")["detection_params"]
+            # @ToDo use custom detection_params
             self.models["silhouette"] = YOLO(seg_model_path)
         if any([True for part in self.parts_to_detect if part["part_name"] == "face"]):
+            detection_params = self.get_part_to_detect("face")["detection_params"]
+            # @ToDo use custom detection_params
             self.models["face"] = YOLO(face_bbox_model_path)
 
     def detect_body_bbox(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
