@@ -8,10 +8,10 @@ class ResultMpKinematicsManager:
     def __init__(self, db_connection: DBConnection):
         self.__db_connection = db_connection
 
-    def create_result_mp_kinematics_entry(self, id: str, result_video_id: str, job_id: str, data: dict):
+    def create_result_mp_kinematics_entry(self, id: str, result_video_id: str, video_id: str, job_id: str, type: str, data: dict):
         self.__db_connection.execute(
-            "INSERT INTO result_mp_kinematics (id, result_video_id, job_id, data) VALUES (%(id)s, %(result_video_id)s, %(job_id)s, %(data)s)",
-            {"id": id, "result_video_id": result_video_id, "job_id": job_id, "data": json.dumps(data)},
+            "INSERT INTO result_mp_kinematics (id, result_video_id, video_id, job_id, type, data) VALUES (%(id)s, %(result_video_id)s, %(video_id)s, %(job_id)s, %(type)s, %(data)s)",
+            {"id": id, "result_video_id": result_video_id, "video_id": video_id, "job_id": job_id, "type": type, "data": json.dumps(data)},
         )
 
     def fetch_result_mp_kinematics_entry(self, result_video_id: str):

@@ -1,7 +1,13 @@
 import requests
+from enum import Enum
 
 
 BASE_PATH = 'http://python:8000/worker/'
+
+
+class MpKinematicsType(str, Enum):
+    body = "body"
+    face = "face"
 
 
 class BackendClient:
@@ -36,10 +42,10 @@ class BackendClient:
         )
 
     def upload_result_mp_kinematics(
-        self, video_id: str, result_video_id: str, data: dict
+        self, video_id: str, result_video_id: str, data: dict, type: MpKinematicsType
     ):
         requests.post(
-            self._make_url('videos/' + video_id + '/results/' + result_video_id + '/mp_kinematics'),
+            self._make_url('videos/' + video_id + '/results/' + result_video_id + '/mp_kinematics/' + type),
             json=data
         )
 

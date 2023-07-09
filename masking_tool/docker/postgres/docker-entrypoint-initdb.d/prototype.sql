@@ -68,7 +68,9 @@ ALTER TABLE public.jobs OWNER TO dev;
 CREATE TABLE public.result_mp_kinematics (
     id uuid NOT NULL,
     result_video_id uuid NOT NULL,
+    video_id uuid NOT NULL,
     job_id uuid NOT NULL,
+    type character varying NOT NULL,
     data jsonb NOT NULL
 );
 
