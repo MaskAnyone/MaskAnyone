@@ -62,6 +62,20 @@ CREATE TABLE public.jobs (
 ALTER TABLE public.jobs OWNER TO dev;
 
 --
+-- Name: result_mp_kinematics; Type: TABLE; Schema: public; Owner: dev
+--
+
+CREATE TABLE public.result_mp_kinematics (
+    id uuid NOT NULL,
+    result_video_id uuid NOT NULL,
+    job_id uuid NOT NULL,
+    data jsonb NOT NULL
+);
+
+
+ALTER TABLE public.result_mp_kinematics OWNER TO dev;
+
+--
 -- Name: result_videos; Type: TABLE; Schema: public; Owner: dev
 --
 
@@ -95,6 +109,14 @@ ALTER TABLE public.videos OWNER TO dev;
 
 ALTER TABLE ONLY public.jobs
     ADD CONSTRAINT jobs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: result_mp_kinematics result_mp_kinematics_pkey; Type: CONSTRAINT; Schema: public; Owner: dev
+--
+
+ALTER TABLE ONLY public.result_mp_kinematics
+    ADD CONSTRAINT result_mp_kinematics_pkey PRIMARY KEY (id);
 
 
 --

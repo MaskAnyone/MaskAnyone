@@ -1,4 +1,5 @@
 import os
+import uuid
 
 from fastapi import APIRouter, Request
 
@@ -6,6 +7,7 @@ from models import RunParams
 from db.job_manager import JobManager
 from db.video_manager import VideoManager
 from db.result_video_manager import ResultVideoManager
+from db.result_mp_kinematics_manager import ResultMpKinematicsManager
 from db.db_connection import DBConnection
 from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 from utils.request_utils import range_requests_response
@@ -14,6 +16,7 @@ from utils.request_utils import range_requests_response
 db_connection = DBConnection()
 video_manager = VideoManager(db_connection)
 result_video_manager = ResultVideoManager(db_connection)
+result_mp_kinematics_manager = ResultMpKinematicsManager(db_connection)
 job_manager = JobManager(db_connection)
 
 router = APIRouter(
@@ -79,3 +82,15 @@ async def upload_result_video_preview_image(video_id: str, result_video_id: str,
     file = open(image_path, "wb")
     file.write(image_content)
     file.close()
+
+
+@router.post("/videos/{video_id}/results/{result_video_id}/mp_kinematics")
+async def upload_result_mp_kinematics(video_id: str, result_video_id: str, request: Request):
+    job = job_manager.fetch_job_by_result_video_id(result_video_id)
+
+    result_mp_kinematics_manager.create_result_mp_kinematics_entry(
+        str(uuid.uuid4()),
+        result_video_id,
+        job.id,
+        await request.json()
+    )
