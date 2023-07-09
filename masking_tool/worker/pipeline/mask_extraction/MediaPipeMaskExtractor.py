@@ -163,7 +163,7 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
             lm.visibility = 0.0
 
         output_image = np.zeros((frame.shape), dtype=np.uint8)
-        output_image = self.draw_pose_landmarks(output_image, landmarks_to_hide)
+        output_image = self.draw_pose_landmarks(output_image, body_result)
         return output_image
 
     def compute_face_results(self, frame: np.ndarray, timestamp_ms: int):
@@ -188,7 +188,8 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
     def mask_face_mesh(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
         face_results = self.compute_face_results(frame, timestamp_ms)
         face_landmarks_list = face_results.face_landmarks
-        self.store_ts("face", face_landmarks_list, timestamp_ms)
+        if self.get_part_to_mask("face")["save_timeseries"] == True:
+            self.store_ts("face", face_landmarks_list, timestamp_ms)
         if self.params_3d["blendshapes"]:
             self.store_blendshapes(
                 face_results.face_blendshapes,
@@ -196,6 +197,7 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
             )
 
         if not "face" in self.model_3d_only_parts:
+            print("shoudl draw")
             output_image = np.zeros(frame.shape, dtype=np.uint8)
             output_image = self.draw_face_mesh_landmarks(
                 output_image, face_landmarks_list
@@ -218,7 +220,7 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
                         x=landmark.x,
                         y=landmark.y,
                         z=landmark.z,
-                        visibility=landmark.visibility,
+                        visibility=0 if landmark.visibility == 0 else 1,
                     )
                     for landmark in pose_landmarks
                 ]
@@ -243,7 +245,6 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
                         x=landmark.x,
                         y=landmark.y,
                         z=landmark.z,
-                        visibility=landmark.visibility,
                     )
                     for landmark in face_landmarks
                 ]
