@@ -20,9 +20,6 @@ class BaseMaskExtractor:
             mask = self.part_methods[part_name](frame, timestamp_ms)
             if not mask is None:
                 part_result: MaskingResult = {"part_name": part_name, "mask": mask}
-                if part["save_timeseries"]:
-                    part_result["timeseries"] = self.timeseries[part_name]
-                self.timeseries[part_name] = []
                 results.append(part_result)
         return results
 
@@ -31,6 +28,9 @@ class BaseMaskExtractor:
 
     def get_newest_blendshapes(self):
         return self.current_blendshapes
+
+    def get_newest_timeseries(self):
+        return self.timeseries
 
     def get_part_to_mask(self, part_name: str) -> PartToMask:
         return next(

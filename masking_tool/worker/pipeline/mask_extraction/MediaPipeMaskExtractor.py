@@ -20,7 +20,7 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
         self.params_3d = params_3d
         self.part_methods = {"body": self.mask_body, "face": self.mask_face}
         self.models = {}
-        self.timeseries = {"body": [], "face": []}
+        self.timeseries = {}
         self.current_blendshapes = []
         self.ts_headers = {
             "body": create_header_mp("body"),
@@ -131,7 +131,8 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
             for lm in landmarks_to_hide:
                 lm.visibility = 0.0
 
-                self.store_ts("body", pose_landmarks_list, timestamp_ms)
+        if self.get_part_to_mask("body")["save_timeseries"]:
+            self.store_ts("body", pose_landmarks_list, timestamp_ms)
 
         if not "body" in self.model_3d_only_parts:
             output_image = np.zeros(frame.shape, dtype=np.uint8)
@@ -172,6 +173,9 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
 
     def store_blendshapes(self, blendshapes, transformation_matrixes):
         # @ToDo currently only supporting one detected person
+        if not blendshapes:
+            self.current_blendshapes = {}
+            return
         processed_blendshapes = {
             entry.category_name: entry.score for entry in blendshapes[0]
         }

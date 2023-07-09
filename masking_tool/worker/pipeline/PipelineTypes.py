@@ -45,7 +45,6 @@ class PartMaskingMethods(TypedDict):
 class MaskingResult(TypedDict):
     part_name: str
     mask: np.ndarray
-    timeseries: Optional[np.ndarray]
 
 
 class Params3D(TypedDict):
