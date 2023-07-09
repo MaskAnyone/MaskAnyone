@@ -24,6 +24,14 @@ export interface ApiFetchResultVideosResponse {
     }[];
 }
 
+export interface ApiFetchDownloadableResultFilesResponse {
+    files: {
+        id: string;
+        title: string;
+        url: string;
+    }[];
+}
+
 export interface ApiFetchJobsResponse {
     jobs: {
         id: string;

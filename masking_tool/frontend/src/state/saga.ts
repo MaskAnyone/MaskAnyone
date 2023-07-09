@@ -5,6 +5,7 @@ import {maskVideoFlow} from "./sagas/video/maskVideoFlow";
 import {fetchJobListFlow} from "./sagas/job/fetchJobListFlow";
 import {enqueueNotificationFlow} from "./sagas/notification/enqueueNotificationFlow";
 import {fetchResultVideoListFlow} from "./sagas/video/fetchResultVideoListFlow";
+import {fetchDownloadableResultFilesFlow} from "./sagas/video/fetchDownloadableResultFilesFlow";
 
 /**
  * Prevents the root saga from terminating entirely due to some error in another saga
@@ -37,6 +38,7 @@ const sagas: any[] = [
     fetchVideoListFlow,
     maskVideoFlow,
     fetchResultVideoListFlow,
+    fetchDownloadableResultFilesFlow,
 
     uploadFilesFlow,
     uploadProgressWatcherFlow,

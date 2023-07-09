@@ -1,4 +1,7 @@
 import {Menu, MenuItem} from "@mui/material";
+import {useSelector} from "react-redux";
+import Selector from "../../../state/selector";
+import Config from "../../../config";
 
 interface DownloadMenuProps {
     videoId: string;
@@ -8,6 +11,9 @@ interface DownloadMenuProps {
 }
 
 const DownloadMenu = (props: DownloadMenuProps) => {
+    const downloadableResultFileLists = useSelector(Selector.Video.downloadableResultFileLists);
+
+    const downloadableResultFiles = downloadableResultFileLists[props.resultVideoId || ''] || [];
     const open = Boolean(props.anchorEl);
 
     const downloadOriginalVideo = () => {
@@ -28,6 +34,16 @@ const DownloadMenu = (props: DownloadMenuProps) => {
         >
             <MenuItem onClick={downloadOriginalVideo}>Original Video</MenuItem>
             {props.resultVideoId && <MenuItem onClick={downloadResultVideo}>Result Video</MenuItem>}
+            {downloadableResultFiles.map((file) => (
+                <MenuItem
+                    key={file.id}
+                    onClick={() => {
+                        window.open(Config.api.baseUrl + file.url, '_blank');
+                        props.onClose();
+                    }}
+                    children={file.title}
+                />
+            ))}
         </Menu>
     );
 };

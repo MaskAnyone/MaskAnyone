@@ -173,14 +173,14 @@ def get_downloadable_result_files(video_id: str, result_video_id: str):
         files.append({
             'id': blendshapes_id,
             'title': 'Blendshapes',
-            'url': '/' + video_id + '/results/' + result_video_id + '/blendshapes/' + blendshapes_id + '/download'
+            'url': '/videos/' + video_id + '/results/' + result_video_id + '/blendshapes/' + blendshapes_id + '/download'
         })
 
     for mp_kinematics_id, mp_kinematics_type in mp_kinematics_entries:
         files.append({
             'id': mp_kinematics_id,
             'title': 'MP Kinematics ' + mp_kinematics_type,
-            'url': '/' + video_id + '/results/' + result_video_id + '/mp-kinematics/' + mp_kinematics_id + '/download'
+            'url': '/videos/' + video_id + '/results/' + result_video_id + '/mp-kinematics/' + mp_kinematics_id + '/download'
         })
 
     return {
@@ -195,7 +195,7 @@ def download_mp_kinematics(video_id: str, result_video_id: str, mp_kinematics_id
     result_mp_kinematics = result_mp_kinematics_manager.fetch_result_mp_kinematics_entry(mp_kinematics_id)
 
     response.headers['Content-Disposition'] = 'attachment; filename="' + file_name + '"'
-    return result_mp_kinematics
+    return result_mp_kinematics.data
 
 
 @router.get("/{video_id}/results/{result_video_id}/blendshapes/{blendshapes_id}/download")
@@ -205,4 +205,4 @@ def download_blendshapes(video_id: str, result_video_id: str, blendshapes_id: st
     result_blendshapes = result_blendshapes_manager.fetch_result_blendshapes_entry(blendshapes_id)
 
     response.headers['Content-Disposition'] = 'attachment; filename="' + file_name + '"'
-    return result_blendshapes
+    return result_blendshapes.data

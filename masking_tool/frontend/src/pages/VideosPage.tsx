@@ -17,6 +17,12 @@ const VideosPage = () => {
         }
     }, [videoId]);
 
+    useEffect(() => {
+        if (videoId && resultVideoId) {
+            dispatch(Command.Video.fetchDownloadableResultFiles({ videoId, resultVideoId }));
+        }
+    }, [videoId, resultVideoId]);
+
     if (!videoId) {
         return null;
     }

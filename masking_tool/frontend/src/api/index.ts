@@ -1,6 +1,11 @@
 import axios, {AxiosRequestConfig, AxiosResponse} from 'axios';
 import Config from "../config";
-import {ApiFetchJobsResponse, ApiFetchResultVideosResponse, ApiFetchVideosResponse} from "./types";
+import {
+    ApiFetchDownloadableResultFilesResponse,
+    ApiFetchJobsResponse,
+    ApiFetchResultVideosResponse,
+    ApiFetchVideosResponse
+} from "./types";
 import { RunParams } from '../state/types/Run';
 
 const configuredAxios = axios.create({
@@ -28,16 +33,13 @@ const Api = {
 
         return result.data;
     },
-    fetchResultPreview: async (
-        video_id: string,
-        result_video_id: string
-    ): Promise<any[]> => {
+    fetchDownloadableResultFiles: async (videoId: string, resultVideoId: string): Promise<ApiFetchDownloadableResultFilesResponse> => {
         const result = await sendApiRequest({
-            url: `videos/${video_id}/results/${result_video_id}/preview`,
+            url: `videos/${videoId}/results/${resultVideoId}/result-files`,
             method: 'get'
         });
 
-        return result.data.image;
+        return result.data;
     },
     fetchJobs: async (): Promise<ApiFetchJobsResponse> => {
         const result = await sendApiRequest({
