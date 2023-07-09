@@ -23,7 +23,6 @@ class VideoManager:
 
     def upload_result_video(self, video_id: str, result_video_id: str):
         path = os.path.join("results", video_id + ".mp4")
-        video_data = None
         if self.__local_data_manager.path_exists(path):
             video_data = self.__local_data_manager.read_binary(path)
             self.__backend_client.upload_result_video(
@@ -32,7 +31,6 @@ class VideoManager:
 
     def upload_result_video_preview_image(self, video_id: str, result_video_id: str):
         path = os.path.join("results", video_id + ".png")
-        image_data = None
         if self.__local_data_manager.path_exists(path):
             image_data = self.__local_data_manager.read_binary(path)
             self.__backend_client.upload_result_video_preview_image(
@@ -43,12 +41,19 @@ class VideoManager:
         possible_timeseries = ["body", "face"]
         for part in possible_timeseries:
             path = os.path.join("timeseries", part + "_" + video_id + ".json")
-            data = None
             if self.__local_data_manager.path_exists(path):
                 data = self.__local_data_manager.read_json(path)
                 self.__backend_client.upload_result_mp_kinematics(
                     video_id, result_video_id, data, part
                 )
+
+    def upload_result_blendshapes(self, video_id: str, result_video_id):
+        path = os.path.join("blendshapes", video_id + ".json")
+        if self.__local_data_manager.path_exists(path):
+            data = self.__local_data_manager.read_json(path)
+            self.__backend_client.upload_result_blendshapes(
+                video_id, result_video_id, data
+            )
 
     def cleanup_result_video_files(self, video_id: str):
         result_path = os.path.join("results", video_id + ".mp4")
