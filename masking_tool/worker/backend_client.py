@@ -49,5 +49,13 @@ class BackendClient:
             json=data
         )
 
+    def upload_result_blendshapes(
+        self, video_id: str, result_video_id: str, data: dict
+    ):
+        requests.post(
+            self._make_url('videos/' + video_id + '/results/' + result_video_id + '/blendshapes'),
+            json=data
+        )
+
     def _make_url(self, path: str) -> str:
         return BASE_PATH + path

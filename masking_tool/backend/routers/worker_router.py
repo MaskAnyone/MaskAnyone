@@ -9,16 +9,17 @@ from db.job_manager import JobManager
 from db.video_manager import VideoManager
 from db.result_video_manager import ResultVideoManager
 from db.result_mp_kinematics_manager import ResultMpKinematicsManager
+from db.result_blendshapes_manager import ResultBlendshapesManager
 from db.db_connection import DBConnection
 from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 from utils.request_utils import range_requests_response
 from utils.video_utils import extract_video_info_from_capture
 
-
 db_connection = DBConnection()
 video_manager = VideoManager(db_connection)
 result_video_manager = ResultVideoManager(db_connection)
 result_mp_kinematics_manager = ResultMpKinematicsManager(db_connection)
+result_blendshapes_manager = ResultBlendshapesManager(db_connection)
 job_manager = JobManager(db_connection)
 
 router = APIRouter(
@@ -79,7 +80,7 @@ async def upload_result_video(video_id: str, result_video_id: str, request: Requ
 
 @router.post("/videos/{video_id}/results/{result_video_id}/preview")
 async def upload_result_video_preview_image(
-    video_id: str, result_video_id: str, request: Request
+        video_id: str, result_video_id: str, request: Request
 ):
     result_dir = os.path.join(RESULT_BASE_PATH, video_id)
     if not os.path.exists(result_dir):
@@ -96,7 +97,7 @@ async def upload_result_video_preview_image(
 
 @router.post("/videos/{video_id}/results/{result_video_id}/mp_kinematics/{type}")
 async def upload_result_mp_kinematics(
-    video_id: str, result_video_id: str, request: Request, type: MpKinematicsType
+        video_id: str, result_video_id: str, type: MpKinematicsType, request: Request
 ):
     job = job_manager.fetch_job_by_result_video_id(result_video_id)
 
@@ -106,5 +107,20 @@ async def upload_result_mp_kinematics(
         video_id,
         job.id,
         type,
+        await request.json()
+    )
+
+
+@router.post("/videos/{video_id}/results/{result_video_id}/blendshapes")
+async def upload_result_blendshapes(
+        video_id: str, result_video_id: str, request: Request
+):
+    job = job_manager.fetch_job_by_result_video_id(result_video_id)
+
+    result_blendshapes_manager.create_result_mp_kinematics_entry(
+        str(uuid.uuid4()),
+        result_video_id,
+        video_id,
+        job.id,
         await request.json()
     )
