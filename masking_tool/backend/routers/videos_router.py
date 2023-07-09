@@ -2,6 +2,7 @@ import os
 import cv2
 
 from fastapi import APIRouter, Request, Response, HTTPException
+from fastapi.responses import FileResponse
 
 from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 from utils.request_utils import range_requests_response
@@ -36,6 +37,12 @@ def get_video_stream(video_id, request: Request):
     return range_requests_response(
         request, file_path=video_path, content_type="video/mp4"
     )
+
+
+@router.get('/{video_id}/download')
+def download_video(video_id):
+    video_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
+    return FileResponse(path=video_path, filename=video_path, media_type='video/mp4')
 
 
 @router.get("/{video_id}/preview")
@@ -125,6 +132,16 @@ def get_result_video_stream(video_id: str, result_video_id: str, request: Reques
     return range_requests_response(
         request, file_path=video_path, content_type="video/mp4"
     )
+
+
+@router.get('/{video_id}/results/{result_video_id}/download')
+def download_result_video(video_id: str, result_video_id: str):
+    video_path = os.path.join(RESULT_BASE_PATH, video_id, result_video_id + ".mp4")
+
+    if not os.path.exists(video_path):
+        raise HTTPException(status_code=404, detail="Requested result video not found.")
+
+    return FileResponse(path=video_path, filename=video_path, media_type='video/mp4')
 
 
 @router.get("/{video_id}/results/{result_video_id}/preview")
