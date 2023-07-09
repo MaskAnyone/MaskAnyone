@@ -2,10 +2,10 @@ import {useEffect, useState} from "react";
 import {useParams} from "react-router";
 import {Box, Divider} from "@mui/material";
 import DoubleVideo from "../components/videos/DoubleVideo";
-import VideoRunParams from "../components/videos/VideoRunParams";
 import VideoResultsOverview from "../components/videos/VideoResultsOverview";
 import {useDispatch} from "react-redux";
 import Command from "../state/actions/command";
+import VideoTaskBar from "../components/videos/VideoTaskBar";
 
 const VideosPage = () => {
     const dispatch = useDispatch();
@@ -17,12 +17,15 @@ const VideosPage = () => {
         }
     }, [videoId]);
 
+    if (!videoId) {
+        return null;
+    }
+
     return (
         <Box component="div">
-            {videoId && (<VideoRunParams videoId={videoId} />)}
-            <Divider style={{marginBottom: "15px"}}/>
-            {videoId && <DoubleVideo videoId={videoId} resultVideoId={resultVideoId} />}
-            {videoId && <VideoResultsOverview key={videoId} videoId={videoId} resultVideoId={resultVideoId} />}
+            <VideoTaskBar videoId={videoId} resultVideoId={resultVideoId} />
+            <DoubleVideo videoId={videoId} resultVideoId={resultVideoId} />
+            <VideoResultsOverview key={videoId} videoId={videoId} resultVideoId={resultVideoId} />
         </Box>
     );
 };
