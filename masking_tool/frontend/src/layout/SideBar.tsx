@@ -5,6 +5,7 @@ import Selector from "../state/selector";
 import UploadIcon from '@mui/icons-material/Upload';
 import UploadDialog from "../components/upload/UploadDialog";
 import Event from "../state/actions/event";
+import SideBarVideoItem from "./SideBarVideoItem";
 
 const styles = {
     drawer: (theme: any) => ({
@@ -55,14 +56,7 @@ const SideBar = (props: SideBarProps) => {
                 <Box component="div" sx={styles.container}>
                     <List sx={{ display: 'flex', flexDirection: 'column', flex: 1, paddingBottom: 1 }} disablePadding={true}>
                         {videoList.map(video => (
-                            <SideBarItem
-                                key={video.name}
-                                url={`/videos/${video.id}`}
-                                title={`${video.name} (${Math.round(video.videoInfo.duration)}s)`}
-                                subtitle={`${video.videoInfo.frameWidth}x${video.videoInfo.frameHeight}, ${video.videoInfo.fps} FPS`}
-                                videoId={video.id}
-                                badge={videoJobsRecord[video.id] || 0}
-                            />
+                            <SideBarVideoItem video={video} badge={videoJobsRecord[video.id] || 0} />
                         ))}
                     </List>
                     <Fab variant={'extended'} color={'primary'} onClick={openUploadDialog}>

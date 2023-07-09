@@ -29,6 +29,12 @@ const styles = {
             marginTop: 0,
         },
     }),
+    listItemText: {
+        '& .MuiTypography-root': {
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+        },
+    },
 };
 
 interface SideBarItemProps {
@@ -48,14 +54,19 @@ const SideBarItem = (props: SideBarItemProps) => {
                 sx={styles.button}
                 className={location.pathname.startsWith(props.url) ? 'active' : ''}
                 children={(
-                    <Box component="div" sx={{ display: 'flex', alignItems: 'center' }}>
-                        <img
-                            style={{ width: '64px', objectFit: 'cover', marginRight: '8px', borderRadius: '4px' }}
-                            src={Config.api.baseUrl + '/videos/' + props.videoId + '/preview'}
-                        />
-                        <Badge badgeContent={props.badge} max={9} color={'secondary'} sx={{ '& .MuiBadge-badge': { marginTop: 1 } }}>
-                            <ListItemText primary={props.title} secondary={props.subtitle} />
+                    <Box component="div" sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                        <Badge badgeContent={props.badge} max={9} color={'secondary'} sx={{ '& .MuiBadge-badge': { marginTop: 0.75, marginRight: 1.25 } }}>
+                            <img
+                                style={{ width: '64px', objectFit: 'cover', marginRight: '8px', borderRadius: '4px' }}
+                                src={Config.api.baseUrl + '/videos/' + props.videoId + '/preview'}
+                            />
                         </Badge>
+
+                        <ListItemText
+                            primary={props.title}
+                            secondary={props.subtitle}
+                            sx={styles.listItemText}
+                        />
                     </Box>
                 )}
                 component={Link}
