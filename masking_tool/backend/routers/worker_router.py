@@ -4,7 +4,7 @@ import cv2
 
 from fastapi import APIRouter, Request
 
-from models import RunParams
+from models import RunParams, MpKinematicsType
 from db.job_manager import JobManager
 from db.video_manager import VideoManager
 from db.result_video_manager import ResultVideoManager
@@ -94,12 +94,17 @@ async def upload_result_video_preview_image(
     file.close()
 
 
-@router.post("/videos/{video_id}/results/{result_video_id}/mp_kinematics")
+@router.post("/videos/{video_id}/results/{result_video_id}/mp_kinematics/{type}")
 async def upload_result_mp_kinematics(
-    video_id: str, result_video_id: str, request: Request
+    video_id: str, result_video_id: str, request: Request, type: MpKinematicsType
 ):
     job = job_manager.fetch_job_by_result_video_id(result_video_id)
 
     result_mp_kinematics_manager.create_result_mp_kinematics_entry(
-        str(uuid.uuid4()), result_video_id, job.id, await request.json()
+        str(uuid.uuid4()),
+        result_video_id,
+        video_id,
+        job.id,
+        type,
+        await request.json()
     )

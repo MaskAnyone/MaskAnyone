@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from enum import IntEnum
+from enum import IntEnum, Enum
 
 
 class HidingStrategy(IntEnum):
@@ -32,3 +32,8 @@ class RequestVideoUploadParams(BaseModel):
 
 class FinalizeVideoUploadParams(BaseModel):
     video_id: str
+
+
+class MpKinematicsType(str, Enum):
+    body = "body"
+    face = "face"
