@@ -138,7 +138,7 @@ class Pipeline:
 
     def write_timeseries(self, masking_results: List[MaskingResult]):
         for masking_result in masking_results:
-            if not masking_result["timeseries"]:
+            if not "timeseries" in masking_result:
                 continue
             file_handle = self.ts_file_handlers[masking_result["part_name"]]
             writer = csv.writer(file_handle)
