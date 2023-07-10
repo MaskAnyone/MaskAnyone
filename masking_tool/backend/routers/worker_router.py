@@ -6,6 +6,7 @@ from fastapi import APIRouter, Request
 
 from models import RunParams, MpKinematicsType
 from db.job_manager import JobManager
+from db.worker_manager import WorkerManager
 from db.video_manager import VideoManager
 from db.result_video_manager import ResultVideoManager
 from db.result_mp_kinematics_manager import ResultMpKinematicsManager
@@ -21,10 +22,16 @@ result_video_manager = ResultVideoManager(db_connection)
 result_mp_kinematics_manager = ResultMpKinematicsManager(db_connection)
 result_blendshapes_manager = ResultBlendshapesManager(db_connection)
 job_manager = JobManager(db_connection)
+worker_manager = WorkerManager(db_connection)
 
 router = APIRouter(
     prefix="/worker",
 )
+
+
+@router.post("/workers/{worker_id}/register")
+def register_worker(worker_id: str):
+    worker_manager.register_worker(worker_id)
 
 
 @router.get("/jobs/next")

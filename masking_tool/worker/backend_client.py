@@ -11,6 +11,9 @@ class MpKinematicsType(str, Enum):
 
 
 class BackendClient:
+    def register_worker(self, worker_id: str):
+        requests.post(self._make_url('workers/' + worker_id + '/register'))
+
     def fetch_next_job(self):
         response = requests.get(self._make_url('jobs/next'))
         return response.json()['job']
