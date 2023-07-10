@@ -25,7 +25,7 @@ job_manager = JobManager(db_connection)
 worker_manager = WorkerManager(db_connection)
 
 router = APIRouter(
-    prefix="/workers/{worker_id}",
+    prefix="/_worker/{worker_id}",
 )
 
 
@@ -44,11 +44,13 @@ def fetch_next_job(worker_id: str):
 
 @router.post("/jobs/{job_id}/finish")
 def finish_job(worker_id: str, job_id: str):
+    worker_manager.update_worker_activity(worker_id)
     job_manager.mark_job_as_finished(job_id)
 
 
 @router.post("/jobs/{job_id}/fail")
 def fail_job(worker_id: str, job_id: str):
+    worker_manager.update_worker_activity(worker_id)
     job_manager.mark_job_as_failed(job_id)
 
 

@@ -2,7 +2,7 @@ import requests
 from enum import Enum
 
 
-BASE_PATH = 'http://python:8000/workers/'
+BASE_PATH = 'http://python:8000/_worker/'
 
 
 class MpKinematicsType(str, Enum):

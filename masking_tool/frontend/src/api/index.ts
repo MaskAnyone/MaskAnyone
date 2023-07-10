@@ -4,7 +4,7 @@ import {
     ApiFetchDownloadableResultFilesResponse,
     ApiFetchJobsResponse,
     ApiFetchResultVideosResponse,
-    ApiFetchVideosResponse
+    ApiFetchVideosResponse, ApiFetchWorkersResponse
 } from "./types";
 import { RunParams } from '../state/types/Run';
 
@@ -100,6 +100,14 @@ const Api = {
                 video_id: videoId,
             },
         });
+    },
+    fetchWorkers: async (): Promise<ApiFetchWorkersResponse> => {
+        const result = await sendApiRequest({
+            url: 'workers',
+            method: 'get',
+        });
+
+        return result.data;
     },
 };
 

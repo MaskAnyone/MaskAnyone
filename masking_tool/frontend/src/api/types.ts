@@ -44,3 +44,11 @@ export interface ApiFetchJobsResponse {
         finished_at: string|null;
     }[];
 }
+
+export interface ApiFetchWorkersResponse {
+    workers: {
+        id: string;
+        job_id?: string;
+        last_activity: string;
+    }[];
+}

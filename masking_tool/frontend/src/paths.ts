@@ -5,6 +5,7 @@ const Paths = {
     resultVideoDetails: '/videos/:videoId/results/:resultVideoId',
     runs: '/runs',
     presets: '/presets',
+    workers: '/workers',
 
     makeVideoDetailsUrl: (videoId: string) => Paths.videoDetails
         .replace(':videoId', videoId),

@@ -17,7 +17,6 @@ video_manager = VideoManager(backend_client, LocalDataManager(DATA_BASE_DIR))
 init_directories()
 
 
-
 def fetch_next_job():
     try:
         return backend_client.fetch_next_job()

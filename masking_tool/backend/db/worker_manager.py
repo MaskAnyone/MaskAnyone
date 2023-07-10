@@ -1,5 +1,5 @@
 from db.db_connection import DBConnection
-from db.model.job import Job
+from db.model.worker import Worker
 import json
 
 
@@ -22,3 +22,15 @@ class WorkerManager:
                 "id": id,
             },
         )
+
+    def fetch_active_workers(self):
+        result = []
+
+        worker_data_list = self.__db_connection.select_all(
+            "SELECT * FROM workers where last_activity > NOW() - INTERVAL '3 minutes'"
+        )
+
+        for worker_data in worker_data_list:
+            result.append(Worker(*worker_data))
+
+        return result
