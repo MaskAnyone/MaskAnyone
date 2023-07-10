@@ -25,34 +25,35 @@ job_manager = JobManager(db_connection)
 worker_manager = WorkerManager(db_connection)
 
 router = APIRouter(
-    prefix="/worker",
+    prefix="/workers/{worker_id}",
 )
 
 
-@router.post("/workers/{worker_id}/register")
+@router.post("/register")
 def register_worker(worker_id: str):
     worker_manager.register_worker(worker_id)
 
 
 @router.get("/jobs/next")
-def fetch_next_job():
+def fetch_next_job(worker_id: str):
+    worker_manager.update_worker_activity(worker_id)
     job = job_manager.fetch_next_job()
 
     return {"job": job}
 
 
 @router.post("/jobs/{job_id}/finish")
-def finish_job(job_id: str):
+def finish_job(worker_id: str, job_id: str):
     job_manager.mark_job_as_finished(job_id)
 
 
 @router.post("/jobs/{job_id}/fail")
-def fail_job(job_id: str):
+def fail_job(worker_id: str, job_id: str):
     job_manager.mark_job_as_failed(job_id)
 
 
 @router.get("/videos/{video_id}")
-def get_video_stream(video_id, request: Request):
+def get_video_stream(worker_id: str, video_id: str, request: Request):
     video_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
 
     return range_requests_response(
@@ -61,7 +62,7 @@ def get_video_stream(video_id, request: Request):
 
 
 @router.post("/videos/{video_id}/results/{result_video_id}")
-async def upload_result_video(video_id: str, result_video_id: str, request: Request):
+async def upload_result_video(worker_id: str, video_id: str, result_video_id: str, request: Request):
     result_dir = os.path.join(RESULT_BASE_PATH, video_id)
     if not os.path.exists(result_dir):
         os.mkdir(result_dir)
@@ -87,7 +88,7 @@ async def upload_result_video(video_id: str, result_video_id: str, request: Requ
 
 @router.post("/videos/{video_id}/results/{result_video_id}/preview")
 async def upload_result_video_preview_image(
-        video_id: str, result_video_id: str, request: Request
+    worker_id: str, video_id: str, result_video_id: str, request: Request
 ):
     result_dir = os.path.join(RESULT_BASE_PATH, video_id)
     if not os.path.exists(result_dir):
@@ -104,7 +105,7 @@ async def upload_result_video_preview_image(
 
 @router.post("/videos/{video_id}/results/{result_video_id}/mp_kinematics/{type}")
 async def upload_result_mp_kinematics(
-        video_id: str, result_video_id: str, type: MpKinematicsType, request: Request
+    worker_id: str, video_id: str, result_video_id: str, type: MpKinematicsType, request: Request
 ):
     job = job_manager.fetch_job_by_result_video_id(result_video_id)
 
@@ -120,7 +121,7 @@ async def upload_result_mp_kinematics(
 
 @router.post("/videos/{video_id}/results/{result_video_id}/blendshapes")
 async def upload_result_blendshapes(
-        video_id: str, result_video_id: str, request: Request
+    worker_id: str, video_id: str, result_video_id: str, request: Request
 ):
     job = job_manager.fetch_job_by_result_video_id(result_video_id)
 

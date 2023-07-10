@@ -8,13 +8,14 @@ import uuid
 from utils.app_utils import init_directories
 
 DATA_BASE_DIR = "local_data"
+worker_id = str(uuid.uuid4())
 
-backend_client = BackendClient()
+backend_client = BackendClient(worker_id)
+backend_client.register_worker(worker_id)
+
 video_manager = VideoManager(backend_client, LocalDataManager(DATA_BASE_DIR))
 init_directories()
 
-worker_id = str(uuid.uuid4())
-backend_client.register_worker(worker_id)
 
 
 def fetch_next_job():
