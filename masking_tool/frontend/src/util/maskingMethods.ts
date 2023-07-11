@@ -175,5 +175,11 @@ export const maskingMethods: MaskingMethods = {
                 }
             },
         },
+        maskingMethods: {
+            none: {
+                name: "None",
+                description: "Does not mask the subject in the video"
+            },
+        }
     }
 }

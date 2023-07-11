@@ -1,5 +1,5 @@
-import csv
 import os
+import time
 from typing import List
 from config import (
     BLENDSHAPES_BASE_PATH,
@@ -8,6 +8,7 @@ from config import (
     VIDEOS_BASE_PATH,
 )
 import json
+from backend_client import BackendClient
 from pipeline.mask_extraction.MediaPipeMaskExtractor import MediaPipeMaskExtractor
 
 from pipeline.detection.YoloDetector import YoloDetector
@@ -29,8 +30,9 @@ import cv2
 
 
 class Pipeline:
-    def __init__(self, run_params: dict):
-        # Detectors and Mask creators are stateful
+    def __init__(self, run_params: dict, backend_client: BackendClient):
+        self.backend_client = backend_client
+
         self.detectors = []
         self.mask_extractors = []
         self.ts_file_handlers = {}
@@ -41,6 +43,10 @@ class Pipeline:
 
         self.model_3d_only = False
         self.blendshapes_file_handle = None
+
+        self.num_frames = 0
+        self.progress_message_sent_time = None
+        self.progress_update_interval = 5  # in seconds
 
         # extract arguments from request and create initialization arguments for maskers, detectors and hider
         vid_masking_params = run_params["videoMasking"]
@@ -101,6 +107,8 @@ class Pipeline:
 
         params_3d: Params3D = run_params["threeDModelCreation"]
 
+        print(required_detectors)
+        print(required_maskers)
         self.init_detectors(required_detectors)
         self.init_maskers(required_maskers, params_3d)
 
@@ -169,6 +177,19 @@ class Pipeline:
             json_string = json.dumps(blendshapes_dict)
             self.blendshapes_file_handle.write(json_string)
 
+    def should_send_progress_message(self, index: int):
+        if self.progress_message_sent_time == None or index == 0:
+            return False
+        cur_time = time.time()
+        elapsed_time = cur_time - self.progress_message_sent_time
+        return elapsed_time > self.progress_update_interval
+
+    def send_progress_update(self, current_index: int):
+        if self.should_send_progress_message(current_index):
+            progress = int(current_index / self.num_frames)
+            self.backend_client.update_progress(progress)
+            self.progress_message_sent_time = time.time()
+
     def run(self, video_id: str):
         print(f"Running job on video {video_id}")
         video_in_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
@@ -178,6 +199,8 @@ class Pipeline:
 
         self.init_ts_file_handlers(video_id)
         self.init_blendshapes_file_handle(video_id)
+        self.num_frames = int(video_cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        index = 0
 
         if not self.detectors and not self.mask_extractors:
             # Nothing to do
@@ -225,6 +248,8 @@ class Pipeline:
                 out_frame = overlay_frames(hidden_frame, mask_results)
                 out.write(out_frame)
             is_first_frame = False
+            self.send_progress_update(index)
+            index += 1
 
         self.close_ts_file_handles()
         self.close_bs_file_handle()

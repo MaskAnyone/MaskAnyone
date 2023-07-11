@@ -22,14 +22,7 @@ class MediaPipeDetector(BaseDetector):
         self.init_mp_model()
 
     def reorder_parts_to_detect(self) -> List[PartToDetect]:
-        background_part = next(
-            (
-                part
-                for part in self.parts_to_detect
-                if part["part_name"] == "background"
-            ),
-            None,
-        )
+        background_part = self.get_part_to_detect("background")
         if background_part:
             index = self.parts_to_detect.index(background_part)
             self.parts_to_detect.pop(index)
@@ -42,7 +35,20 @@ class MediaPipeDetector(BaseDetector):
         VisionRunningMode = mp.tasks.vision.RunningMode
 
         # @ToDo currently only working for body
-        detection_params = self.get_part_to_detect("body")["detection_params"]
+        detection_params = None
+        body_part = self.get_part_to_detect("body")
+        background_part = self.get_part_to_detect("background")
+        if body_part:
+            detection_params = body_part["detection_params"]
+        elif background_part:
+            try:
+                detection_params = background_part["detection_params"]
+            except:
+                raise Exception("Detection Parameters for background not specified")
+        else:
+            raise Exception(
+                "MediaPipe detector only supports body and background detection."
+            )
 
         options = PoseLandmarkerOptions(
             base_options=BaseOptions(model_asset_path=self.model_path),
@@ -85,19 +91,14 @@ class MediaPipeDetector(BaseDetector):
         self, frame: np.ndarray, timestamp_ms: int
     ) -> np.ndarray:
         # Returns the segmentation mask for the background [black / white]
-        person_silhouette_result = next(
-            (
-                result
-                for result in self.current_results
-                if result["part_name"] == "background"
-            ),
-            None,
-        )
+        # The background is defined as everything that is not body
+        person_silhouette_result = self.get_part_to_detect("body")
         if person_silhouette_result:
             mask = person_silhouette_result["mask"]
         else:
             mask = self.detect_body_silhouette(frame, timestamp_ms)
-        return cv2.bitwise_not(mask)
+            mask_inverted = 255 - mask
+        return mask_inverted  # the opposite of the body mask is the background
 
     def detect_boundingbox(self, frame, part_name: str):
         raise NotImplementedError(
