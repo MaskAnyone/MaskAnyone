@@ -2,7 +2,7 @@ import requests
 from enum import Enum
 
 
-BASE_PATH = "http://python:8000/worker/"
+BASE_PATH = "http://python:8000/_worker/"
 
 
 class MpKinematicsType(str, Enum):
@@ -11,6 +11,14 @@ class MpKinematicsType(str, Enum):
 
 
 class BackendClient:
+    _worker_id: str
+
+    def __init__(self, worker_id: str):
+        self._worker_id = worker_id
+
+    def register_worker(self, worker_id: str):
+        requests.post(self._make_url("register"))
+
     def fetch_next_job(self):
         response = requests.get(self._make_url("jobs/next"))
         return response.json()["job"]
@@ -72,4 +80,4 @@ class BackendClient:
         pass
 
     def _make_url(self, path: str) -> str:
-        return BASE_PATH + path
+        return BASE_PATH + self._worker_id + "/" + path

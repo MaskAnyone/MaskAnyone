@@ -6,6 +6,7 @@ import {fetchJobListFlow} from "./sagas/job/fetchJobListFlow";
 import {enqueueNotificationFlow} from "./sagas/notification/enqueueNotificationFlow";
 import {fetchResultVideoListFlow} from "./sagas/video/fetchResultVideoListFlow";
 import {fetchDownloadableResultFilesFlow} from "./sagas/video/fetchDownloadableResultFilesFlow";
+import {fetchWorkerListFlow} from "./sagas/worker/fetchWorkerListFlow";
 
 /**
  * Prevents the root saga from terminating entirely due to some error in another saga
@@ -44,6 +45,8 @@ const sagas: any[] = [
     uploadProgressWatcherFlow,
 
     fetchJobListFlow,
+
+    fetchWorkerListFlow,
 
     enqueueNotificationFlow,
 ].map(makeRestartable);

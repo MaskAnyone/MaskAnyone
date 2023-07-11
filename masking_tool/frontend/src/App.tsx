@@ -8,6 +8,7 @@ import PresetsPage from './pages/PresetsPage';
 import Command from "./state/actions/command";
 import {useDispatch} from "react-redux";
 import Paths from "./paths";
+import WorkersPage from "./pages/WorkersPage";
 
 const App = () => {
     const dispatch = useDispatch();
@@ -15,6 +16,7 @@ const App = () => {
     useEffect(() => {
         dispatch(Command.Video.fetchVideoList({}));
         dispatch(Command.Job.fetchJobList({}));
+        dispatch(Command.Worker.fetchWorkerList({}));
     }, []);
 
     return (<>
@@ -26,6 +28,7 @@ const App = () => {
                 <Route path={Paths.resultVideoDetails} element={<VideosPage />} />
                 <Route path={Paths.runs} element={<RunsPage />} />
                 <Route path={Paths.presets} element={<PresetsPage />} />
+                <Route path={Paths.workers} element={<WorkersPage />} />
                 <Route index={true} element={<Navigate to={Paths.videos} replace={true} />} />
             </Route>
         </Routes>
