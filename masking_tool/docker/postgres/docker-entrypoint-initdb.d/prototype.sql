@@ -121,6 +121,19 @@ CREATE TABLE public.videos (
 ALTER TABLE public.videos OWNER TO dev;
 
 --
+-- Name: workers; Type: TABLE; Schema: public; Owner: dev
+--
+
+CREATE TABLE public.workers (
+    id uuid NOT NULL,
+    job_id uuid,
+    last_activity timestamp without time zone
+);
+
+
+ALTER TABLE public.workers OWNER TO dev;
+
+--
 -- Name: jobs jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: dev
 --
 
@@ -166,6 +179,14 @@ ALTER TABLE ONLY public.jobs
 
 ALTER TABLE ONLY public.videos
     ADD CONSTRAINT videos_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: workers workers_pkey; Type: CONSTRAINT; Schema: public; Owner: dev
+--
+
+ALTER TABLE ONLY public.workers
+    ADD CONSTRAINT workers_pkey PRIMARY KEY (id);
 
 
 --
