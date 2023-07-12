@@ -64,7 +64,9 @@ def get_video_stream(worker_id: str, video_id: str, request: Request):
 
 
 @router.post("/videos/{video_id}/results/{result_video_id}")
-async def upload_result_video(worker_id: str, video_id: str, result_video_id: str, request: Request):
+async def upload_result_video(
+    worker_id: str, video_id: str, result_video_id: str, request: Request
+):
     result_dir = os.path.join(RESULT_BASE_PATH, video_id)
     if not os.path.exists(result_dir):
         os.mkdir(result_dir)
@@ -107,17 +109,16 @@ async def upload_result_video_preview_image(
 
 @router.post("/videos/{video_id}/results/{result_video_id}/mp_kinematics/{type}")
 async def upload_result_mp_kinematics(
-    worker_id: str, video_id: str, result_video_id: str, type: MpKinematicsType, request: Request
+    worker_id: str,
+    video_id: str,
+    result_video_id: str,
+    type: MpKinematicsType,
+    request: Request,
 ):
     job = job_manager.fetch_job_by_result_video_id(result_video_id)
 
     result_mp_kinematics_manager.create_result_mp_kinematics_entry(
-        str(uuid.uuid4()),
-        result_video_id,
-        video_id,
-        job.id,
-        type,
-        await request.json()
+        str(uuid.uuid4()), result_video_id, video_id, job.id, type, await request.json()
     )
 
 
@@ -128,9 +129,5 @@ async def upload_result_blendshapes(
     job = job_manager.fetch_job_by_result_video_id(result_video_id)
 
     result_blendshapes_manager.create_result_mp_kinematics_entry(
-        str(uuid.uuid4()),
-        result_video_id,
-        video_id,
-        job.id,
-        await request.json()
+        str(uuid.uuid4()), result_video_id, video_id, job.id, await request.json()
     )

@@ -36,10 +36,6 @@ class Pipeline:
         self.detectors = []
         self.mask_extractors = []
         self.ts_file_handlers = {}
-        hiding_strategies: HidingStategies = {}
-
-        required_detectors = {}
-        required_maskers = {}
 
         self.model_3d_only = False
         self.blendshapes_file_handle = None
@@ -48,7 +44,23 @@ class Pipeline:
         self.progress_message_sent_time = None
         self.progress_update_interval = 5  # in seconds
 
+        (
+            required_detectors,
+            required_maskers,
+            hiding_strategies,
+        ) = self.identify_requried_models(run_params)
+        params_3d: Params3D = run_params["threeDModelCreation"]
+
+        self.init_detectors(required_detectors)
+        self.init_maskers(required_maskers, params_3d)
+        self.hider = Hider(hiding_strategies)
+
+    def identify_requried_models(self, run_params: dict):
         # extract arguments from request and create initialization arguments for maskers, detectors and hider
+        hiding_strategies: HidingStategies = {}
+        required_detectors = {}
+        required_maskers = {}
+
         vid_masking_params = run_params["videoMasking"]
         for video_part in vid_masking_params:
             video_part_params = vid_masking_params[video_part]
@@ -104,15 +116,7 @@ class Pipeline:
                         "save_timeseries": save_timeseries,
                     }
                     required_maskers[masking_model_name].append(part_to_mask)
-
-        params_3d: Params3D = run_params["threeDModelCreation"]
-
-        print(required_detectors)
-        print(required_maskers)
-        self.init_detectors(required_detectors)
-        self.init_maskers(required_maskers, params_3d)
-
-        self.hider = Hider(hiding_strategies)
+        return required_detectors, required_maskers, hiding_strategies
 
     def init_detectors(self, required_detectors: dict):
         if "mediapipe" in required_detectors:

@@ -15,7 +15,7 @@ class WorkerManager:
             },
         )
 
-    def update_worker_activity(self,  id: str):
+    def update_worker_activity(self, id: str):
         self.__db_connection.execute(
             "UPDATE workers SET last_activity=current_timestamp WHERE id=%(id)s",
             {
