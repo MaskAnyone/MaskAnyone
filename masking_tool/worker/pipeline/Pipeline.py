@@ -62,6 +62,7 @@ class Pipeline:
         required_maskers = {}
 
         vid_masking_params = run_params["videoMasking"]
+        print(vid_masking_params)
         for video_part in vid_masking_params:
             video_part_params = vid_masking_params[video_part]
             if (
@@ -81,7 +82,6 @@ class Pipeline:
                     raise Exception(
                         f"Detection Model/Detection Type not specified for hiding of {video_part}"
                     )
-
                 detection_model_name = hiding_settings["detectionModel"]
                 detection_type = hiding_settings["subjectDetection"]
                 detection_params = hiding_settings["detectionParams"]

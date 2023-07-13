@@ -69,22 +69,21 @@ class MediaPipeDetector(BaseDetector):
 
         results = self.model.detect_for_video(mp_image, timestamp_ms)
 
-        output_image = 255 * np.ones(
-            (mp_image.height, mp_image.width, mp_image.channels)
-        )
+        output_image = np.zeros((mp_image.height, mp_image.width, mp_image.channels))
         if results.segmentation_masks:
             for segmentation_mask in results.segmentation_masks:
                 mask = segmentation_mask.numpy_view()
                 seg_mask = np.repeat(mask[:, :, np.newaxis], 3, axis=2)
 
-                output_image[seg_mask > 0.3] = 0
+                output_image[seg_mask > 0.3] = 1
                 interpolation_mask = (seg_mask > 0.1) & (seg_mask <= 0.3)
                 interpolation_factor = (seg_mask - 0.1) / (0.3 - 0.1)
                 output_image[interpolation_mask] = (
-                    1 - interpolation_factor[interpolation_mask]
-                ) * output_image[interpolation_mask] + interpolation_factor[
-                    interpolation_mask
-                ] * 0
+                    1
+                    - (1 - interpolation_factor[interpolation_mask])
+                    * output_image[interpolation_mask]
+                    + interpolation_factor[interpolation_mask] * 0
+                )
         return output_image
 
     def detect_background_silhouette(
@@ -97,7 +96,7 @@ class MediaPipeDetector(BaseDetector):
             mask = person_silhouette_result["mask"]
         else:
             mask = self.detect_body_silhouette(frame, timestamp_ms)
-            mask_inverted = 255 - mask
+            mask_inverted = ~mask
         return mask_inverted  # the opposite of the body mask is the background
 
     def detect_boundingbox(self, frame, part_name: str):

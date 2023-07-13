@@ -15,14 +15,14 @@ class BaseDetector:
             {}
         )  # the specific models for each part (e.g face model etc)
         self.boundingbox_methods: PartDetectionMethods = {}
+        self.silhouette_methods = {}
         self.parts_to_detect: List[PartToDetect] = parts_to_detect
         self.current_results: List[DetectionResult] = []
 
     def detect(self, frame: np.ndarray, timestamp_ms: int) -> List[DetectionResult]:
         # Runs the adequate detection method for each body part.
         # During part processing results from other parts can be used via self.current_results
-        # (e.g use the detection of the body silhouette, to find the background, without re_computing this silhouette)
-
+        # (e.g use the detection of the body silhouette, to find the background, without re_computing this silhouette
         self.current_results = []
         for part_to_detect in self.parts_to_detect:
             part_result: np.ndarray = self.detect_part(
