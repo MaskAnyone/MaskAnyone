@@ -34,6 +34,10 @@ class FinalizeVideoUploadParams(BaseModel):
     video_id: str
 
 
+class UpdateJobProgressParams(BaseModel):
+    progress: int
+
+
 class MpKinematicsType(str, Enum):
     body = "body"
     face = "face"

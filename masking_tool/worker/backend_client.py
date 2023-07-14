@@ -76,8 +76,11 @@ class BackendClient:
             json=data,
         )
 
-    def update_progress(self, progess: int):
-        pass
+    def update_progress(self, job_id: str, progress: int):
+        requests.post(
+            self._make_url("jobs/" + job_id + "/progress"),
+            json={'progress': progress},
+        )
 
     def _make_url(self, path: str) -> str:
         return BASE_PATH + self._worker_id + "/" + path

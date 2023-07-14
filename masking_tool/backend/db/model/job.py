@@ -12,3 +12,4 @@ class Job:
     created_at: str
     started_at: str
     finished_at: str
+    progress: int

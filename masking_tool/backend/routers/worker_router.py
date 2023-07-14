@@ -4,7 +4,7 @@ import cv2
 
 from fastapi import APIRouter, Request
 
-from models import RunParams, MpKinematicsType
+from models import RunParams, MpKinematicsType, UpdateJobProgressParams
 from db.job_manager import JobManager
 from db.worker_manager import WorkerManager
 from db.video_manager import VideoManager
@@ -40,6 +40,12 @@ def fetch_next_job(worker_id: str):
     job = job_manager.fetch_next_job()
 
     return {"job": job}
+
+
+@router.post("/jobs/{job_id}/progress")
+def update_job_progress(worker_id: str, job_id: str, params: UpdateJobProgressParams):
+    worker_manager.update_worker_activity(worker_id)
+    job_manager.update_job_progress(params.progress)
 
 
 @router.post("/jobs/{job_id}/finish")

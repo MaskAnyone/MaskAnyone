@@ -7,6 +7,10 @@ Clone the repo and then run the following commands in this directory.
 ```bash
 docker-compose build
 docker-compose run --rm yarn yarn install
+docker-compose up -d postgres
+```
+Wait a few seconds
+```bash
 docker-compose up -d
 ```
 
@@ -16,9 +20,22 @@ docker-compose up -d
 - PGAdmin: [https://localhost:5433/](https://localhost:5433/) (Password: `dev`)
 
 ## Database
+
+### Export Schema
 If you changed the schema of the DB please run the following command to refresh the schema dump.
 This is to ensure that the DB schema dump is up-to-date for whenever someone sets up the project.
 ```bash
 docker-compose exec postgres pg_dump --schema-only --username dev --create prototype > ./docker/postgres/docker-entrypoint-initdb.d/prototype.sql
 ```
 You can also include the `--schema-only` parameter to omit the data in the dump.
+
+### Reset DB
+To reset the DB to the latest schema simply run the following commands.
+```bash
+docker-compose down -v
+docker-compose up -d postgres
+```
+Wait a few seconds
+```bash
+docker-compose up -d
+```

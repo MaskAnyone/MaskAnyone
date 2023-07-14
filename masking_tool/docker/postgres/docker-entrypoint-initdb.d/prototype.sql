@@ -55,7 +55,8 @@ CREATE TABLE public.jobs (
     data jsonb NOT NULL,
     created_at timestamp without time zone NOT NULL,
     started_at timestamp without time zone,
-    finished_at timestamp without time zone
+    finished_at timestamp without time zone,
+    progress integer DEFAULT 0 NOT NULL
 );
 
 

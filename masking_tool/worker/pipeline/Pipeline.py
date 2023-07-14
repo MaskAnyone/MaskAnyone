@@ -188,13 +188,13 @@ class Pipeline:
         elapsed_time = cur_time - self.progress_message_sent_time
         return elapsed_time > self.progress_update_interval
 
-    def send_progress_update(self, current_index: int):
+    def send_progress_update(self, job_id: str, current_index: int):
         if self.should_send_progress_message(current_index):
             progress = int(current_index / self.num_frames)
-            self.backend_client.update_progress(progress)
+            self.backend_client.update_progress(job_id, progress)
             self.progress_message_sent_time = time.time()
 
-    def run(self, video_id: str):
+    def run(self, video_id: str, job_id: str):
         print(f"Running job on video {video_id}")
         video_in_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
         video_out_path = os.path.join(RESULT_BASE_PATH, video_id + ".mp4")
@@ -252,7 +252,7 @@ class Pipeline:
                 out_frame = overlay_frames(hidden_frame, mask_results)
                 out.write(out_frame)
             is_first_frame = False
-            self.send_progress_update(index)
+            self.send_progress_update(job_id, index)
             index += 1
 
         self.close_ts_file_handles()

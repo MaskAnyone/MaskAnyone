@@ -34,7 +34,7 @@ def handle_job(job):
     video_manager.load_original_video(video_id)
 
     masking_pipeline = Pipeline(job["data"], backend_client)
-    masking_pipeline.run(video_id)
+    masking_pipeline.run(video_id, job["id"])
 
     result_video_id = job["result_video_id"]
     video_manager.upload_result_video(video_id, result_video_id)

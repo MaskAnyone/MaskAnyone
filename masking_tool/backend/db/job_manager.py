@@ -70,7 +70,11 @@ class JobManager:
 
         return Job(*job_data_list[0])
 
-
+    def update_job_progress(self, job_id: str, progress: int):
+        self.__db_connection.execute(
+            "UPDATE jobs SET progress=%(progress)s WHERE id=%(id)s",
+            {"progress": progress, "id": job_id}
+        )
 
     def mark_job_as_finished(self, job_id: str):
         self.__db_connection.execute(
