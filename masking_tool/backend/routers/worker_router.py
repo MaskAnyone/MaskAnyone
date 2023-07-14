@@ -45,7 +45,7 @@ def fetch_next_job(worker_id: str):
 @router.post("/jobs/{job_id}/progress")
 def update_job_progress(worker_id: str, job_id: str, params: UpdateJobProgressParams):
     worker_manager.update_worker_activity(worker_id)
-    job_manager.update_job_progress(params.progress)
+    job_manager.update_job_progress(job_id, params.progress)
 
 
 @router.post("/jobs/{job_id}/finish")

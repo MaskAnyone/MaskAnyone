@@ -182,15 +182,19 @@ class Pipeline:
             self.blendshapes_file_handle.write(json_string)
 
     def should_send_progress_message(self, index: int):
-        if self.progress_message_sent_time == None or index == 0:
+        if index == 0:
             return False
+
+        if self.progress_message_sent_time is None:
+            return True
+
         cur_time = time.time()
         elapsed_time = cur_time - self.progress_message_sent_time
         return elapsed_time > self.progress_update_interval
 
     def send_progress_update(self, job_id: str, current_index: int):
         if self.should_send_progress_message(current_index):
-            progress = int(current_index / self.num_frames)
+            progress = int((float(current_index) / float(self.num_frames)) * 100.0)
             self.backend_client.update_progress(job_id, progress)
             self.progress_message_sent_time = time.time()
 
@@ -251,6 +255,7 @@ class Pipeline:
             if not self.model_3d_only:
                 out_frame = overlay_frames(hidden_frame, mask_results)
                 out.write(out_frame)
+
             is_first_frame = False
             self.send_progress_update(job_id, index)
             index += 1
