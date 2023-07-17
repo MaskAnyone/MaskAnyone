@@ -47,7 +47,7 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
             body_part["save_timeseries"] = True
 
         if self.params_3d["blendshapes"] and not self.get_part_to_mask("face"):
-            self.model_3d_only_parts.append("body")
+            self.model_3d_only_parts.append("face")
             self.parts_to_mask.append(
                 {
                     "part_name": "face",

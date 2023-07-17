@@ -27,6 +27,28 @@ def fetch_next_job():
     return None
 
 
+def produces_out_vid(run_params: dict):
+    masking_params = run_params["videoMasking"]
+    for video_part in masking_params:
+        if masking_params[video_part]["hidingStrategy"]["key"] != "none":
+            return True
+        if masking_params[video_part]["maskingStrategy"]["key"] != "none":
+            return True
+    return False
+
+
+def produces_kinematics(run_params: dict):
+    if run_params["threeDModelCreation"]["skeleton"]:
+        return True
+    return False
+
+
+def produces_blendshapes(run_params: dict):
+    if run_params["threeDModelCreation"]["blendshapes"]:
+        return True
+    return False
+
+
 def handle_job(job):
     print("Start working on job " + job["id"])
 
@@ -37,9 +59,13 @@ def handle_job(job):
     masking_pipeline.run(video_id, job["id"])
 
     result_video_id = job["result_video_id"]
-    video_manager.upload_result_video(video_id, result_video_id)
-    video_manager.upload_result_video_preview_image(video_id, result_video_id)
-    video_manager.upload_result_kinematics(video_id, result_video_id)
+    if produces_out_vid(job["data"]):
+        video_manager.upload_result_video(video_id, result_video_id)
+        video_manager.upload_result_video_preview_image(video_id, result_video_id)
+    if produces_kinematics(job["data"]):
+        video_manager.upload_result_kinematics(video_id, result_video_id)
+    if produces_blendshapes(job["data"]):
+        video_manager.upload_result_blendshapes(video_id, result_video_id)
     video_manager.cleanup_result_video_files(video_id)
 
 

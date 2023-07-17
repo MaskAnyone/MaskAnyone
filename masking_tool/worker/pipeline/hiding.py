@@ -38,6 +38,5 @@ class Hider:
     def hide_blackout(
         self, base_image: np.ndarray, mask: np.ndarray, params: dict
     ) -> np.ndarray:
-        print(base_image.shape, mask.shape)
         base_image[mask != 0] = int(params["color"])
         return base_image

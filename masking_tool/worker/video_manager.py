@@ -51,6 +51,7 @@ class VideoManager:
         path = os.path.join("blendshapes", video_id + ".json")
         if self.__local_data_manager.path_exists(path):
             data = self.__local_data_manager.read_json(path)
+
             self.__backend_client.upload_result_blendshapes(
                 video_id, result_video_id, data
             )

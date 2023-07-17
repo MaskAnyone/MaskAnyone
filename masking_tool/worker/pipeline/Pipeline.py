@@ -175,9 +175,9 @@ class Pipeline:
         self.blendshapes_file_handle.close()
 
     def write_blendshapes(self, blendshapes_dict, first):
-        if not first:
-            self.blendshapes_file_handle.write(",")
         if blendshapes_dict:
+            if not first:
+                self.blendshapes_file_handle.write(",")
             json_string = json.dumps(blendshapes_dict)
             self.blendshapes_file_handle.write(json_string)
 

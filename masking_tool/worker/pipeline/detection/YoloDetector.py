@@ -129,7 +129,7 @@ class YoloDetector(BaseDetector):
             mask = person_silhouette_result["mask"]
         else:
             mask = self.detect_body_silhouette(frame, timestamp_ms)
-        return ~mask
+        return 1 - mask
 
     def detect_background_bbox(
         self, frame: np.ndarray, timestamp_ms: int

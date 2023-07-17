@@ -1,4 +1,4 @@
-import axios, {AxiosRequestConfig, AxiosResponse} from 'axios';
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import Config from "../config";
 import {
     ApiFetchDownloadableResultFilesResponse,
@@ -28,6 +28,14 @@ const Api = {
     fetchVideoResults: async (videoId: string): Promise<ApiFetchResultVideosResponse> => {
         const result = await sendApiRequest({
             url: `videos/${videoId}/results`,
+            method: 'get'
+        });
+
+        return result.data;
+    },
+    fetchBlendshapes: async (jobId: string): Promise<any> => {
+        const result = await sendApiRequest({
+            url: `jobs/${jobId}/results/blendshapes`,
             method: 'get'
         });
 

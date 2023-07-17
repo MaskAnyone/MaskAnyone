@@ -24,8 +24,14 @@ import { useGLTF, useAnimations } from '@react-three/drei'
 import { useFrame, useGraph } from '@react-three/fiber';
 import { GLTF } from 'three-stdlib'
 import * as Kalidokit from 'kalidokit';
-import initialFaceResults from "../../mockData/faceResults3.json"
+import initialFaceResults from "../../mockData/init2.json"
 import initialPoseResults from "../../mockData/poseResults.json"
+import Api from "../../api";
+
+
+interface CharacterProps {
+  jobId: string
+}
 
 interface Blendshapes {
   [name: string]: number;
@@ -70,7 +76,7 @@ function updateBlendshapes(headMesh: any, nodes: any, blendshapes: any, transfor
     headMesh.morphTargetInfluences[idx] = value;
   }
 
-  if(transformationMatrix.length){
+  if (transformationMatrix) {
     const matrix = new THREE.Matrix4().fromArray(transformationMatrix);
     const rotation = new THREE.Euler().setFromRotationMatrix(matrix);
     nodes.Head.rotation.set(rotation.x, rotation.y, rotation.z);
@@ -81,12 +87,12 @@ function updateBlendshapes(headMesh: any, nodes: any, blendshapes: any, transfor
 
 function updatePose(poseResult: any, poseWorldResults: any, bones: any) {
   console.log(bones)
-  let  boneRotations: any = Kalidokit.Pose.solve(poseWorldResults, poseResult,{runtime:'mediapipe', imageSize: {width: 316, height: 308}})
+  let boneRotations: any = Kalidokit.Pose.solve(poseWorldResults, poseResult, { runtime: 'mediapipe', imageSize: { width: 316, height: 308 } })
   console.log(boneRotations)
   rotateBone(bones["Hips"], boneRotations["Hips"].rotation, 0.7)
   updateBonePosition(bones["Hips"], {
     x: -boneRotations.Hips.position.x, // Reverse direction
-    y:  boneRotations.Hips.position.y + 1, // Add a bit of height
+    y: boneRotations.Hips.position.y + 1, // Add a bit of height
     z: -boneRotations.Hips.position.z // Reverse direction
   })
   rotateBone(bones["Chest"], boneRotations["Spine"], 0.25)
@@ -100,15 +106,15 @@ function updatePose(poseResult: any, poseWorldResults: any, bones: any) {
 }
 
 function rotateBone(bone: any, rotation: any, dampener?: number, lerp?: number) {
-    dampener = dampener || 1
-    lerp = lerp || 0.3 // linear interpolation amount 
-    console.log(bone)
-    console.log(rotation)
-    let euler = new THREE.Euler(rotation.x * dampener, rotation.y * dampener, rotation.z * dampener, rotation.rotationOrder || "XYZ")
-    console.log(euler)
-    let quaternion = new THREE.Quaternion().setFromEuler(euler)
-    console.log(quaternion)
-    bone.quaternion.slerp(quaternion, lerp) // interpolate
+  dampener = dampener || 1
+  lerp = lerp || 0.3 // linear interpolation amount 
+  console.log(bone)
+  console.log(rotation)
+  let euler = new THREE.Euler(rotation.x * dampener, rotation.y * dampener, rotation.z * dampener, rotation.rotationOrder || "XYZ")
+  console.log(euler)
+  let quaternion = new THREE.Quaternion().setFromEuler(euler)
+  console.log(quaternion)
+  bone.quaternion.slerp(quaternion, lerp) // interpolate
 }
 
 function updateBonePosition(bone: any, position: any) {
@@ -119,21 +125,28 @@ function updateBonePosition(bone: any, position: any) {
   bone.position.lerp(vector, lerpAmount) // interpolate)
 }
 
-export function Character(props: JSX.IntrinsicElements['group']) {
-  const [faceResults, setFaceResults] = useState<any>(initialFaceResults)
+export function Character(props: CharacterProps) {
+  const [faceResults, setFaceResults] = useState<any>()
   const [poseResults, setPoseResults] = useState<any>(initialPoseResults)
   const [frameIndex, setFrameIndex] = useState(0)
   const { scene } = useGLTF("https://models.readyplayer.me/648acfafc91663ff974a4ff2.glb?morphTargets=ARKit")
   const { nodes } = useGraph(scene);
   const [bones, setBones] = useState<any>([])
+  const jobId = props.jobId
 
 
   const headMesh: any = (nodes.Wolf3D_Head || nodes.Wolf3D_Avatar || nodes.Wolf3D_Head_Custom);
   let count = 0
 
   useEffect(() => {
+    Api.fetchBlendshapes(jobId).then((res) => {
+      setFaceResults(res)
+    })
+  }, [])
+
+  useEffect(() => {
     scene.traverse((descendant) => {
-      switch(descendant.name) {
+      switch (descendant.name) {
         case "Hips":
           bones['Hips'] = descendant
           break
@@ -182,20 +195,24 @@ export function Character(props: JSX.IntrinsicElements['group']) {
     })
   }, [])
 
- useEffect(()=>{
+  useEffect(() => {
     setInterval(() => {
-      if(count >= faceResults.blendshapes.length - 1){
+      if (!faceResults) {
+        return
+      }
+
+      if (count >= faceResults.length - 1) {
         count = 0
       }
-      updateBlendshapes(headMesh, nodes, faceResults.blendshapes[count], faceResults.transformationMatrices[count]);
+      updateBlendshapes(headMesh, nodes, faceResults[count].blendshapes, faceResults[count].transformationMatrices);
       // updatePose(poseResults.pose[count], poseResults.poseWorld[count], bones)
       count = count + 1
     }, 50);
-  }, [nodes]);
+  }, [nodes, faceResults]);
 
   return (
     <>
-    <primitive object={scene} position={[0, -1.75, 3]} />
+      <primitive object={scene} position={[0, -1.75, 3]} />
     </>
   )
 }

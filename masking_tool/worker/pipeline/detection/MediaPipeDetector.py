@@ -96,7 +96,7 @@ class MediaPipeDetector(BaseDetector):
             mask = person_silhouette_result["mask"]
         else:
             mask = self.detect_body_silhouette(frame, timestamp_ms)
-            mask_inverted = ~mask
+            mask_inverted = 1 - mask
         return mask_inverted  # the opposite of the body mask is the background
 
     def detect_boundingbox(self, frame, part_name: str):

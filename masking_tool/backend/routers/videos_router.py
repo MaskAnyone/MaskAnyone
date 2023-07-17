@@ -8,7 +8,12 @@ from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 from utils.request_utils import range_requests_response
 from utils.preview_image_utils import aspect_preserving_resize_and_crop
 from utils.video_utils import extract_video_info_from_capture
-from models import RunParams, RequestVideoUploadParams, FinalizeVideoUploadParams, MpKinematicsType
+from models import (
+    RunParams,
+    RequestVideoUploadParams,
+    FinalizeVideoUploadParams,
+    MpKinematicsType,
+)
 from db.video_manager import VideoManager
 from db.result_video_manager import ResultVideoManager
 from db.result_mp_kinematics_manager import ResultMpKinematicsManager
@@ -23,18 +28,18 @@ result_mp_kinematics_manager = ResultMpKinematicsManager(db_connection)
 result_blendshapes_manager = ResultBlendshapesManager(db_connection)
 
 router = APIRouter(
-    prefix='/videos',
+    prefix="/videos",
 )
 
 
-@router.get('')
+@router.get("")
 def get_videos():
     videos = video_manager.fetch_videos()
 
     return {"videos": videos}
 
 
-@router.get('/{video_id}')
+@router.get("/{video_id}")
 def get_video_stream(video_id, request: Request):
     video_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
 
@@ -43,10 +48,10 @@ def get_video_stream(video_id, request: Request):
     )
 
 
-@router.get('/{video_id}/download')
+@router.get("/{video_id}/download")
 def download_video(video_id):
     video_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
-    return FileResponse(path=video_path, filename=video_path, media_type='video/mp4')
+    return FileResponse(path=video_path, filename=video_path, media_type="video/mp4")
 
 
 @router.get("/{video_id}/preview")
@@ -63,7 +68,7 @@ def get_preview_for_video(video_id: str):
     return Response(content=image_content, media_type="image/jpeg")
 
 
-@router.post('/upload/request')
+@router.post("/upload/request")
 def request_video_upload(params: RequestVideoUploadParams):
     if video_manager.has_video_with_name(params.video_name):
         raise HTTPException(
@@ -87,7 +92,7 @@ def finalize_video_upload(params: FinalizeVideoUploadParams):
     capture = cv2.VideoCapture(video_path)
 
     frame_count = capture.get(cv2.CAP_PROP_FRAME_COUNT)
-    video_preview_image_path = os.path.join(VIDEOS_BASE_PATH, params.video_id + '.jpg')
+    video_preview_image_path = os.path.join(VIDEOS_BASE_PATH, params.video_id + ".jpg")
     capture.set(cv2.CAP_PROP_POS_FRAMES, int(frame_count / 2))
     _, frame = capture.read()
     preview_image = aspect_preserving_resize_and_crop(frame, 80, 60)
@@ -119,9 +124,7 @@ async def upload_video(video_id, request: Request):
 def get_results_for_video(video_id: str):
     result_videos = result_video_manager.fetch_result_videos(video_id)
 
-    return {
-        'result_videos': result_videos
-    }
+    return {"result_videos": result_videos}
 
 
 @router.get("/{video_id}/results/{result_video_id}")
@@ -138,14 +141,14 @@ def get_result_video_stream(video_id: str, result_video_id: str, request: Reques
     )
 
 
-@router.get('/{video_id}/results/{result_video_id}/download')
+@router.get("/{video_id}/results/{result_video_id}/download")
 def download_result_video(video_id: str, result_video_id: str):
     video_path = os.path.join(RESULT_BASE_PATH, video_id, result_video_id + ".mp4")
 
     if not os.path.exists(video_path):
         raise HTTPException(status_code=404, detail="Requested result video not found.")
 
-    return FileResponse(path=video_path, filename=video_path, media_type='video/mp4')
+    return FileResponse(path=video_path, filename=video_path, media_type="video/mp4")
 
 
 @router.get("/{video_id}/results/{result_video_id}/preview")
@@ -170,39 +173,65 @@ def get_downloadable_result_files(video_id: str, result_video_id: str):
     mp_kinematics_entries = result_mp_kinematics_manager.find_entries(result_video_id)
 
     for blendshapes_id in blendshapes_entries:
-        files.append({
-            'id': blendshapes_id,
-            'title': 'Blendshapes',
-            'url': '/videos/' + video_id + '/results/' + result_video_id + '/blendshapes/' + blendshapes_id + '/download'
-        })
+        files.append(
+            {
+                "id": blendshapes_id,
+                "title": "Blendshapes",
+                "url": "/videos/"
+                + video_id
+                + "/results/"
+                + result_video_id
+                + "/blendshapes/"
+                + blendshapes_id
+                + "/download",
+            }
+        )
 
     for mp_kinematics_id, mp_kinematics_type in mp_kinematics_entries:
-        files.append({
-            'id': mp_kinematics_id,
-            'title': 'MP Kinematics ' + mp_kinematics_type,
-            'url': '/videos/' + video_id + '/results/' + result_video_id + '/mp-kinematics/' + mp_kinematics_id + '/download'
-        })
+        files.append(
+            {
+                "id": mp_kinematics_id,
+                "title": "MP Kinematics " + mp_kinematics_type,
+                "url": "/videos/"
+                + video_id
+                + "/results/"
+                + result_video_id
+                + "/mp-kinematics/"
+                + mp_kinematics_id
+                + "/download",
+            }
+        )
 
-    return {
-        'files': files
-    }
+    return {"files": files}
 
 
-@router.get("/{video_id}/results/{result_video_id}/mp-kinematics/{mp_kinematics_id}/download")
-def download_mp_kinematics(video_id: str, result_video_id: str, mp_kinematics_id: str, response: Response):
-    file_name = result_video_id + '_mp-kinematics.json'
+@router.get(
+    "/{video_id}/results/{result_video_id}/mp-kinematics/{mp_kinematics_id}/download"
+)
+def download_mp_kinematics(
+    video_id: str, result_video_id: str, mp_kinematics_id: str, response: Response
+):
+    file_name = result_video_id + "_mp-kinematics.json"
 
-    result_mp_kinematics = result_mp_kinematics_manager.fetch_result_mp_kinematics_entry(mp_kinematics_id)
+    result_mp_kinematics = (
+        result_mp_kinematics_manager.fetch_result_mp_kinematics_entry(mp_kinematics_id)
+    )
 
-    response.headers['Content-Disposition'] = 'attachment; filename="' + file_name + '"'
+    response.headers["Content-Disposition"] = 'attachment; filename="' + file_name + '"'
     return result_mp_kinematics.data
 
 
-@router.get("/{video_id}/results/{result_video_id}/blendshapes/{blendshapes_id}/download")
-def download_blendshapes(video_id: str, result_video_id: str, blendshapes_id: str, response: Response):
-    file_name = result_video_id + '_blendshapes.json'
+@router.get(
+    "/{video_id}/results/{result_video_id}/blendshapes/{blendshapes_id}/download"
+)
+def download_blendshapes(
+    video_id: str, result_video_id: str, blendshapes_id: str, response: Response
+):
+    file_name = result_video_id + "_blendshapes.json"
 
-    result_blendshapes = result_blendshapes_manager.fetch_result_blendshapes_entry(blendshapes_id)
+    result_blendshapes = result_blendshapes_manager.fetch_result_blendshapes_entry(
+        blendshapes_id
+    )
 
-    response.headers['Content-Disposition'] = 'attachment; filename="' + file_name + '"'
+    response.headers["Content-Disposition"] = 'attachment; filename="' + file_name + '"'
     return result_blendshapes.data

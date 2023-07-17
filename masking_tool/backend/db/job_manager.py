@@ -62,18 +62,18 @@ class JobManager:
     def fetch_job_by_result_video_id(self, result_video_id: str) -> Job:
         job_data_list = self.__db_connection.select_all(
             "SELECT * FROM jobs WHERE result_video_id=%(result_video_id)s",
-            {'result_video_id': result_video_id}
+            {"result_video_id": result_video_id},
         )
 
         if len(job_data_list) < 1:
-            raise Exception('Could not find job for result video ' + result_video_id)
+            raise Exception("Could not find job for result video " + result_video_id)
 
         return Job(*job_data_list[0])
 
     def update_job_progress(self, job_id: str, progress: int):
         self.__db_connection.execute(
             "UPDATE jobs SET progress=%(progress)s WHERE id=%(id)s",
-            {"progress": progress, "id": job_id}
+            {"progress": progress, "id": job_id},
         )
 
     def mark_job_as_finished(self, job_id: str):
