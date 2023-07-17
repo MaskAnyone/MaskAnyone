@@ -31,8 +31,8 @@ const DoubleVideo = (props: DoubleVideoProps) => {
                 </video>
             );
         }
-        if (view === views.blendshapes3D) {
-            return (<BlendshapesRenderer3D jobId={"ca04b399-d983-4fb2-acfd-70a9c1d55cc6"} />)
+        if (view === views.blendshapes3D && props.resultVideoId) {
+            return (<BlendshapesRenderer3D resultVideoId={props.resultVideoId} />)
         }
         if (view === views.skeleton3D) {
             return <PoseRenderer3D />

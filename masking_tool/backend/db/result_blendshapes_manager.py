@@ -34,14 +34,16 @@ class ResultBlendshapesManager:
 
         return ResultBlendshapes(*result_blendshapes_data_list[0])
 
-    def fetch_result_blendshapes_entry_by_jobid(self, job_id: str):
+    def fetch_result_blendshapes_entry_by_resvid_id(self, result_video_id: str):
         result_blendshapes_data_list = self.__db_connection.select_all(
-            "SELECT * FROM result_blendshapes WHERE job_id=%(job_id)s",
-            {"job_id": job_id},
+            "SELECT * FROM result_blendshapes WHERE result_video_id=%(result_video_id)s",
+            {"result_video_id": result_video_id},
         )
 
         if not result_blendshapes_data_list:
-            raise Exception(f"No blendshapes for job id {job_id} found")
+            raise Exception(
+                f"No blendshapes for result video id {result_video_id} found"
+            )
 
         return ResultBlendshapes(*result_blendshapes_data_list[0])
 

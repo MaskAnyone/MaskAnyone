@@ -30,7 +30,7 @@ import Api from "../../api";
 
 
 interface CharacterProps {
-  jobId: string
+  resultVideoId: string
 }
 
 interface Blendshapes {
@@ -132,14 +132,14 @@ export function Character(props: CharacterProps) {
   const { scene } = useGLTF("https://models.readyplayer.me/648acfafc91663ff974a4ff2.glb?morphTargets=ARKit")
   const { nodes } = useGraph(scene);
   const [bones, setBones] = useState<any>([])
-  const jobId = props.jobId
+  const resultVideoId = props.resultVideoId
 
 
   const headMesh: any = (nodes.Wolf3D_Head || nodes.Wolf3D_Avatar || nodes.Wolf3D_Head_Custom);
   let count = 0
 
   useEffect(() => {
-    Api.fetchBlendshapes(jobId).then((res) => {
+    Api.fetchBlendshapes(resultVideoId).then((res) => {
       setFaceResults(res)
     })
   }, [])

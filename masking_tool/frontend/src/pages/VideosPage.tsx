@@ -1,15 +1,17 @@
-import {useEffect, useState} from "react";
-import {useParams} from "react-router";
-import {Box, Divider} from "@mui/material";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router";
+import { Box, Divider } from "@mui/material";
 import DoubleVideo from "../components/videos/DoubleVideo";
 import VideoResultsOverview from "../components/videos/VideoResultsOverview";
-import {useDispatch} from "react-redux";
+import { useDispatch } from "react-redux";
 import Command from "../state/actions/command";
 import VideoTaskBar from "../components/videos/VideoTaskBar";
+import Api from "../api";
 
 const VideosPage = () => {
     const dispatch = useDispatch();
     const { videoId, resultVideoId } = useParams<{ videoId: string, resultVideoId: string }>();
+    const [jobId, setJobId] = useState<string>()
 
     useEffect(() => {
         if (videoId) {

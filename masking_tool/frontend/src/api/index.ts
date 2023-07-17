@@ -33,9 +33,9 @@ const Api = {
 
         return result.data;
     },
-    fetchBlendshapes: async (jobId: string): Promise<any> => {
+    fetchBlendshapes: async (resultVideoId: string): Promise<any> => {
         const result = await sendApiRequest({
-            url: `jobs/${jobId}/results/blendshapes`,
+            url: `/results/${resultVideoId}/blendshapes`,
             method: 'get'
         });
 
