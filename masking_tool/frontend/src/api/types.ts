@@ -42,6 +42,7 @@ export interface ApiFetchJobsResponse {
         created_at: string;
         started_at: string|null;
         finished_at: string|null;
+        progress: number;
     }[];
 }
 

@@ -78,12 +78,12 @@ class JobManager:
 
     def mark_job_as_finished(self, job_id: str):
         self.__db_connection.execute(
-            "UPDATE jobs SET status=%(status)s, finished_at=current_timestamp WHERE id=%(id)s",
+            "UPDATE jobs SET status=%(status)s, finished_at=current_timestamp, progress=100 WHERE id=%(id)s",
             {"status": "finished", "id": job_id},
         )
 
     def mark_job_as_failed(self, job_id: str):
         self.__db_connection.execute(
-            "UPDATE jobs SET status=%(status)s, finished_at=current_timestamp WHERE id=%(id)s",
+            "UPDATE jobs SET status=%(status)s, finished_at=current_timestamp, progress=100 WHERE id=%(id)s",
             {"status": "failed", "id": job_id},
         )

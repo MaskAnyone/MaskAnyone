@@ -36,8 +36,12 @@ def register_worker(worker_id: str):
 
 @router.get("/jobs/next")
 def fetch_next_job(worker_id: str):
-    worker_manager.update_worker_activity(worker_id)
     job = job_manager.fetch_next_job()
+
+    if job:
+        worker_manager.set_worker_job(worker_id, job.id)
+    else:
+        worker_manager.update_worker_activity(worker_id)
 
     return {"job": job}
 
@@ -50,14 +54,14 @@ def update_job_progress(worker_id: str, job_id: str, params: UpdateJobProgressPa
 
 @router.post("/jobs/{job_id}/finish")
 def finish_job(worker_id: str, job_id: str):
-    worker_manager.update_worker_activity(worker_id)
     job_manager.mark_job_as_finished(job_id)
+    worker_manager.remove_worker_job(worker_id, job_id)
 
 
 @router.post("/jobs/{job_id}/fail")
 def fail_job(worker_id: str, job_id: str):
-    worker_manager.update_worker_activity(worker_id)
     job_manager.mark_job_as_failed(job_id)
+    worker_manager.remove_worker_job(worker_id, job_id)
 
 
 @router.get("/videos/{video_id}")

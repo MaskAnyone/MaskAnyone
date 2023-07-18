@@ -8,4 +8,5 @@ export interface Job {
     createdAt: Date;
     startedAt?: Date;
     finishedAt?: Date;
+    progress: number;
 }

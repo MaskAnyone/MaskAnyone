@@ -17,6 +17,7 @@ import Selector from "../state/selector";
 import {Job} from "../state/types/Job";
 import {Link} from "react-router-dom";
 import Paths from "../paths";
+import JobProgress from "../components/runs/JobProgress";
 
 const statusColors: { [status: string] : "info"|"success"|"error" } = {
     'running': 'info',
@@ -52,40 +53,44 @@ interface HeadCell {
   disablePadding: boolean;
   id: keyof Job;
   label: string;
-  numeric: boolean;
 }
 
 const headCells: readonly HeadCell[] = [
   {
+    id: 'status',
+    disablePadding: false,
+    label: 'Status',
+  },
+  {
     id: 'videoId',
-    numeric: false,
     disablePadding: false,
     label: 'Video',
   },
   {
     id: 'type',
-    numeric: false,
     disablePadding: false,
     label: 'Type',
   },
   {
     id: 'createdAt',
-    numeric: false,
     disablePadding: false,
     label: 'Created At',
   },
   {
     id: 'startedAt',
-    numeric: false,
     disablePadding: false,
     label: 'Started At',
   },
   {
-    id: 'status',
-    numeric: true,
+    id: 'finishedAt',
     disablePadding: false,
-    label: 'Status',
+    label: 'Finished At',
   },
+  {
+    id: 'progress',
+    disablePadding: false,
+    label: 'Fortschritt',
+  }
 ];
 
 interface EnhancedTableProps {
@@ -109,7 +114,7 @@ function EnhancedTableHead(props: EnhancedTableProps) {
         {headCells.map((headCell) => (
           <TableCell
             key={headCell.id}
-            align={headCell.numeric ? 'right' : 'left'}
+            align={'left'}
             padding={headCell.disablePadding ? 'none' : 'normal'}
             sortDirection={orderBy === headCell.id ? order : false}
           >
@@ -204,6 +209,9 @@ const RunsPage = () => {
                     sx={{ cursor: 'pointer' }}
                   >
                     <TableCell>
+                      <Chip label={row.status} color={statusColors[row.status]} />
+                    </TableCell>
+                    <TableCell>
                       <MuiLink component={Link} to={Paths.makeVideoDetailsUrl(row.videoId)}>
                         {videos.find(video => video.id === row.videoId)?.name}
                       </MuiLink>
@@ -211,8 +219,9 @@ const RunsPage = () => {
                     <TableCell>{row.type}</TableCell>
                     <TableCell>{row.createdAt.toLocaleString()}</TableCell>
                     <TableCell>{row.startedAt?.toLocaleString()}</TableCell>
-                    <TableCell align="right">
-                        <Chip label={row.status} color={statusColors[row.status]} />
+                    <TableCell>{row.finishedAt?.toLocaleString()}</TableCell>
+                    <TableCell sx={{ paddingTop: 1, paddingBottom: 1 }}>
+                      <JobProgress value={row.progress} />
                     </TableCell>
                   </TableRow>
                 );

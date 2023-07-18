@@ -39,6 +39,7 @@ const onFetchJobList = function*(payload: FetchJobListPayload) {
             createdAt: new Date(job.created_at),
             startedAt: job.started_at ? new Date(job.started_at) : undefined,
             finishedAt: job.finished_at ? new Date(job.finished_at) : undefined,
+            progress: job.progress,
         }));
 
         yield put(Event.Job.jobListFetched({ jobList }));

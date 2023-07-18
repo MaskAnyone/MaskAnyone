@@ -30,6 +30,9 @@ services:
       - ./app.env
     volumes:
       - ./worker:/app
+    mem_limit: 3072m
+    cpus: 4
+    scale: 2
     #deploy:
     #  resources:
     #    reservations:
