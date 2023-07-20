@@ -5,6 +5,7 @@ import routers.videos_router as videos_router
 import routers.workers_router as workers_router
 import routers.worker_router as worker_router
 import routers.results_router as results_router
+import routers.presets_router as presets_router
 
 
 app = FastAPI()
@@ -21,5 +22,8 @@ app.include_router(workers_router.router)
 # /_worker
 app.include_router(worker_router.router)
 
-# /_results
+# /results
 app.include_router(results_router.router)
+
+# /presets
+app.include_router(presets_router.router)
