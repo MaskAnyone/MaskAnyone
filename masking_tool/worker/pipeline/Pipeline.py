@@ -25,6 +25,7 @@ from pipeline.PipelineTypes import (
 )
 from utils.video_utils import setup_video_processing
 from utils.app_utils import save_preview_image
+from models.docker_maskers import docker_maskers as known_docker_mask_extractors
 
 import cv2
 
@@ -35,6 +36,7 @@ class Pipeline:
 
         self.detectors = []
         self.mask_extractors = []
+        self.docker_mask_extractors = {}
         self.ts_file_handlers = {}
 
         self.model_3d_only = False
@@ -135,10 +137,16 @@ class Pipeline:
             or params_3d["skeleton"]
         ):
             if "mediapipe" in required_maskers:
-                params = required_maskers["mediapipe"]
+                parts_to_mask = required_maskers["mediapipe"]
             else:
-                params = []
-            self.mask_extractors.append(MediaPipeMaskExtractor(params, params_3d))
+                parts_to_mask = []
+            self.mask_extractors.append(
+                MediaPipeMaskExtractor(parts_to_mask, params_3d)
+            )
+
+        for masker in required_maskers:
+            if masker in known_docker_mask_extractors:
+                self.docker_mask_extractors[masker] = required_maskers[masker]
 
     def init_ts_file_handlers(self, video_id: str):
         for mask_extractor in self.mask_extractors:
@@ -202,6 +210,11 @@ class Pipeline:
         print(f"Running job on video {video_id}")
         video_in_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
         video_out_path = os.path.join(RESULT_BASE_PATH, video_id + ".mp4")
+
+        if self.docker_mask_extractors:
+            for mask_extractor in self.docker_mask_extractors:
+                self.backend_client.create_job(mask_extractor)
+
         video_cap, out = setup_video_processing(video_in_path, video_out_path)
         is_first_frame = True
 

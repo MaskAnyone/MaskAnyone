@@ -25,4 +25,5 @@ def create_job(run_params: RunParams):
         run_params.video_id,
         run_params.result_video_id,
         run_params.run_data,
+        "basic_masking",
     )

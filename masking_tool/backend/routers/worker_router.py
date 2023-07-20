@@ -34,9 +34,9 @@ def register_worker(worker_id: str):
     worker_manager.register_worker(worker_id)
 
 
-@router.get("/jobs/next")
-def fetch_next_job(worker_id: str):
-    job = job_manager.fetch_next_job()
+@router.get("/jobs/next/{job_type}")
+def fetch_next_job(job_type: str, worker_id: str):
+    job = job_manager.fetch_next_job(job_type)
 
     if job:
         worker_manager.set_worker_job(worker_id, job.id)
@@ -140,4 +140,15 @@ async def upload_result_blendshapes(
 
     result_blendshapes_manager.create_result_mp_kinematics_entry(
         str(uuid.uuid4()), result_video_id, video_id, job.id, await request.json()
+    )
+
+
+@router.post("/jobs/create/{job_type}")
+def create_job(job_type: str, run_params: RunParams):
+    job_manager.create_new_job(
+        run_params.id,
+        run_params.video_id,
+        run_params.result_video_id,
+        run_params.run_data,
+        job_type,
     )

@@ -230,3 +230,11 @@ export const faceMeshFormSchema: RJSFSchema = {
     timeseries: { type: 'boolean', title: 'Save output as timeseries in CSV', default: false },
   },
 };
+
+export const bodyMeshFormSchema: RJSFSchema = {
+  type: 'object',
+  properties: {
+    maskingModel: { title: 'The model that should be used for the body mesh.', type: 'string', default: 'vibe', enum: ['vibe'] },
+    timeseries: { type: 'boolean', title: 'Save output as timeseries in CSV', default: false },
+  },
+};

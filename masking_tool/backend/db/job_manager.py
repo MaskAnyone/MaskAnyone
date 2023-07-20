@@ -19,20 +19,22 @@ class JobManager:
 
         return result
 
-    def create_new_job(self, id: str, video_id: str, result_video_id: str, data: dict):
+    def create_new_job(
+        self, id: str, video_id: str, result_video_id: str, data: dict, job_type: str
+    ):
         self.__db_connection.execute(
             "INSERT INTO jobs (id, video_id, result_video_id, type, status, data, created_at) VALUES (%(id)s, %(video_id)s, %(result_video_id)s, %(type)s, %(status)s, %(data)s, current_timestamp)",
             {
                 "id": id,
                 "video_id": video_id,
                 "result_video_id": result_video_id,
-                "type": "basic_masking",
+                "type": job_type,
                 "status": "open",
                 "data": json.dumps(data),
             },
         )
 
-    def fetch_next_job(self):
+    def fetch_next_job(self, job_type: str):
         # @todo make this nice
         cursor = self.__db_connection.get_cursor()
         jobs = []
@@ -40,7 +42,8 @@ class JobManager:
         try:
             cursor.execute("BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ")
             cursor.execute(
-                "SELECT * FROM jobs WHERE status=%(status)s LIMIT 1", {"status": "open"}
+                "SELECT * FROM jobs WHERE status=%(status)s AND type=%(job_type)s LIMIT 1",
+                {"status": "open", "job_type": job_type},
             )
             jobs = cursor.fetchall()
 

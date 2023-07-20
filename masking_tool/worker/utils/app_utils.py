@@ -4,6 +4,7 @@ import cv2
 from config import (
     BLENDSHAPES_BASE_PATH,
     RESULT_BASE_PATH,
+    TEMP_PATH,
     TS_BASE_PATH,
     VIDEOS_BASE_PATH,
 )
@@ -23,19 +24,17 @@ def init_directories():
     if not os.path.exists(BLENDSHAPES_BASE_PATH):
         os.mkdir(BLENDSHAPES_BASE_PATH)
 
-    temp_dir_path = os.path.join(RESULT_BASE_PATH, "temp")
-    if not os.path.exists(temp_dir_path):
-        os.mkdir(temp_dir_path)
+    if not os.path.exists(TEMP_PATH):
+        os.mkdir(TEMP_PATH)
     else:
         clear_temp_dir()
 
 
 def clear_temp_dir():
     print("Cleaning temp dir")
-    temp_dir_path = os.path.join(RESULT_BASE_PATH, "temp")
-    if os.path.exists(temp_dir_path):
-        for f in os.listdir(temp_dir_path):
-            os.remove(os.path.join(temp_dir_path, f))
+    if os.path.exists(TEMP_PATH):
+        for f in os.listdir(TEMP_PATH):
+            os.remove(os.path.join(TEMP_PATH, f))
 
 
 def save_preview_image(masked_video_path):

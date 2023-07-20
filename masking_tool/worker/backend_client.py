@@ -19,8 +19,8 @@ class BackendClient:
     def register_worker(self, worker_id: str):
         requests.post(self._make_url("register"))
 
-    def fetch_next_job(self):
-        response = requests.get(self._make_url("jobs/next"))
+    def fetch_next_job(self, job_type):
+        response = requests.get(self._make_url("jobs/next/{job_type}"))
         return response.json()["job"]
 
     def fetch_video(self, video_id: str):
@@ -79,8 +79,11 @@ class BackendClient:
     def update_progress(self, job_id: str, progress: int):
         requests.post(
             self._make_url("jobs/" + job_id + "/progress"),
-            json={'progress': progress},
+            json={"progress": progress},
         )
 
     def _make_url(self, path: str) -> str:
         return BASE_PATH + self._worker_id + "/" + path
+
+    def create_job(self, job_type: str, video_id, data: dict):
+        requests.post(self._make_url("jobs/create/job_type"), json=data)

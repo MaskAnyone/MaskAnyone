@@ -25,11 +25,13 @@ services:
   python-worker:
     build:
       context: ./docker/python
-    command: "python worker.py"
+    command: "python worker.py "
     env_file:
       - ./app.env
     volumes:
       - ./worker:/app
+    environment:
+      WORKER_TYPE: "basic_masking"
     mem_limit: 3072m
     cpus: 4
     scale: 2
@@ -38,7 +40,18 @@ services:
     #    reservations:
     #      devices:
     #        - driver: nvidia
-    #          capabilities: [ gpu ]
+    #          capabilities: [ gpu ]+
+
+  python-worker-vibe:
+    build:
+      context: ./docker/custom_models/vibe
+    command: "python worker.py "
+    env_file:
+      - ./app.env
+    volumes:
+      - ./worker:/app
+    environment:
+      WORKER_TYPE: "vibe"
 
   postgres:
     build:
@@ -69,7 +82,6 @@ services:
     command: "yarn start"
     volumes:
       - ./frontend:/app
-
 
 volumes:
   data-postgres:

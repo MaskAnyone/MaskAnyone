@@ -1,5 +1,5 @@
 import { MaskingMethods } from "../state/types/RunParamRendering";
-import { blackoutFormSchemaBG, blackoutFormSchemaSubject, blackoutFormSchemaSubjectUI, blurFormSchemaBG, blurFormSchemaSubject, blurFormSchemaSubjectUI, faceMeshFormSchema, skeletonFormSchema } from "./formSchemas";
+import { blackoutFormSchemaBG, blackoutFormSchemaSubject, blackoutFormSchemaSubjectUI, blurFormSchemaBG, blurFormSchemaSubject, blurFormSchemaSubjectUI, bodyMeshFormSchema, faceMeshFormSchema, skeletonFormSchema } from "./formSchemas";
 
 export const maskingMethods: MaskingMethods = {
     face: {
@@ -131,6 +131,15 @@ export const maskingMethods: MaskingMethods = {
                     maskingModel: "mediapipe",
                     numPoses: 1,
                     confidence: 0.5,
+                    timeseries: false
+                }
+            },
+            vibe: {
+                name: "Body Mesh",
+                description: "Regress a mesh over the body of the subjects",
+                parameterSchema: bodyMeshFormSchema,
+                defaultValues: {
+                    maskingModel: "vibe",
                     timeseries: false
                 }
             },

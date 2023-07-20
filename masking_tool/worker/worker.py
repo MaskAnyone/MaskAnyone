@@ -1,14 +1,24 @@
+import json
+import os
 from backend_client import BackendClient
 from local_data_manager import LocalDataManager
+from config import TEMP_PATH, VIDEOS_BASE_PATH
+from utils.runparams_utils import (
+    produces_blendshapes,
+    produces_kinematics,
+    produces_out_vid,
+)
 from pipeline.Pipeline import Pipeline
 from video_manager import VideoManager
 import time
 import sys
 import uuid
 from utils.app_utils import init_directories
+import subprocess
 
 DATA_BASE_DIR = "local_data"
 worker_id = str(uuid.uuid4())
+worker_type = os.environ["WORKER_TYPE"]
 
 backend_client = BackendClient(worker_id)
 backend_client.register_worker(worker_id)
@@ -19,7 +29,7 @@ init_directories()
 
 def fetch_next_job():
     try:
-        return backend_client.fetch_next_job()
+        return backend_client.fetch_next_job(worker_type)
     except Exception as error:
         print("Error while fetching next job")
         print(error)
@@ -27,46 +37,48 @@ def fetch_next_job():
     return None
 
 
-def produces_out_vid(run_params: dict):
-    masking_params = run_params["videoMasking"]
-    for video_part in masking_params:
-        if masking_params[video_part]["hidingStrategy"]["key"] != "none":
-            return True
-        if masking_params[video_part]["maskingStrategy"]["key"] != "none":
-            return True
-    return False
-
-
-def produces_kinematics(run_params: dict):
-    if run_params["threeDModelCreation"]["skeleton"]:
-        return True
-    return False
-
-
-def produces_blendshapes(run_params: dict):
-    if run_params["threeDModelCreation"]["blendshapes"]:
-        return True
-    return False
-
-
 def handle_job(job):
     print("Start working on job " + job["id"])
 
-    video_id = job["video_id"]
-    video_manager.load_original_video(video_id)
+    video_manager.load_original_video(job["video_id"])
 
+    if worker_type == "basic_masking":
+        handle_job_basic_masking(job)
+    else:
+        handle_job_custom_model(job)
+
+
+def handle_job_basic_masking(job):
+    video_id = job["video_id"]
     masking_pipeline = Pipeline(job["data"], backend_client)
     masking_pipeline.run(video_id, job["id"])
 
     result_video_id = job["result_video_id"]
-    if produces_out_vid(job["data"]):
+    run_params = job["data"]
+    if produces_out_vid(run_params):
         video_manager.upload_result_video(video_id, result_video_id)
         video_manager.upload_result_video_preview_image(video_id, result_video_id)
-    if produces_kinematics(job["data"]):
+    if produces_kinematics(run_params):
         video_manager.upload_result_kinematics(video_id, result_video_id)
-    if produces_blendshapes(job["data"]):
+    if produces_blendshapes(run_params):
         video_manager.upload_result_blendshapes(video_id, result_video_id)
     video_manager.cleanup_result_video_files(video_id)
+
+
+def handle_job_custom_model(job):
+    model_name = job[type]
+    video_in_path = os.path.join(VIDEOS_BASE_PATH, job["video_id"] + ".mp4")
+    config_path = os.path.join("models", "docker_models", model_name, "config.json")
+    if not os.path.exists(config_path):
+        raise Exception(f"No config for docker image {model_name} found")
+    with open(config_path, "r") as f:
+        data = json.load(f)
+        arguments = data["arguments"]
+        run_command = data["run_command"]
+        video_out_path = os.path.join(TEMP_PATH, f"{job['id']}.mp4")
+        argument_list = [f"{key}={arguments[key]}" for key in arguments]
+        command = [run_command, video_in_path, video_out_path, *argument_list]
+        subprocess.check_call(command, shell=False)
 
 
 while True:
