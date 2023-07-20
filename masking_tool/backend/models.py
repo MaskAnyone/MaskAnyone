@@ -38,6 +38,13 @@ class UpdateJobProgressParams(BaseModel):
     progress: int
 
 
+class CreatePresetParams(BaseModel):
+    id: str
+    name: str
+    description: str
+    data: dict
+
+
 class MpKinematicsType(str, Enum):
     body = "body"
     face = "face"
