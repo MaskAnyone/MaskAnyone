@@ -1,3 +1,4 @@
+import uuid
 import requests
 from enum import Enum
 
@@ -19,8 +20,8 @@ class BackendClient:
     def register_worker(self, worker_id: str):
         requests.post(self._make_url("register"))
 
-    def fetch_next_job(self, job_type):
-        response = requests.get(self._make_url("jobs/next/{job_type}"))
+    def fetch_next_job(self, job_type: str):
+        response = requests.get(self._make_url(f"jobs/next/{job_type}"))
         return response.json()["job"]
 
     def fetch_video(self, video_id: str):
@@ -85,5 +86,11 @@ class BackendClient:
     def _make_url(self, path: str) -> str:
         return BASE_PATH + self._worker_id + "/" + path
 
-    def create_job(self, job_type: str, video_id, data: dict):
-        requests.post(self._make_url("jobs/create/job_type"), json=data)
+    def create_job(self, job_type: str, video_id: str, arguments: dict):
+        run_params = {
+            "id": str(uuid.uuid4()),
+            "video_id": video_id,
+            "result_video_id": str(uuid.uuid4()),
+            "run_data": arguments,
+        }
+        requests.post(self._make_url(f"jobs/create/{job_type}"), json=run_params)

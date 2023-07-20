@@ -213,7 +213,9 @@ class Pipeline:
 
         if self.docker_mask_extractors:
             for mask_extractor in self.docker_mask_extractors:
-                self.backend_client.create_job(mask_extractor)
+                self.backend_client.create_job(
+                    mask_extractor, video_id, {"arg1": "someVal"}
+                )
 
         video_cap, out = setup_video_processing(video_in_path, video_out_path)
         is_first_frame = True

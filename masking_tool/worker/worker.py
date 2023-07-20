@@ -29,6 +29,7 @@ init_directories()
 
 def fetch_next_job():
     try:
+        print(worker_type)
         return backend_client.fetch_next_job(worker_type)
     except Exception as error:
         print("Error while fetching next job")
@@ -50,10 +51,10 @@ def handle_job(job):
 
 def handle_job_basic_masking(job):
     video_id = job["video_id"]
+    result_video_id = job["result_video_id"]
     masking_pipeline = Pipeline(job["data"], backend_client)
     masking_pipeline.run(video_id, job["id"])
 
-    result_video_id = job["result_video_id"]
     run_params = job["data"]
     if produces_out_vid(run_params):
         video_manager.upload_result_video(video_id, result_video_id)
@@ -66,18 +67,27 @@ def handle_job_basic_masking(job):
 
 
 def handle_job_custom_model(job):
-    model_name = job[type]
+    print(job)
+    model_name = job["type"]
     video_in_path = os.path.join(VIDEOS_BASE_PATH, job["video_id"] + ".mp4")
     config_path = os.path.join("models", "docker_models", model_name, "config.json")
     if not os.path.exists(config_path):
         raise Exception(f"No config for docker image {model_name} found")
     with open(config_path, "r") as f:
         data = json.load(f)
-        arguments = data["arguments"]
+        arguments = job["data"]
         run_command = data["run_command"]
+        entry_point = data["entry_point"]
+        entry_point = os.path.join("models", "docker_models", model_name, entry_point)
         video_out_path = os.path.join(TEMP_PATH, f"{job['id']}.mp4")
         argument_list = [f"{key}={arguments[key]}" for key in arguments]
-        command = [run_command, video_in_path, video_out_path, *argument_list]
+        command = [
+            run_command,
+            entry_point,
+            video_in_path,
+            video_out_path,
+            *argument_list,
+        ]
         subprocess.check_call(command, shell=False)
 
 

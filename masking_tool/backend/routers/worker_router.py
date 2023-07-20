@@ -46,6 +46,18 @@ def fetch_next_job(job_type: str, worker_id: str):
     return {"job": job}
 
 
+@router.post("/jobs/create/{job_type}")
+def create_job(job_type: str, run_params: RunParams):
+    print("aa")
+    job_manager.create_new_job(
+        run_params.id,
+        run_params.video_id,
+        run_params.result_video_id,
+        run_params.run_data,
+        job_type,
+    )
+
+
 @router.post("/jobs/{job_id}/progress")
 def update_job_progress(worker_id: str, job_id: str, params: UpdateJobProgressParams):
     worker_manager.update_worker_activity(worker_id)
@@ -140,15 +152,4 @@ async def upload_result_blendshapes(
 
     result_blendshapes_manager.create_result_mp_kinematics_entry(
         str(uuid.uuid4()), result_video_id, video_id, job.id, await request.json()
-    )
-
-
-@router.post("/jobs/create/{job_type}")
-def create_job(job_type: str, run_params: RunParams):
-    job_manager.create_new_job(
-        run_params.id,
-        run_params.video_id,
-        run_params.result_video_id,
-        run_params.run_data,
-        job_type,
     )

@@ -4,6 +4,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /app
 
+COPY . .
+
 RUN apt-get update \
     && apt-get -y install \
     python3 \
@@ -18,6 +20,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install \
+    fastapi \
     mediapipe \
+    uvicorn[standard] \
     ultralytics \
-    requests \
+    psycopg2 \
+    requests

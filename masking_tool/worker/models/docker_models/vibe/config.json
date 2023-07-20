@@ -1,0 +1,12 @@
+{
+    "image_name": "vibe",
+    "run_command": "python3",
+    "entry_point": "vibe.py",
+    "accepted_subjects": [
+        "body"
+    ],
+    "argument_schema": {
+        "type": "object",
+        "properties": {}
+    }
+}
