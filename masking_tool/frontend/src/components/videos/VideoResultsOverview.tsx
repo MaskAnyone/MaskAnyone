@@ -1,10 +1,10 @@
-import { Box, Divider, Grid, Paper, Tooltip, Typography, styled } from "@mui/material";
-import HelpIcon from '@mui/icons-material/Help';
+import {Box, Paper, Typography, styled, Card, CardMedia, CardContent, IconButton} from "@mui/material";
 import { useSelector } from "react-redux";
 import Selector from "../../state/selector";
 import Config from "../../config";
 import { useNavigate } from "react-router";
 import Paths from "../../paths";
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 
 interface VideoResultsProps {
     videoId: string;
@@ -33,32 +33,32 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
     };
 
     return (
-        <>
-            <Divider style={{ marginTop: "20px" }} />
-            <Box component="div" sx={{ bgcolor: 'background.paper' }}>
-                <div style={{ display: "flex", alignItems: "center", marginTop: "20px" }}>
-                    <Typography variant={"h6"} style={{ marginRight: "10px" }}>Processed Results</Typography>
-                    <Tooltip title=" Click on a result to run it next to the original video">
-                        <HelpIcon />
-                    </Tooltip>
-                </div>
-                <Grid container spacing={4}>
-                    {resultVideos.map(resultVideo => {
-                        return (
-                            <Grid item xs={4} key={resultVideo.id}>
-                                <Item elevation={3} onClick={() => selectResultVideo(resultVideo.id)} style={resultVideo.id === props.resultVideoId ? { background: "#3498db" } : {}}>
-                                    <img
-                                        src={`${Config.api.baseUrl}/videos/${resultVideo.videoId}/results/${resultVideo.id}/preview`}
-                                        style={{ maxHeight: '200px', maxWidth: "100%" }}
-                                    />
-                                    <h4>{resultVideo.id}</h4>
-                                </Item>
-                            </Grid>
-                        )
-                    })}
-                </Grid>
+        <Box component="div">
+            <Box component={'div'}>
+                <Typography variant={"h6"} style={{ marginRight: "10px" }}>Processed Results</Typography>
             </Box>
-        </>
+            <Box component={'div'} sx={{ overflowX: 'auto', whiteSpace: 'nowrap', paddingBottom: 1, paddingTop: 0.5 }}>
+                {resultVideos.map(resultVideo => (
+                    <Card variant={'outlined'} sx={{ width: '250px', display: 'inline-block', marginRight: '16px', cursor: 'pointer', '&:hover': { boxShadow: '0 0 13px 0 #c8c8c8' }}} onClick={() => selectResultVideo(resultVideo.id)}>
+                        <CardMedia
+                            sx={{ height: 150 }}
+                            image={`${Config.api.baseUrl}/videos/${resultVideo.videoId}/results/${resultVideo.id}/preview`}
+                        />
+                        <CardContent sx={{ position: 'relative' }}>
+                            <Typography gutterBottom variant="h6" component="div" sx={resultVideo.id === props.resultVideoId ? { color: '#1976d2' } : undefined}>
+                                Result
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                20.07.2023
+                            </Typography>
+                            <IconButton sx={{ position: 'absolute', top: 4, right: 0 }}>
+                                <MoreVertIcon />
+                            </IconButton>
+                        </CardContent>
+                    </Card>
+                ))}
+            </Box>
+        </Box>
     )
 
 }
