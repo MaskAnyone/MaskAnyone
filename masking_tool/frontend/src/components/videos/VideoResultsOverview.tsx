@@ -37,15 +37,15 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
             <Box component={'div'}>
                 <Typography variant={"h6"} style={{ marginRight: "10px" }}>Processed Results</Typography>
             </Box>
-            <Box component={'div'} sx={{ overflowX: 'auto', whiteSpace: 'nowrap', paddingBottom: 1, paddingTop: 0.5 }}>
+            <Box component={'div'} sx={{ overflowX: 'auto', whiteSpace: 'nowrap', padding: 1.5, margin: '-4px -12px' }}>
                 {resultVideos.map(resultVideo => (
-                    <Card variant={'outlined'} sx={{ width: '250px', display: 'inline-block', marginRight: '16px', cursor: 'pointer', '&:hover': { boxShadow: '0 0 13px 0 #c8c8c8' }}} onClick={() => selectResultVideo(resultVideo.id)}>
+                    <Card variant={'outlined'} sx={{ width: '250px', display: 'inline-block', marginRight: '16px', cursor: 'pointer', '&:hover': { boxShadow: '0 0 13px 0 #c8c8c8' }, '&.selected': { boxShadow: '0 0 13px 0 #777'}}} className={resultVideo.id === props.resultVideoId ? 'selected' : undefined} onClick={() => selectResultVideo(resultVideo.id)}>
                         <CardMedia
                             sx={{ height: 150 }}
                             image={`${Config.api.baseUrl}/videos/${resultVideo.videoId}/results/${resultVideo.id}/preview`}
                         />
                         <CardContent sx={{ position: 'relative' }}>
-                            <Typography gutterBottom variant="h6" component="div" sx={resultVideo.id === props.resultVideoId ? { color: '#1976d2' } : undefined}>
+                            <Typography gutterBottom variant="h6" component="div">
                                 Result
                             </Typography>
                             <Typography variant="body2" color="text.secondary">

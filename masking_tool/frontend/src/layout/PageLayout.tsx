@@ -23,15 +23,15 @@ const styles = {
                 paddingLeft: '296px',
             },
             [theme.breakpoints.up('md')]: {
-                paddingLeft: '312px',
+                paddingLeft: '300px',
             },
         },
         [theme.breakpoints.up('sm')]: {
             padding: 2,
-            paddingTop: '72px',
+            paddingTop: '84px',
         },
         [theme.breakpoints.up('md')]: {
-            padding: 4,
+            padding: 2.5,
             paddingTop: '88px',
         },
     }),
