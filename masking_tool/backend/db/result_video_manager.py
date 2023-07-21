@@ -8,10 +8,10 @@ class ResultVideoManager:
     def __init__(self, db_connection: DBConnection):
         self.__db_connection = db_connection
 
-    def create_result_video(self, id: str, video_id: str, job_id: str, video_info: dict):
+    def create_result_video(self, id: str, video_id: str, job_id: str, name: str, video_info: dict):
         self.__db_connection.execute(
-            "INSERT INTO result_videos (id, video_id, job_id, video_info, created_at) VALUES (%(id)s, %(video_id)s, %(job_id)s, %(video_info)s, current_timstamp)",
-            {"id": id, "video_id": video_id, "job_id": job_id, "video_info": json.dumps(video_info)},
+            "INSERT INTO result_videos (id, video_id, job_id, video_info, created_at, name) VALUES (%(id)s, %(video_id)s, %(job_id)s, %(video_info)s, current_timestamp, %(name)s)",
+            {"id": id, "video_id": video_id, "job_id": job_id, "video_info": json.dumps(video_info), "name": name},
         )
 
     def fetch_result_videos(self, video_id: str):

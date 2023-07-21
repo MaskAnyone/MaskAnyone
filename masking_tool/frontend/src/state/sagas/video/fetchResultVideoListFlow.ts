@@ -15,6 +15,7 @@ const onFetchResultVideoList = function*(payload: FetchResultVideoListPayload) {
             id: result_video.id,
             videoId: result_video.video_id,
             jobId: result_video.job_id,
+            name: result_video.name,
             videoInfo: {},
             createdAt: new Date(result_video.created_at),
         }));

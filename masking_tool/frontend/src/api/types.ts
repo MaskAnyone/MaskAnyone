@@ -20,6 +20,7 @@ export interface ApiFetchResultVideosResponse {
         id: string;
         video_id: string;
         job_id: string;
+        name: string;
         video_info: any; //@todo
         created_at: string;
     }[];

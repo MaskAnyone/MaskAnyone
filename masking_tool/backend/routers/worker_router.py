@@ -108,7 +108,7 @@ async def upload_result_video(
     capture.release()
 
     result_video_manager.create_result_video(
-        result_video_id, video_id, job.id, video_info
+        result_video_id, video_id, job.id, "Result", video_info
     )
 
 

@@ -8,3 +8,4 @@ class ResultVideo:
     job_id: str
     video_info: dict
     created_at: str
+    name: str

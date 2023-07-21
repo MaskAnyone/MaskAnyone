@@ -33,7 +33,7 @@ const VideoResultCard = (props: VideoResultCardProps) => {
             />
             <CardContent sx={{ position: 'relative' }}>
                 <Typography gutterBottom variant="h6" component="div">
-                    Result
+                    {props.resultVideo.name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                     {props.resultVideo.createdAt.toLocaleDateString()}
