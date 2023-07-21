@@ -2,7 +2,7 @@ import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import Config from "../config";
 import {
     ApiFetchDownloadableResultFilesResponse,
-    ApiFetchJobsResponse,
+    ApiFetchJobsResponse, ApiFetchPresetsResponse,
     ApiFetchResultVideosResponse,
     ApiFetchVideosResponse, ApiFetchWorkersResponse
 } from "./types";
@@ -117,6 +117,32 @@ const Api = {
 
         return result.data;
     },
+    fetchPresets: async (): Promise<ApiFetchPresetsResponse> => {
+        const result = await sendApiRequest({
+            url: 'presets',
+            method: 'get',
+        });
+
+        return result.data;
+    },
+    createNewPreset: async (id: string, name: string, description: string, data: any): Promise<void> => {
+        await sendApiRequest({
+            url: 'presets/create',
+            method: 'post',
+            data: {
+                id,
+                name,
+                description,
+                data,
+            },
+        });
+    },
+    deletePreset: async (id: string): Promise<void> => {
+        await sendApiRequest({
+            url: `presets/${id}/delete`,
+            method: 'post',
+        });
+    }
 };
 
 export default Api;

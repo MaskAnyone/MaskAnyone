@@ -15,6 +15,7 @@ const VideoResultMenu = (props: DownloadMenuProps) => {
             onClose={props.onClose}
         >
             <MenuItem onClick={() => props.onClose()}>Rename result</MenuItem>
+            <MenuItem onClick={() => props.onClose()}>Show masking config</MenuItem>
         </Menu>
     );
 };

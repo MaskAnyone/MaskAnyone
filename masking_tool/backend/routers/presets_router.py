@@ -28,6 +28,6 @@ def create_preset(params: CreatePresetParams):
     )
 
 
-@router.post("/{job_id}/delete")
-def delete_preset(job_id: str):
-    preset_manager.delete_preset(run_params.id)
+@router.post("/{preset_id}/delete")
+def delete_preset(preset_id: str):
+    preset_manager.delete_preset(preset_id)

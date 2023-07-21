@@ -55,3 +55,12 @@ export interface ApiFetchWorkersResponse {
         last_activity: string;
     }[];
 }
+
+export interface ApiFetchPresetsResponse {
+    presets: {
+        id: string;
+        name: string;
+        description: string;
+        data: object;
+    }[];
+}
