@@ -10,7 +10,7 @@ class ResultVideoManager:
 
     def create_result_video(self, id: str, video_id: str, job_id: str, video_info: dict):
         self.__db_connection.execute(
-            "INSERT INTO result_videos (id, video_id, job_id, video_info) VALUES (%(id)s, %(video_id)s, %(job_id)s, %(video_info)s)",
+            "INSERT INTO result_videos (id, video_id, job_id, video_info, created_at) VALUES (%(id)s, %(video_id)s, %(job_id)s, %(video_info)s, current_timstamp)",
             {"id": id, "video_id": video_id, "job_id": job_id, "video_info": json.dumps(video_info)},
         )
 
@@ -18,7 +18,7 @@ class ResultVideoManager:
         result = []
 
         result_video_data_list = self.__db_connection.select_all(
-            "SELECT * FROM result_videos WHERE video_id=%(video_id)s",
+            "SELECT * FROM result_videos WHERE video_id=%(video_id)s ORDER BY created_at DESC",
             { 'video_id': video_id }
         )
 

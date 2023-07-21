@@ -36,7 +36,7 @@ const VideoResultCard = (props: VideoResultCardProps) => {
                     Result
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                    20.07.2023
+                    {props.resultVideo.createdAt.toLocaleDateString()}
                 </Typography>
                 <IconButton sx={{ position: 'absolute', top: 4, right: 0 }} onClick={openVideoResultMenu}>
                     <MoreVertIcon />

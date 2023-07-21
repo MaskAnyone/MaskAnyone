@@ -21,6 +21,7 @@ export interface ApiFetchResultVideosResponse {
         video_id: string;
         job_id: string;
         video_info: any; //@todo
+        created_at: string;
     }[];
 }
 

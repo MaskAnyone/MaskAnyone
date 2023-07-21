@@ -4,4 +4,5 @@ export interface ResultVideo {
     videoId: string;
     jobId: string;
     videoInfo: {};
+    createdAt: Date;
 }

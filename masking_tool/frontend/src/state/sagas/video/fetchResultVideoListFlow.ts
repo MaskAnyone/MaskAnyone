@@ -16,6 +16,7 @@ const onFetchResultVideoList = function*(payload: FetchResultVideoListPayload) {
             videoId: result_video.video_id,
             jobId: result_video.job_id,
             videoInfo: {},
+            createdAt: new Date(result_video.created_at),
         }));
 
         yield put(Event.Video.resultVideoListFetched({ videoId: payload.videoId, resultVideoList }));

@@ -7,3 +7,4 @@ class ResultVideo:
     video_id: str
     job_id: str
     video_info: dict
+    created_at: str
