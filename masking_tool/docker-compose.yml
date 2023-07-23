@@ -44,7 +44,7 @@ services:
 
   python-worker-vibe:
     build:
-      context: ./docker/custom_models/vibe
+      context: ./worker/models/docker_models/vibe
     command: "python worker.py "
     env_file:
       - ./app.env

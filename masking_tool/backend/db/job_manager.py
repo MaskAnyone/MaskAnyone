@@ -19,20 +19,26 @@ class JobManager:
 
         return result
 
-    def create_new_job(
-        self, id: str, video_id: str, result_video_id: str, data: dict, job_type: str
+    def create_new_jobs(
+        self,
+        id: str,
+        video_ids: list[str],
+        result_video_id: str,
+        data: dict,
+        job_type: str,
     ):
-        self.__db_connection.execute(
-            "INSERT INTO jobs (id, video_id, result_video_id, type, status, data, created_at) VALUES (%(id)s, %(video_id)s, %(result_video_id)s, %(type)s, %(status)s, %(data)s, current_timestamp)",
-            {
-                "id": id,
-                "video_id": video_id,
-                "result_video_id": result_video_id,
-                "type": job_type,
-                "status": "open",
-                "data": json.dumps(data),
-            },
-        )
+        for video_id in video_ids:
+            self.__db_connection.execute(
+                "INSERT INTO jobs (id, video_id, result_video_id, type, status, data, created_at) VALUES (%(id)s, %(video_id)s, %(result_video_id)s, %(type)s, %(status)s, %(data)s, current_timestamp)",
+                {
+                    "id": id,
+                    "video_id": video_id,
+                    "result_video_id": result_video_id,
+                    "type": job_type,
+                    "status": "open",
+                    "data": json.dumps(data),
+                },
+            )
 
     def fetch_next_job(self, job_type: str):
         # @todo make this nice

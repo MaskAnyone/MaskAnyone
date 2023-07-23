@@ -1,7 +1,7 @@
 {
     "image_name": "vibe",
     "run_command": "python3",
-    "entry_point": "vibe.py",
+    "entry_point": "main.py",
     "accepted_subjects": [
         "body"
     ],
