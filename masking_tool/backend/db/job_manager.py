@@ -1,3 +1,4 @@
+import uuid
 from db.db_connection import DBConnection
 from db.model.job import Job
 import json
@@ -27,11 +28,15 @@ class JobManager:
         data: dict,
         job_type: str,
     ):
-        for video_id in video_ids:
+        for idx, video_id in enumerate(video_ids):
+            if idx == 0:
+                job_id = id
+            else:
+                job_id = str(uuid.uuid4())
             self.__db_connection.execute(
                 "INSERT INTO jobs (id, video_id, result_video_id, type, status, data, created_at) VALUES (%(id)s, %(video_id)s, %(result_video_id)s, %(type)s, %(status)s, %(data)s, current_timestamp)",
                 {
-                    "id": id,
+                    "id": job_id,
                     "video_id": video_id,
                     "result_video_id": result_video_id,
                     "type": job_type,
