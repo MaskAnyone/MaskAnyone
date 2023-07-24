@@ -1,5 +1,5 @@
 import VideoRunParams from "./VideoRunParams";
-import {Dialog, DialogContent, DialogTitle} from "@mui/material";
+import { Dialog, DialogContent, DialogTitle } from "@mui/material";
 
 interface VideoRunParamsDialogProps {
     videoId: string;
@@ -12,7 +12,7 @@ const VideoRunParamsDialog = (props: VideoRunParamsDialogProps) => {
         <Dialog open={props.open} onClose={props.onClose} fullWidth={true} maxWidth={'xl'}>
             <DialogTitle>Mask Video</DialogTitle>
             <DialogContent>
-                <VideoRunParams videoId={props.videoId} />
+                <VideoRunParams videoIds={[props.videoId]} />
             </DialogContent>
         </Dialog>
     );

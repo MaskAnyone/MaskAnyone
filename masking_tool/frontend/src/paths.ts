@@ -2,6 +2,7 @@
 const Paths = {
     videos: '/videos',
     videoDetails: '/videos/:videoId',
+    videoRunMasking: 'videos/mask',
     resultVideoDetails: '/videos/:videoId/results/:resultVideoId',
     runs: '/runs',
     presets: '/presets',

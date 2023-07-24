@@ -1,14 +1,15 @@
-import React, {useEffect} from 'react';
-import {CssBaseline} from "@mui/material";
-import {Navigate, Route, Routes} from "react-router";
+import React, { useEffect } from 'react';
+import { CssBaseline } from "@mui/material";
+import { Navigate, Route, Routes } from "react-router";
 import PageLayout from "./layout/PageLayout";
 import VideosPage from "./pages/VideosPage";
 import RunsPage from './pages/RunsPage';
 import PresetsPage from './pages/PresetsPage';
 import Command from "./state/actions/command";
-import {useDispatch} from "react-redux";
+import { useDispatch } from "react-redux";
 import Paths from "./paths";
 import WorkersPage from "./pages/WorkersPage";
+import VideosMaskingPage from "./pages/VideosMaskingPage"
 
 const App = () => {
     const dispatch = useDispatch();
@@ -25,6 +26,7 @@ const App = () => {
             <Route path={'/'} element={<PageLayout />}>
                 <Route path={Paths.videos} element={<VideosPage />} />
                 <Route path={Paths.videoDetails} element={<VideosPage />} />
+                <Route path={Paths.videoRunMasking} element={<VideosMaskingPage />} />
                 <Route path={Paths.resultVideoDetails} element={<VideosPage />} />
                 <Route path={Paths.runs} element={<RunsPage />} />
                 <Route path={Paths.presets} element={<PresetsPage />} />

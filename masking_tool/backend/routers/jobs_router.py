@@ -20,9 +20,9 @@ def fetch_jobs():
 
 @router.post("/create")
 def create_job(run_params: RunParams):
-    job_manager.create_new_job(
+    job_manager.create_new_jobs(
         run_params.id,
-        run_params.video_id,
+        run_params.video_ids,
         run_params.result_video_id,
         run_params.run_data,
         "basic_masking",

@@ -1,6 +1,6 @@
-import {Box, Button} from "@mui/material";
+import { Box, Button } from "@mui/material";
 import VideoRunParamsDialog from "./VideoRunParamsDialog";
-import React, {useState} from "react";
+import React, { useState } from "react";
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import DownloadMenu from "./videoTaskBar/DownloadMenu";
@@ -21,7 +21,7 @@ interface VideoTaskBarProps {
 
 const VideoTaskBar = (props: VideoTaskBarProps) => {
     const [videoRunParamsOpen, setVideoRunParamsOpen] = useState<boolean>(false);
-    const [downloadAnchorEl, setDownloadAnchorEl] = useState<null|HTMLElement>(null);
+    const [downloadAnchorEl, setDownloadAnchorEl] = useState<null | HTMLElement>(null);
 
     const openDownloadMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
         setDownloadAnchorEl(event.currentTarget);

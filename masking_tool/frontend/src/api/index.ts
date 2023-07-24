@@ -59,7 +59,7 @@ const Api = {
     },
     createBasicMaskingJob: async (
         id: string,
-        videoId: string,
+        videoIds: string[],
         resultVideoId: string,
         runData: RunParams
     ): Promise<void> => {
@@ -69,7 +69,7 @@ const Api = {
             data: {
                 id,
                 run_data: runData,
-                video_id: videoId,
+                video_ids: videoIds,
                 result_video_id: resultVideoId
             }
         });

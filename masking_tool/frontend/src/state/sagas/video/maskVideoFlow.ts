@@ -1,15 +1,15 @@
-import {call, fork, put, take} from 'redux-saga/effects';
-import {Action} from 'redux-actions';
-import {MaskVideoPayload} from "../../actions/videoCommand";
+import { call, fork, put, take } from 'redux-saga/effects';
+import { Action } from 'redux-actions';
+import { MaskVideoPayload } from "../../actions/videoCommand";
 import Command from "../../actions/command";
 import Api from "../../../api";
 
-const onMaskVideo = function*(payload: MaskVideoPayload) {
+const onMaskVideo = function* (payload: MaskVideoPayload) {
     try {
         yield call(
             Api.createBasicMaskingJob,
             payload.id,
-            payload.videoId,
+            payload.videoIds,
             payload.resultVideoId,
             payload.runData
         );

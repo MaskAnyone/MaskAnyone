@@ -12,7 +12,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { maskingMethods } from "../../util/maskingMethods";
 
 interface VideoRunParamsProps {
-    videoId: string;
+    videoIds: string[];
 }
 
 const initialRunParams: RunParams = {
@@ -70,13 +70,13 @@ const VideoRunParams = (props: VideoRunParamsProps) => {
     }
 
     const maskVideo = () => {
-        if (!props.videoId) {
+        if (!props.videoIds) {
             return;
         }
 
         dispatch(Command.Video.maskVideo({
             id: uuidv4(),
-            videoIds: [props.videoId],
+            videoIds: props.videoIds,
             resultVideoId: uuidv4(),
             runData: runParams,
         }));
