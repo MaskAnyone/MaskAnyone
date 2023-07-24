@@ -8,9 +8,11 @@ export interface PresetListFetchedPayload {
 }
 
 export interface NewPresetCreatedPayload {
+    preset: Preset;
 }
 
 export interface PresetDeletedPayload {
+    id: string;
 }
 
 const PresetEvent = {

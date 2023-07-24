@@ -7,6 +7,9 @@ import {enqueueNotificationFlow} from "./sagas/notification/enqueueNotificationF
 import {fetchResultVideoListFlow} from "./sagas/video/fetchResultVideoListFlow";
 import {fetchDownloadableResultFilesFlow} from "./sagas/video/fetchDownloadableResultFilesFlow";
 import {fetchWorkerListFlow} from "./sagas/worker/fetchWorkerListFlow";
+import {fetchPresetListFlow} from "./sagas/preset/fetchPresetListFlow";
+import {deletePresetFlow} from "./sagas/preset/deletePresetFlow";
+import {createNewPresetFlow} from "./sagas/preset/createNewPresetFlow";
 
 /**
  * Prevents the root saga from terminating entirely due to some error in another saga
@@ -47,6 +50,10 @@ const sagas: any[] = [
     fetchJobListFlow,
 
     fetchWorkerListFlow,
+
+    fetchPresetListFlow,
+    deletePresetFlow,
+    createNewPresetFlow,
 
     enqueueNotificationFlow,
 ].map(makeRestartable);

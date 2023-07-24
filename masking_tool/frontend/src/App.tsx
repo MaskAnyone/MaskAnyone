@@ -18,6 +18,7 @@ const App = () => {
         dispatch(Command.Video.fetchVideoList({}));
         dispatch(Command.Job.fetchJobList({}));
         dispatch(Command.Worker.fetchWorkerList({}));
+        dispatch(Command.Preset.fetchPresetList({}));
     }, []);
 
     return (<>
