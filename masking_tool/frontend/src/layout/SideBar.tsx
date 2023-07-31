@@ -99,14 +99,13 @@ const SideBar = (props: SideBarProps) => {
             variant={props.isLargeScreen ? 'persistent' : 'temporary'}
             children={(
                 <Box component="div" sx={styles.container}>
-                    <Box component="div" style={{ display: anyChecked ? "block" : "none", paddingLeft: "15px", borderBottom: "1px solid #e0e0e0" }}>
-                        <IconButton aria-label="Cancel Multiple Selection" style={{ float: "left" }} onClick={() => handleSelectCancel()}>
+                    <Box component="div" style={{ display: anyChecked ? "flex" : "none", justifyContent: 'space-between', borderBottom: "1px solid #e0e0e0" }}>
+                        <IconButton onClick={handleSelectCancel}>
                             <ClearIcon />
                         </IconButton>
                         <Checkbox
-                            style={{ float: "right" }}
-                            checked={selectedVideos.length == videoList.length}
-                            onClick={() => handleSelectAll()}
+                            checked={selectedVideos.length === videoList.length}
+                            onClick={handleSelectAll}
                         />
                     </Box>
                     <List sx={{ display: 'flex', flexDirection: 'column', flex: 1, paddingBottom: 1 }} disablePadding={true}>
