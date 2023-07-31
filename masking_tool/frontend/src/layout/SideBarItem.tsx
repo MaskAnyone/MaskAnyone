@@ -1,5 +1,4 @@
-import { useLocation } from "react-router";
-import { Badge, Box, Button, Checkbox, ListItem, ListItemText } from "@mui/material";
+import {Badge, Box, Button, Checkbox, ListItem, ListItemText} from "@mui/material";
 import { Link } from "react-router-dom";
 import Config from "../config";
 import { useState } from "react";
@@ -40,6 +39,7 @@ const styles = {
 };
 
 interface SideBarItemProps {
+    url: string;
     title: string;
     subtitle: string;
     videoId: string;
@@ -47,34 +47,25 @@ interface SideBarItemProps {
     checked: boolean;
     anyChecked: boolean;
     active: boolean;
-    onItemClicked: (videoId: string) => void;
-    onCheckboxClicked: (e: React.MouseEvent<HTMLButtonElement>, videoId: string) => void;
+    onCheckboxClicked: (videoId: string) => void;
 }
 
 const SideBarItem = (props: SideBarItemProps) => {
-    const location = useLocation();
-    const [checkboxStyle, setCheckboxStyle] = useState<{ visibility: 'hidden' | 'visible' }>({ visibility: 'hidden' })
+    const [checkboxStatus, setCheckboxStatus] = useState<'hidden' | 'visible'>('hidden');
 
-    const getCheckboxStyle = (): { visibility: 'hidden' | 'visible' } => {
-        if (props.anyChecked) {
-            return { visibility: "visible" }
-        } else {
-            return checkboxStyle
-        }
-    }
+    const handleCheckboxClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        props.onCheckboxClicked(props.videoId);
+    };
 
     return (
         <ListItem
             disableGutters={true}
             disablePadding={true}
             sx={styles.item}
-            onClick={() => { props.onItemClicked(props.videoId) }}
-            onMouseEnter={e => {
-                setCheckboxStyle({ visibility: 'visible' });
-            }}
-            onMouseLeave={e => {
-                setCheckboxStyle({ visibility: 'hidden' })
-            }}>
+            onMouseEnter={() => setCheckboxStatus('visible')}
+            onMouseLeave={() => setCheckboxStatus('hidden')}>
             <Button
                 sx={styles.button}
                 className={props.active ? 'active' : ''}
@@ -94,12 +85,15 @@ const SideBarItem = (props: SideBarItemProps) => {
                         />
 
                         <Checkbox
-                            style={getCheckboxStyle()}
+                            style={{ visibility: props.anyChecked ? 'visible' : checkboxStatus }}
                             checked={props.checked}
-                            onClick={(e) => props.onCheckboxClicked(e, props.videoId)}
+                            onClick={handleCheckboxClick}
+                            onMouseDown={e => e.stopPropagation()}
                         />
                     </Box>
                 )}
+                component={Link}
+                to={props.url}
             />
         </ListItem>
     );

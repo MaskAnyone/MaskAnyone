@@ -1,4 +1,4 @@
-import { Box, Checkbox, Divider, Drawer, Fab, IconButton, List } from "@mui/material";
+import { Box, Checkbox, Drawer, Fab, IconButton, List } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import Selector from "../state/selector";
 import UploadIcon from '@mui/icons-material/Upload';
@@ -8,7 +8,6 @@ import SideBarVideoItem from "./SideBarVideoItem";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import Paths from "../paths";
-import LibraryAddCheckIcon from '@mui/icons-material/LibraryAddCheck';
 import ClearIcon from '@mui/icons-material/Clear';
 
 const styles = {
@@ -61,14 +60,6 @@ const SideBar = (props: SideBarProps) => {
         dispatch(Event.Upload.uploadDialogClosed({}));
     };
 
-    const handleItemClicked = (videoId: string) => {
-        if (!anyChecked) {
-            navigate(Paths.makeVideoDetailsUrl(videoId));
-        } else {
-            selectOrUnselectVideo(videoId)
-        }
-    }
-
     const selectOrUnselectVideo = (videoId: string) => {
         console.log(videoId, selectedVideos)
         if (selectedVideos.includes(videoId)) {
@@ -82,9 +73,8 @@ const SideBar = (props: SideBarProps) => {
         }
     }
 
-    const handleCheckboxClicked = (e: React.MouseEvent<HTMLButtonElement>, videoId: string) => {
+    const handleCheckboxClicked = (videoId: string) => {
         setAnyChecked(true)
-        e.stopPropagation()
         selectOrUnselectVideo(videoId)
     }
 
@@ -125,7 +115,6 @@ const SideBar = (props: SideBarProps) => {
                                 video={video}
                                 badge={videoJobsRecord[video.id] || 0}
                                 onCheckboxClicked={handleCheckboxClicked}
-                                onItemClicked={handleItemClicked}
                                 checked={selectedVideos.includes(video.id)}
                                 active={selectedVideos.length == 1 && selectedVideos[0] == video.id}
                                 anyChecked={anyChecked}
