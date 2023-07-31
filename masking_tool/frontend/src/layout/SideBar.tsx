@@ -47,8 +47,6 @@ const SideBar = (props: SideBarProps) => {
     useEffect(() => {
         if (anyChecked) {
             navigate(Paths.videoRunMasking, { state: { selectedVideos } })
-        } else {
-            navigate("/")
         }
     }, [anyChecked, selectedVideos])
 

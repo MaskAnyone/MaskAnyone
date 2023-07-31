@@ -1,10 +1,13 @@
 import { Box } from "@mui/material";
+import {useSelector} from "react-redux";
+import Selector from "../state/selector";
 
 const PresetsPage = () => {
+    const presetList = useSelector(Selector.Preset.presetList);
+
     return (
         <Box component="div">
-            <h2>Presets</h2>
-            This page will soon allow you to create and save your own presets.
+            {JSON.stringify(presetList)}
         </Box>
     );
 };
