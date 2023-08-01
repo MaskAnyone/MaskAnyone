@@ -10,6 +10,7 @@ import { useDispatch } from "react-redux";
 import Paths from "./paths";
 import WorkersPage from "./pages/WorkersPage";
 import VideosMaskingPage from "./pages/VideosMaskingPage"
+import LandingPage from "./pages/LandingPage";
 
 const App = () => {
     const dispatch = useDispatch();
@@ -24,6 +25,7 @@ const App = () => {
     return (<>
         <CssBaseline />
         <Routes>
+            <Route path={'/home'} element={<LandingPage />} />
             <Route path={'/'} element={<PageLayout />}>
                 <Route path={Paths.videos} element={<VideosPage />} />
                 <Route path={Paths.videoDetails} element={<VideosPage />} />
