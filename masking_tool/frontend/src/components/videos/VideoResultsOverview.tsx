@@ -1,5 +1,5 @@
-import {Box, Paper, Typography, styled} from "@mui/material";
-import { useSelector } from "react-redux";
+import {Box, Typography} from "@mui/material";
+import {useDispatch, useSelector} from "react-redux";
 import Selector from "../../state/selector";
 import { useNavigate } from "react-router";
 import Paths from "../../paths";
@@ -7,28 +7,21 @@ import VideoResultCard from "./videoResultsOverview/VideoResultCard";
 import React, {useState} from "react";
 import VideoResultMenu from "./videoResultsOverview/VideoResultMenu";
 import CreatePresetDialog from "../presets/CreatePresetDialog";
+import Command from "../../state/actions/command";
 
 interface VideoResultsProps {
     videoId: string;
     resultVideoId?: string;
 }
 
-const Item = styled(Paper)(() => ({
-    backgroundColor: '#bdc3c7',
-    padding: 8,
-    textAlign: 'center',
-    color: 'black',
-    cursor: "pointer",
-    '&:hover': {
-        background: "#3498db",
-    }
-}));
-
 const VideoResultsOverview = (props: VideoResultsProps) => {
     const navigate = useNavigate();
+    const dispatch = useDispatch();
     const resultVideoLists = useSelector(Selector.Video.resultVideoLists);
+    const jobList = useSelector(Selector.Job.jobList);
     const [videoResultAnchorEl, setVideoResultAnchorEl] = useState<null|HTMLElement>(null);
     const [createPresetDialogOpen, setCreatePresetDialogOpen] = useState<boolean>(false);
+    const [activeResultVideoId, setActiveResultVideoId] = useState<string>();
 
     const resultVideos = resultVideoLists[props.videoId] || [];
 
@@ -36,9 +29,37 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
         navigate(Paths.makeResultVideoDetailsUrl(props.videoId, resultVideoId));
     };
 
+    const openVideoResultMenu = (anchorEl: HTMLElement, resultVideoId: string) => {
+        setVideoResultAnchorEl(anchorEl);
+        setActiveResultVideoId(resultVideoId);
+    };
+
     const openCreatePresetDialog = () => {
         setVideoResultAnchorEl(null);
         setCreatePresetDialogOpen(true);
+    };
+
+    const createPreset = (name: string, description: string) => {
+        const activeResultVideo = resultVideos.find(resultVideo => resultVideo.id === activeResultVideoId);
+        if (!activeResultVideo) {
+            return;
+        }
+
+        const job = jobList.find(job => job.id === activeResultVideo.jobId);
+        if (!job) {
+            return;
+        }
+
+        dispatch(Command.Preset.createNewPreset({
+            newPreset: {
+                name,
+                description,
+                data: job.data,
+            },
+        }));
+
+        setCreatePresetDialogOpen(false);
+        setActiveResultVideoId(undefined);
     };
 
     return (
@@ -52,7 +73,7 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
                         resultVideo={resultVideo}
                         selected={props.resultVideoId === resultVideo.id}
                         onSelect={() => selectResultVideo(resultVideo.id)}
-                        onOpenMenu={setVideoResultAnchorEl}
+                        onOpenMenu={openVideoResultMenu}
                     />
                 ))}
             </Box>
@@ -65,6 +86,7 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
             <CreatePresetDialog
                 open={createPresetDialogOpen}
                 onClose={() => setCreatePresetDialogOpen(false)}
+                onCreatePreset={createPreset}
             />
         </Box>
     )

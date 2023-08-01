@@ -4,6 +4,7 @@ interface PresetPreviewMenuProps {
     anchorEl: HTMLElement|null;
     onClose: () => void;
     onDelete: () => void;
+    onShowDetails: () => void;
 }
 
 const PresetPreviewMenu = (props: PresetPreviewMenuProps) => {
@@ -15,7 +16,7 @@ const PresetPreviewMenu = (props: PresetPreviewMenuProps) => {
             open={open}
             onClose={props.onClose}
         >
-            <MenuItem onClick={() => props.onClose()}>View details</MenuItem>
+            <MenuItem onClick={props.onShowDetails}>View details</MenuItem>
             <MenuItem onClick={props.onDelete}>Delete</MenuItem>
         </Menu>
     );

@@ -24,6 +24,11 @@ const onCreateNewPreset = function*(payload: CreateNewPresetPayload) {
                 ...payload.newPreset,
             },
         }));
+
+        yield put(Command.Notification.enqueueNotification({
+            severity: 'success',
+            message: 'The preset has been created.',
+        }));
     } catch (e) {
         console.error(e);
         yield put(Command.Notification.enqueueNotification({

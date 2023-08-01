@@ -13,11 +13,20 @@ const styles = {
 interface CreatePresetDialogProps {
     open: boolean;
     onClose: () => void;
+    onCreatePreset: (name: string, description: string) => void;
 }
 
 const CreatePresetDialog = (props: CreatePresetDialogProps) => {
     const [name, setName] = useState<string|null>(null);
     const [description, setDescription] = useState<string|null>(null);
+
+    const createPreset = () => {
+        if (!name || !description) {
+            return;
+        }
+
+        props.onCreatePreset(name, description);
+    };
 
     return (
         <Dialog open={props.open} onClose={props.onClose} fullWidth={true}>
@@ -45,7 +54,7 @@ const CreatePresetDialog = (props: CreatePresetDialogProps) => {
                 <Button onClick={props.onClose}>Cancel</Button>
                 <Button
                     variant={'contained'}
-                    onClick={props.onClose}
+                    onClick={createPreset}
                     children={'Create Preset'}
                     disabled={!name || !description}
                 />

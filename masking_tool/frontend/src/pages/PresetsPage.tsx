@@ -6,6 +6,7 @@ import React, {useEffect, useState} from "react";
 import Command from "../state/actions/command";
 import DeletePresetConfirmationDialog from "../components/presets/DeletePresetConfirmationDialog";
 import PresetPreviewMenu from "../components/presets/PresetPreviewMenu";
+import PresetDetailsDialog from "../components/presets/PresetDetailsDialog";
 
 const PresetsPage = () => {
     const dispatch = useDispatch();
@@ -13,6 +14,8 @@ const PresetsPage = () => {
     const [presetPreviewAnchorEl, setPresetPreviewAnchorEl] = useState<null|HTMLElement>(null);
     const [activePresetId, setActivePresetId] = useState<string>();
     const [deletePresetDialogOpen, setDeletePresetDialogOpen] = useState<boolean>(false);
+    const [presetDetailsDialogOpen, setPresetDetailsDialogOpen] = useState<boolean>(false);
+
 
     useEffect(() => {
         dispatch(Command.Preset.fetchPresetList({}));
@@ -25,6 +28,11 @@ const PresetsPage = () => {
 
     const openDeleteDialog = () => {
         setDeletePresetDialogOpen(true);
+        setPresetPreviewAnchorEl(null);
+    };
+
+    const openPresetDetailsDialog = () => {
+        setPresetDetailsDialogOpen(true);
         setPresetPreviewAnchorEl(null);
     };
 
@@ -61,11 +69,17 @@ const PresetsPage = () => {
                 anchorEl={presetPreviewAnchorEl}
                 onClose={() => setPresetPreviewAnchorEl(null)}
                 onDelete={openDeleteDialog}
+                onShowDetails={openPresetDetailsDialog}
             />
             <DeletePresetConfirmationDialog
                 open={deletePresetDialogOpen}
                 onClose={() => setDeletePresetDialogOpen(false)}
                 onDelete={deletePreset}
+            />
+            <PresetDetailsDialog
+                open={presetDetailsDialogOpen}
+                onClose={() => setPresetDetailsDialogOpen(false)}
+                preset={presetList.find(preset => preset.id === activePresetId)}
             />
         </Box>
     );

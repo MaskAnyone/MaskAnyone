@@ -8,14 +8,14 @@ interface VideoResultCardProps {
     resultVideo: ResultVideo;
     selected: boolean;
     onSelect: () => void;
-    onOpenMenu: (element: HTMLElement) => void;
+    onOpenMenu: (element: HTMLElement, resultVideoId: string) => void;
 }
 
 const VideoResultCard = (props: VideoResultCardProps) => {
     const openVideoResultMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
         event.stopPropagation();
-        props.onOpenMenu(event.currentTarget);
+        props.onOpenMenu(event.currentTarget, props.resultVideo.id);
     };
 
     return (
