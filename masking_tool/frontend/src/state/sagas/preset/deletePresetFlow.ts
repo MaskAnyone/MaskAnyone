@@ -10,6 +10,11 @@ const onDeletePreset = function*(payload: DeletePresetPayload) {
         yield call(Api.deletePreset, payload.id);
 
         yield put(Event.Preset.presetDeleted({ id: payload.id }));
+
+        yield put(Command.Notification.enqueueNotification({
+            severity: 'success',
+            message: 'The preset has been deleted.',
+        }));
     } catch (e) {
         console.error(e);
         yield put(Command.Notification.enqueueNotification({

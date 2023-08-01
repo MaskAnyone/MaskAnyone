@@ -1,8 +1,7 @@
 import {Box, Card, CardContent, CardMedia, IconButton, Typography} from "@mui/material";
 import {Preset} from "../../state/types/Preset";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-import React, {useState} from "react";
-import PresetPreviewMenu from "./PresetPreviewMenu";
+import React from "react";
 
 const styles = {
     card: {
@@ -10,7 +9,7 @@ const styles = {
         height: 170,
     },
     description: {
-        paddingTop: 1,
+        paddingTop: 0.75,
         display: '-webkit-box',
         WebkitLineClamp: 6,
         WebkitBoxOrient: 'vertical',
@@ -20,18 +19,17 @@ const styles = {
 
 interface PresetPreviewProps {
     preset: Preset;
+    onOpenMenu: (element: HTMLElement) => void;
 }
 
 const PresetPreview = (props: PresetPreviewProps) => {
-    const [presetPreviewAnchorEl, setPresetPreviewAnchorEl] = useState<null|HTMLElement>(null);
-
     const openPresetPreviewMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
         event.stopPropagation();
-        setPresetPreviewAnchorEl(event.currentTarget);
+        props.onOpenMenu(event.currentTarget);
     };
 
-    return (<>
+    return (
         <Card sx={styles.card}>
             <Box component={'div'} sx={{ display: 'flex', flexDirection: 'row', position: 'relative' }}>
                 <CardContent sx={{ width: 160 }}>
@@ -49,15 +47,11 @@ const PresetPreview = (props: PresetPreviewProps) => {
                     sx={{ width: 160, height: 170 }}
                 />
                 <IconButton sx={{ position: 'absolute', top: 4, right: 0 }} onClick={openPresetPreviewMenu}>
-                    <MoreVertIcon />
+                    <MoreVertIcon sx={{ color: 'white', mixBlendMode: 'difference'}} />
                 </IconButton>
             </Box>
         </Card>
-        <PresetPreviewMenu
-            anchorEl={presetPreviewAnchorEl}
-            onClose={() => setPresetPreviewAnchorEl(null)}
-        />
-    </>);
+    );
 };
 
 export default PresetPreview;

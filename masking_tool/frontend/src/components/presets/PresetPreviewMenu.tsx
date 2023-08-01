@@ -3,6 +3,7 @@ import {Menu, MenuItem} from "@mui/material";
 interface PresetPreviewMenuProps {
     anchorEl: HTMLElement|null;
     onClose: () => void;
+    onDelete: () => void;
 }
 
 const PresetPreviewMenu = (props: PresetPreviewMenuProps) => {
@@ -15,7 +16,7 @@ const PresetPreviewMenu = (props: PresetPreviewMenuProps) => {
             onClose={props.onClose}
         >
             <MenuItem onClick={() => props.onClose()}>View details</MenuItem>
-            <MenuItem onClick={() => props.onClose()}>Delete</MenuItem>
+            <MenuItem onClick={props.onDelete}>Delete</MenuItem>
         </Menu>
     );
 };
