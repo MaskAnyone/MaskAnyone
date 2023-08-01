@@ -4,7 +4,9 @@ import Selector from "../../state/selector";
 import { useNavigate } from "react-router";
 import Paths from "../../paths";
 import VideoResultCard from "./videoResultsOverview/VideoResultCard";
-import React from "react";
+import React, {useState} from "react";
+import VideoResultMenu from "./videoResultsOverview/VideoResultMenu";
+import CreatePresetDialog from "../presets/CreatePresetDialog";
 
 interface VideoResultsProps {
     videoId: string;
@@ -25,11 +27,18 @@ const Item = styled(Paper)(() => ({
 const VideoResultsOverview = (props: VideoResultsProps) => {
     const navigate = useNavigate();
     const resultVideoLists = useSelector(Selector.Video.resultVideoLists);
+    const [videoResultAnchorEl, setVideoResultAnchorEl] = useState<null|HTMLElement>(null);
+    const [createPresetDialogOpen, setCreatePresetDialogOpen] = useState<boolean>(false);
 
     const resultVideos = resultVideoLists[props.videoId] || [];
 
     const selectResultVideo = (resultVideoId: string) => {
         navigate(Paths.makeResultVideoDetailsUrl(props.videoId, resultVideoId));
+    };
+
+    const openCreatePresetDialog = () => {
+        setVideoResultAnchorEl(null);
+        setCreatePresetDialogOpen(true);
     };
 
     return (
@@ -43,9 +52,20 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
                         resultVideo={resultVideo}
                         selected={props.resultVideoId === resultVideo.id}
                         onSelect={() => selectResultVideo(resultVideo.id)}
+                        onOpenMenu={setVideoResultAnchorEl}
                     />
                 ))}
             </Box>
+
+            <VideoResultMenu
+                anchorEl={videoResultAnchorEl}
+                onClose={() => setVideoResultAnchorEl(null)}
+                onCreatePreset={openCreatePresetDialog}
+            />
+            <CreatePresetDialog
+                open={createPresetDialogOpen}
+                onClose={() => setCreatePresetDialogOpen(false)}
+            />
         </Box>
     )
 

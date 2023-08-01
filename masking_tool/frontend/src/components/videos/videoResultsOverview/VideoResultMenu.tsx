@@ -3,6 +3,7 @@ import {Menu, MenuItem} from "@mui/material";
 interface DownloadMenuProps {
     anchorEl: HTMLElement|null;
     onClose: () => void;
+    onCreatePreset: () => void;
 }
 
 const VideoResultMenu = (props: DownloadMenuProps) => {
@@ -16,6 +17,7 @@ const VideoResultMenu = (props: DownloadMenuProps) => {
         >
             <MenuItem onClick={() => props.onClose()}>Rename result</MenuItem>
             <MenuItem onClick={() => props.onClose()}>Show masking config</MenuItem>
+            <MenuItem onClick={props.onCreatePreset}>Create preset</MenuItem>
         </Menu>
     );
 };
