@@ -1,6 +1,6 @@
 import { Box } from "@mui/material";
 import { useLocation } from "react-router";
-import VideoRunParams from "../components/videos/VideoRunParams";
+import MaskingForm from "../components/videos/maskingForm/MaskingForm";
 
 const VideosMaskingPage = () => {
     const { state } = useLocation();
@@ -8,7 +8,7 @@ const VideosMaskingPage = () => {
 
     return (
         <Box component="div">
-            {selectedVideos.length != 0 && <VideoRunParams videoIds={selectedVideos} />}
+            {selectedVideos.length != 0 && <MaskingForm videoIds={selectedVideos} />}
         </Box>
     )
 }

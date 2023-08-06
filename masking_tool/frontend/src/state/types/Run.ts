@@ -21,19 +21,19 @@ export type Strategy = {
 
 // videopart describes the part of the video that should be masked (e.g face, background, body...)
 export type VideoMaskingParams = {
-    [videoPart: string] : {
-        hidingStrategy: Strategy,
-        maskingStrategy?: Strategy // Not every video part can be masked (e.g background can only be hidden)
-    }
+    hidingTarget: "face" | "body" | "none"
+    hidingtrategyTarget?: Strategy
+    hidingStrategyBG?: Strategy
+    maskingStrategy?: Strategy
 }
 
 export type ThreeDModelCreationParams = {
     skeleton: boolean,
-    skeletonParams: {[paramName: string]: any}
+    skeletonParams: { [paramName: string]: any }
     blender: boolean,
-    blenderParams: {[paramName: string]: any}
+    blenderParams: { [paramName: string]: any }
     blendshapes: boolean,
-    blendshapesParams: {[paramName: string]: any}
+    blendshapesParams: { [paramName: string]: any }
 }
 
 export type RunParams = {

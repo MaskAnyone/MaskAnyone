@@ -2,7 +2,7 @@ import { Box, Button, Checkbox, Divider, FormControl, FormControlLabel, FormGrou
 import React, { useState } from "react";
 import TabPanel from "./ParamTabPanel";
 import { RunParams } from "../../state/types/Run";
-import MethodSettings from "./MethodSettings";
+import MethodSettings from "./maskingForm/MethodSettings";
 import MovieFilterIcon from '@mui/icons-material/MovieFilter';
 import EmojiPeopleIcon from '@mui/icons-material/EmojiPeople';
 import GraphicEqIcon from '@mui/icons-material/GraphicEq';

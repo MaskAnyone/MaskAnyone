@@ -3,12 +3,12 @@ import { Box } from "@mui/system";
 import PresetItem from "./PresetItem";
 import TuneIcon from '@mui/icons-material/Tune';
 import { useState } from "react";
-import { Preset, RunParams } from "../../state/types/Run";
-import { maskingMethods } from "../../util/maskingMethods";
+import { Preset, RunParams } from "../../../../state/types/Run";
+import { maskingMethods } from "../../../../util/maskingMethods";
 
 interface PresetSelectionProps {
-    onPresetSelect: (preset: Preset) => void
-    onCustomModeRequested: () => void
+    onPresetSelected: (preset: Preset) => void
+    onCustomModeClicked: () => void
     selectedPreset?: Preset
 }
 
@@ -180,7 +180,7 @@ const PresetSelection = (props: PresetSelectionProps) => {
     const { selectedPreset } = props
 
     const onPresetClicked = (preset: Preset) => {
-        props.onPresetSelect(preset)
+        props.onPresetSelected(preset)
     }
 
     return (
@@ -201,7 +201,7 @@ const PresetSelection = (props: PresetSelectionProps) => {
                     name="Custom Run"
                     icon={<TuneIcon />}
                     selected={false}
-                    onClick={() => props.onCustomModeRequested()}
+                    onClick={() => props.onCustomModeClicked()}
                 />
             </Grid>
         </Grid>
