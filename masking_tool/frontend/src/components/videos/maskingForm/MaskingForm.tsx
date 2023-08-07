@@ -15,6 +15,18 @@ interface MaskingFormProps {
 const initialRunParams: RunParams = {
     videoMasking: {
         hidingTarget: "none",
+        hidingStrategyTarget: {
+            key: "none",
+            params: {}
+        },
+        hidingStrategyBG: {
+            key: "none",
+            params: {}
+        },
+        maskingStrategy: {
+            key: "none",
+            params: {}
+        }
     },
     threeDModelCreation: {
         skeleton: false,
@@ -68,6 +80,7 @@ const MaskingForm = (props: MaskingFormProps) => {
                     onCustomModeClicked={handleCustomModeClicked}
                     onPresetParamRefinementClicked={handlePresetParamRefinementClicked}
                     maskVideo={maskVideo}
+                    selectedPreset={selectedPreset}
                 /> :
                 <CustomSettingsContainer
                     onBackClicked={() => setPresetView(true)}

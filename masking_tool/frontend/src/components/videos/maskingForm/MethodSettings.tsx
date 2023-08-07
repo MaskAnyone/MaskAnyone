@@ -10,14 +10,14 @@ interface MethodSettingProps {
     children?: React.ReactNode
     formSchema?: RJSFSchema,
     uiSchema?: UiSchema,
-    methodName: string,
-    values?: {[paramterName: string]: any}
+    methodName?: string,
+    values?: { [paramterName: string]: any }
     onSet: (params: object) => void
 }
 
 const MethodSettings = (props: MethodSettingProps) => {
     const [open, setOpen] = useState(false)
-    const {formSchema, uiSchema, methodName, values, onSet} = props
+    const { formSchema, uiSchema, methodName, values, onSet } = props
 
     const submitFormRef: React.RefObject<HTMLInputElement> = createRef();
 
@@ -31,7 +31,7 @@ const MethodSettings = (props: MethodSettingProps) => {
     }
 
     const handleParamsSet = () => {
-        if(submitFormRef.current){
+        if (submitFormRef.current) {
             submitFormRef.current.click()
             setOpen(false)
         } else {
@@ -39,12 +39,12 @@ const MethodSettings = (props: MethodSettingProps) => {
         }
     }
 
-    if(!formSchema) {
+    if (!methodName || !formSchema) {
         return (
             <div>
-            <IconButton aria-label="Adjust method parameters" disabled={true}>
-                <TuneIcon />
-            </IconButton>
+                <IconButton aria-label="Adjust method parameters" disabled={true}>
+                    <TuneIcon />
+                </IconButton>
             </div>
         )
     }
@@ -55,25 +55,25 @@ const MethodSettings = (props: MethodSettingProps) => {
                 <TuneIcon />
             </IconButton>
 
-            <Dialog open={open} onClose={() =>  setOpen(false)}>
-            <DialogTitle>Customize parameters for {methodName}</DialogTitle>
-            <DialogContent>
-                <Form
-                    schema={formSchema}
-                    validator={validator}
-                    onSubmit={onSubmit}
-                    formData={values}
-                    uiSchema={uiSchema}
-                >
-                    <input ref={submitFormRef} type="submit" style={{ display: "none" }} />
-                </Form>
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={() => setOpen(false)}>Cancel</Button>
-                <Button onClick={() => handleParamsSet()}>Set</Button>
-            </DialogActions>
+            <Dialog open={open} onClose={() => setOpen(false)}>
+                <DialogTitle>Customize parameters for {methodName}</DialogTitle>
+                <DialogContent>
+                    <Form
+                        schema={formSchema}
+                        validator={validator}
+                        onSubmit={onSubmit}
+                        formData={values}
+                        uiSchema={uiSchema}
+                    >
+                        <input ref={submitFormRef} type="submit" style={{ display: "none" }} />
+                    </Form>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpen(false)}>Cancel</Button>
+                    <Button onClick={() => handleParamsSet()}>Set</Button>
+                </DialogActions>
             </Dialog>
-      </div>
+        </div>
     )
 }
 

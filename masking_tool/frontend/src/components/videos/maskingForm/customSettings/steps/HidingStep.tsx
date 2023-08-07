@@ -11,7 +11,14 @@ export interface StepProps {
     onParamsChange: (runParams: RunParams) => void
 }
 
-const maskingAreas = [
+interface MaskingArea {
+    title: string,
+    value: "face" | "body" | "none",
+    description: string,
+    imagePath: string
+}
+
+const maskingAreas: MaskingArea[] = [
     {
         title: "Face Only",
         description: "Only hide the face of the subjects",
@@ -33,10 +40,11 @@ const maskingAreas = [
 ]
 
 const HidingStep = (props: StepProps) => {
-    const params = props.runParams.videoMasking
-    const hidingTarget = params.hidingTarget
-    const hidingStrategyTarget = params.hidingtrategyTarget
-    const hidingStrategyBG = params.hidingStrategyBG
+    const { runParams, onParamsChange } = props
+    const videoMaskingParams = runParams.videoMasking
+    const hidingTarget = videoMaskingParams.hidingTarget
+    const hidingStrategyTarget = videoMaskingParams.hidingStrategyTarget
+    const hidingStrategyBG = videoMaskingParams.hidingStrategyBG
     const [availableHidingMethodsTarget, setAvailableHidingMethodsTarget] = useState<{
         [methodName: string]: Method
     } | null>(null)
@@ -44,7 +52,6 @@ const HidingStep = (props: StepProps) => {
 
     useEffect(() => {
         if (hidingTarget != "none") {
-            console.log(maskingMethods[hidingTarget].hidingMethods)
             setAvailableHidingMethodsTarget(maskingMethods[hidingTarget].hidingMethods)
         } else {
             setAvailableHidingMethodsTarget(null)
@@ -53,6 +60,83 @@ const HidingStep = (props: StepProps) => {
 
     const upperFirst = (str: string) => {
         return str.charAt(0).toUpperCase() + str.slice(1)
+    }
+
+    const setHidingTarget = (hidingTarget: string) => {
+        if (!(hidingTarget == "face" || hidingTarget == "body" || hidingTarget == "none")) {
+            return
+        }
+        onParamsChange({
+            ...runParams,
+            videoMasking: {
+                ...runParams.videoMasking,
+                hidingTarget: hidingTarget
+            }
+        })
+    }
+
+    const setHidingStrategyTarget = (hidingStrategy: string) => {
+        let params;
+        if (hidingStrategy != "none" && availableHidingMethodsTarget) {
+            params = availableHidingMethodsTarget[hidingStrategy].defaultValues
+        } else {
+            params = {}
+        }
+        onParamsChange({
+            ...runParams,
+            videoMasking: {
+                ...runParams.videoMasking,
+                hidingStrategyTarget: {
+                    key: hidingStrategy,
+                    params: params!
+                }
+            }
+        })
+    }
+
+    const setHidingStrategyTargetParams = (params: any) => {
+        onParamsChange({
+            ...runParams,
+            videoMasking: {
+                ...runParams.videoMasking,
+                hidingStrategyTarget: {
+                    ...runParams.videoMasking.hidingStrategyTarget,
+                    params
+                }
+            }
+        })
+    }
+
+    const setHidingStrategyBG = (hidingStrategy: string) => {
+        let params;
+        if (hidingStrategy != "none" && availableHidingMethodsBG) {
+            params = availableHidingMethodsBG[hidingStrategy].defaultValues
+        } else {
+            params = {}
+        }
+        onParamsChange({
+            ...runParams,
+            videoMasking: {
+                ...runParams.videoMasking,
+                hidingStrategyBG: {
+                    key: hidingStrategy,
+                    params: params!
+                }
+            }
+        })
+    }
+
+    const setHidingStrategyBGParams = (params: any) => {
+        onParamsChange({
+            ...runParams,
+            videoMasking: {
+                ...runParams.videoMasking,
+                hidingStrategyBG: {
+                    ...runParams.videoMasking.hidingStrategyBG,
+                    params
+                }
+            }
+        })
     }
 
     const handleHidingStrategyTargetChanged = (newStrategy: string) => {
@@ -94,7 +178,7 @@ const HidingStep = (props: StepProps) => {
                 })
             }
             {
-                availableHidingMethodsTarget && (
+                (hidingStrategyTarget && availableHidingMethodsTarget) && (
                     <Box component="div">
                         <Grid container pt={3}>
                             <Grid xs={6} container>
@@ -105,7 +189,7 @@ const HidingStep = (props: StepProps) => {
                                 </Grid>
                                 <Grid item xs={10}>
                                     <Select
-                                        value={hidingStrategyTarget}
+                                        value={hidingStrategyTarget.key}
                                         onChange={(e) => { handleHidingStrategyTargetChanged(e.target.value) }}
                                         fullWidth
                                     >
@@ -118,10 +202,10 @@ const HidingStep = (props: StepProps) => {
                                 </Grid>
                                 <Grid item xs={2} sx={{ display: 'flex', alignItems: 'center' }}>
                                     <MethodSettings
-                                        methodName={hidingStrategyTarget}
-                                        formSchema={availableHidingMethodsTarget[hidingStrategyTarget].parameterSchema}
-                                        uiSchema={availableHidingMethodsTarget[hidingStrategyTarget].uiSchema}
-                                        values={hidingStartegyTargetParams}
+                                        methodName={hidingStrategyTarget.key}
+                                        formSchema={availableHidingMethodsTarget[hidingStrategyTarget.key].parameterSchema}
+                                        uiSchema={availableHidingMethodsTarget[hidingStrategyTarget.key].uiSchema}
+                                        values={hidingStrategyTarget.params}
                                         onSet={setHidingStrategyTargetParams}
                                     />
                                 </Grid>
@@ -134,7 +218,7 @@ const HidingStep = (props: StepProps) => {
                                 </Grid>
                                 <Grid item xs={10}>
                                     <Select
-                                        value={hidingStrategyBG}
+                                        value={hidingStrategyBG.key}
                                         onChange={(e) => { handleHidingStrategyBGChanged(e.target.value) }}
                                         fullWidth
                                     >
@@ -147,10 +231,10 @@ const HidingStep = (props: StepProps) => {
                                 </Grid>
                                 <Grid item xs={2} sx={{ display: 'flex', alignItems: 'center' }}>
                                     <MethodSettings
-                                        methodName={hidingStrategyBG}
-                                        formSchema={availableHidingMethodsBG[hidingStrategyBG].parameterSchema}
-                                        uiSchema={availableHidingMethodsBG[hidingStrategyBG].uiSchema}
-                                        values={hidingStartegyBGParams}
+                                        methodName={hidingStrategyBG.key}
+                                        formSchema={availableHidingMethodsBG[hidingStrategyBG.key].parameterSchema}
+                                        uiSchema={availableHidingMethodsBG[hidingStrategyBG.key].uiSchema}
+                                        values={hidingStrategyBG.params}
                                         onSet={setHidingStrategyBGParams}
                                     />
                                 </Grid>

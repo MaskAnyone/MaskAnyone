@@ -16,15 +16,17 @@ export interface Run {
 
 export type Strategy = {
     key: string, // @todo add exact values "blur" | "blackout" | "estimate"
-    params: object
+    params: {
+        [paramterName: string]: any;
+    }
 }
 
 // videopart describes the part of the video that should be masked (e.g face, background, body...)
 export type VideoMaskingParams = {
     hidingTarget: "face" | "body" | "none"
-    hidingtrategyTarget?: Strategy
-    hidingStrategyBG?: Strategy
-    maskingStrategy?: Strategy
+    hidingStrategyTarget: Strategy
+    hidingStrategyBG: Strategy
+    maskingStrategy: Strategy
 }
 
 export type ThreeDModelCreationParams = {
