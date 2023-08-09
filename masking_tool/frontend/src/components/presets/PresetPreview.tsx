@@ -1,21 +1,9 @@
-import {Box, Card, CardContent, CardMedia, IconButton, Typography} from "@mui/material";
+import {IconButton} from "@mui/material";
 import {Preset} from "../../state/types/Preset";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import React from "react";
-
-const styles = {
-    card: {
-        width: 320,
-        height: 170,
-    },
-    description: {
-        paddingTop: 0.75,
-        display: '-webkit-box',
-        WebkitLineClamp: 6,
-        WebkitBoxOrient: 'vertical',
-        overflow: 'hidden',
-    },
-};
+import SideBySideCard from "../common/SideBySideCard";
+import SideBySideCardContent from "../common/SideBySideCardContent";
 
 interface PresetPreviewProps {
     preset: Preset;
@@ -30,26 +18,15 @@ const PresetPreview = (props: PresetPreviewProps) => {
     };
 
     return (
-        <Card sx={styles.card}>
-            <Box component={'div'} sx={{ display: 'flex', flexDirection: 'row', position: 'relative' }}>
-                <CardContent sx={{ width: 160 }}>
-                    <Typography variant={'body1'} component="div" fontWeight={'bold'}>
-                        {props.preset.name}
-                    </Typography>
-                    <Typography color={'text.secondary'} fontSize={12} component="div" sx={styles.description}>
-                        {props.preset.description}
-                    </Typography>
-                </CardContent>
-                <CardMedia
-                    component={'img'}
-                    image={'https://picsum.photos/150/150'}
-                    sx={{ width: 160, height: 170 }}
-                />
-                <IconButton sx={{ position: 'absolute', top: 4, right: 0 }} onClick={openPresetPreviewMenu}>
-                    <MoreVertIcon sx={{ color: 'white', mixBlendMode: 'difference'}} />
-                </IconButton>
-            </Box>
-        </Card>
+        <SideBySideCard>
+            <SideBySideCardContent
+                title={props.preset.name}
+                description={props.preset.description}
+            />
+            <IconButton sx={{ position: 'absolute', top: 4, right: 0 }} onClick={openPresetPreviewMenu}>
+                <MoreVertIcon sx={{ color: 'white', mixBlendMode: 'difference'}} />
+            </IconButton>
+        </SideBySideCard>
     );
 };
 
