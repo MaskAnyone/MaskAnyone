@@ -1,5 +1,5 @@
 import { Preset } from "../state/types/Run";
-import { maskingMethods } from "./maskingMethods";
+import { hidingMethods, maskingMethods } from "./maskingMethods";
 
 export const presetsDB: Preset[] = [
     {
@@ -10,7 +10,7 @@ export const presetsDB: Preset[] = [
                 hidingTarget: "face",
                 hidingStrategyTarget: {
                     key: "blur",
-                    params: maskingMethods["body"].hidingMethods!["blur"].defaultValues!
+                    params: hidingMethods["body"]["blur"].defaultValues!
                 },
                 maskingStrategy: {
                     key: "none",
@@ -39,11 +39,11 @@ export const presetsDB: Preset[] = [
                 hidingTarget: "body",
                 hidingStrategyTarget: {
                     key: "blackout",
-                    params: maskingMethods["body"].hidingMethods["blackout"].defaultValues!
+                    params: hidingMethods["body"]["blackout"].defaultValues!
                 },
                 maskingStrategy: {
                     key: "skeleton",
-                    params: maskingMethods["body"].maskingMethods!["skeleton"].defaultValues!
+                    params: maskingMethods!["skeleton"].defaultValues!
                 },
                 hidingStrategyBG: {
                     key: "none",
@@ -130,7 +130,7 @@ export const presetsDB: Preset[] = [
                 },
                 hidingStrategyBG: {
                     key: "blur",
-                    params: maskingMethods["background"].hidingMethods!["blur"].defaultValues!
+                    params: hidingMethods["background"]!["blur"].defaultValues!
                 },
                 maskingStrategy: {
                     key: "none",

@@ -2,26 +2,26 @@ import SideBySideCardContent from "./SideBySideCardContent";
 import React from "react";
 import SideBySideCard from "./SideBySideCard";
 
-interface SelectableCardProps {
+interface CheckableCardProps {
     title: string;
     description: string;
-    selected: boolean;
+    checked: boolean;
     imagePath: String;
     onSelect: () => void;
 }
 
-const SelectableCard = (props: SelectableCardProps) => {
+const CheckableCard = (props: CheckableCardProps) => {
     return (
         <SideBySideCard>
             <SideBySideCardContent
                 title={props.title}
                 description={props.description}
-                selectable={true}
-                selected={props.selected}
+                checkable={true}
+                selected={props.checked}
                 onSelect={props.onSelect}
             />
         </SideBySideCard>
     );
 };
 
-export default SelectableCard;
+export default CheckableCard;

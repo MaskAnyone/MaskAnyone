@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { v4 as uuidv4 } from 'uuid';
 import PresetView from "./presets/PresetView";
 import { Box } from "@mui/material";
 import { Preset, RunParams } from "../../../state/types/Run";
 import Command from "../../../state/actions/command";
-import { maskingMethods } from "../../../util/maskingMethods";
 import CustomSettingsContainer from "./customSettings/CustomSettingsContainer";
 
 interface MaskingFormProps {
@@ -53,6 +52,7 @@ const MaskingForm = (props: MaskingFormProps) => {
     const handleCustomModeClicked = () => {
         setPresetView(false)
         setSelectedPreset(undefined)
+        setRunParams(initialRunParams)
     }
 
     const handlePresetParamRefinementClicked = () => {

@@ -5,6 +5,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import HidingStep, { StepProps } from "./steps/HidingStep";
 import VideoMaskingStep from "./steps/VideoMaskingStep";
 import VoiceMaskingStep from "./steps/VoiceMaskingStep";
+import DataExctactionStep from "./steps/DataExtractionStep";
 
 const steps = [
     {
@@ -21,7 +22,7 @@ const steps = [
     },
     {
         name: "3D Model Extraction",
-        component: HidingStep
+        component: DataExctactionStep
     }
 ]
 
@@ -60,12 +61,12 @@ const CustomSettingsContainer = (props: RunSettingsContainerProps) => {
 
     return (
         <Box component="div" sx={{ width: '100%' }}>
-            <Box component="div" >
+            <Box component="div">
                 <IconButton onClick={() => props.onBackClicked()} >
                     <ArrowBackIcon />
                 </IconButton>
                 Presets
-                <Stepper nonLinear activeStep={activeStep} sx={{ textAlign: "center" }}>
+                <Stepper nonLinear activeStep={activeStep} sx={{ textAlign: "center", marginTop: "10px" }}>
                     {steps.map((step, index) => {
                         return (
                             <Step key={step.name} completed={isStepCompleted(index)}>
@@ -83,7 +84,7 @@ const CustomSettingsContainer = (props: RunSettingsContainerProps) => {
             <Box display="flex" component="div" justifyContent="flex-end" alignItems="flex-end" mt={3}>
                 {activeStep > 0 && <Button variant="outlined" onClick={() => handleBack()}>Go back</Button>}
                 {activeStep < steps.length - 1 && <Button variant="contained" sx={{ marginLeft: "25px" }} onClick={() => handleNext()}>Next</Button>}
-                {activeStep == steps.length - 1 && <Button variant="contained" color="success" onClick={() => props.onRunClicked} sx={{ marginLeft: "25px" }}>Mask Video!</Button>}
+                {activeStep == steps.length - 1 && <Button variant="contained" color="success" onClick={() => props.onRunClicked()} sx={{ marginLeft: "25px" }}>Mask Video!</Button>}
             </Box>
         </Box>
     )

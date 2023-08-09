@@ -1,4 +1,4 @@
-import {CardContent, Radio, Typography} from "@mui/material";
+import { CardContent, Checkbox, Radio, Typography } from "@mui/material";
 import React from "react";
 
 const styles = {
@@ -15,6 +15,7 @@ interface SideBySideCardContentProps {
     title: string;
     description: string;
     selectable?: boolean;
+    checkable?: boolean;
     selected?: boolean;
     onSelect?: () => void;
 }
@@ -25,6 +26,9 @@ const SideBySideCardContent = (props: SideBySideCardContentProps) => {
             <Typography variant={'body1'} component="div" fontWeight={'bold'}>
                 {props.selectable && (
                     <Radio checked={props.selected} onChange={props.onSelect} />
+                )}
+                {props.checkable && (
+                    <Checkbox checked={props.selected} onChange={props.onSelect} />
                 )}
                 {props.title}
             </Typography>

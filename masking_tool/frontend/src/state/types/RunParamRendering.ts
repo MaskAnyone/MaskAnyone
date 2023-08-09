@@ -2,19 +2,18 @@ import { RJSFSchema, UiSchema } from "@rjsf/utils"
 
 export type Method = {
     name: string,
-    description: string, 
+    description: string,
     parameterSchema?: RJSFSchema
     uiSchema?: UiSchema
-    defaultValues?: {[paramterName: string]: any}
+    defaultValues?: { [paramterName: string]: any }
+}
+
+export type HidingMethods = {
+    [videoPart: string]: {
+        [methodName: string]: Method
+    }
 }
 
 export type MaskingMethods = {
-    [videoPart: string]: {
-        hidingMethods: {
-            [methodName: string]: Method
-        }
-        maskingMethods?: {
-            [methodName: string]: Method
-        }
-    }
+    [maskingMethod: string]: Method
 }

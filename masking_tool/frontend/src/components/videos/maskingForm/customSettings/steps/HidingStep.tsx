@@ -2,9 +2,10 @@ import { Box, Grid, MenuItem, Select, Typography } from "@mui/material"
 import { RunParams } from "../../../../../state/types/Run"
 import RadioCard from "../RadioCard"
 import MethodSettings from "../../MethodSettings"
-import { maskingMethods } from "../../../../../util/maskingMethods";
+import { hidingMethods } from "../../../../../util/maskingMethods";
 import { useEffect, useState } from "react";
 import { Method } from "../../../../../state/types/RunParamRendering";
+import SelectableCard from "../../../../common/SelectableCard";
 
 export interface StepProps {
     runParams: RunParams,
@@ -48,11 +49,11 @@ const HidingStep = (props: StepProps) => {
     const [availableHidingMethodsTarget, setAvailableHidingMethodsTarget] = useState<{
         [methodName: string]: Method
     } | null>(null)
-    const availableHidingMethodsBG = maskingMethods["background"].hidingMethods
+    const availableHidingMethodsBG = hidingMethods["background"]
 
     useEffect(() => {
         if (hidingTarget != "none") {
-            setAvailableHidingMethodsTarget(maskingMethods[hidingTarget].hidingMethods)
+            setAvailableHidingMethodsTarget(hidingMethods[hidingTarget])
         } else {
             setAvailableHidingMethodsTarget(null)
         }
@@ -87,7 +88,7 @@ const HidingStep = (props: StepProps) => {
             videoMasking: {
                 ...runParams.videoMasking,
                 hidingStrategyTarget: {
-                    key: hidingStrategy,
+                    key: "abc",
                     params: params!
                 }
             }
@@ -146,7 +147,6 @@ const HidingStep = (props: StepProps) => {
         } else {
             setHidingStrategyTargetParams(null)
         }
-
     }
 
     const handleHidingStrategyBGChanged = (newStrategy: string) => {
@@ -163,20 +163,21 @@ const HidingStep = (props: StepProps) => {
             <Typography variant="body1" sx={{ fontWeight: 500 }} mt={3}>
                 Area to Mask
             </Typography >
-            {
-                maskingAreas.map((area) => {
-                    return (
-                        <RadioCard
-                            title={area.title}
-                            description={area.description}
-                            value={area.value}
-                            imagePath={area.imagePath}
-                            onSelect={setHidingTarget}
-                            selected={hidingTarget == area.value}
-                        />
-                    )
-                })
-            }
+            <Box component="div" sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '15px' }}>
+                {
+                    maskingAreas.map((area) => {
+                        return (
+                            <SelectableCard
+                                title={area.title}
+                                description={area.description}
+                                imagePath={area.imagePath}
+                                onSelect={() => setHidingTarget(area.value)}
+                                selected={hidingTarget == area.value}
+                            />
+                        )
+                    })
+                }
+            </Box>
             {
                 (hidingStrategyTarget && availableHidingMethodsTarget) && (
                     <Box component="div">
