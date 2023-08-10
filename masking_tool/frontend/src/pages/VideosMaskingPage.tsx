@@ -8,7 +8,7 @@ const VideosMaskingPage = () => {
 
     return (
         <Box component="div">
-            {selectedVideos.length != 0 && <MaskingForm videoIds={selectedVideos} />}
+            {selectedVideos.length != 0 && <MaskingForm videoIds={selectedVideos} onClose={() => {}} />}
         </Box>
     )
 }

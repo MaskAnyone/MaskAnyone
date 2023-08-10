@@ -7,7 +7,6 @@ import { Preset } from "../../../../state/types/Run";
 interface PresetViewProps {
     onPresetSelected: (preset: Preset) => void
     onPresetParamRefinementClicked: () => void
-    onCustomModeClicked: () => void
     selectedPreset?: Preset
     maskVideo: () => void
 }
@@ -15,20 +14,15 @@ interface PresetViewProps {
 const PresetView = (props: PresetViewProps) => {
     return (<>
         <DialogContent sx={{ padding: '20px 32px' }}>
-            <Box component="div" sx={{ flexGrow: 1, padding: "20px 40px" }}>
-                <Grid container>
-                    <PresetSelection
-                        selectedPreset={props.selectedPreset}
-                        onPresetSelected={props.onPresetSelected}
-                        onCustomModeClicked={props.onCustomModeClicked}
-                    />
-                </Grid>
-            </Box>
+            <PresetSelection
+                selectedPreset={props.selectedPreset}
+                onPresetSelected={props.onPresetSelected}
+            />
         </DialogContent>
         <DialogActions>
             <Button
                 startIcon={<TuneIcon />}
-                children={'Customize Params'}
+                children={props.selectedPreset ? 'Customize Preset' : 'Use Custom Settings'}
                 onClick={() => props.onPresetParamRefinementClicked()}
             />
             <Button
@@ -36,6 +30,7 @@ const PresetView = (props: PresetViewProps) => {
                 startIcon={<MasksIcon />}
                 onClick={() => props.maskVideo()}
                 children={'Mask Video'}
+                disabled={!props.selectedPreset}
             />
         </DialogActions>
     </>);

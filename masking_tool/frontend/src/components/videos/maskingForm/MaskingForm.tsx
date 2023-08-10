@@ -8,6 +8,7 @@ import CustomSettingsContainer from "./customSettings/CustomSettingsContainer";
 
 interface MaskingFormProps {
     videoIds: string[];
+    onClose: () => void;
 }
 
 const initialRunParams: RunParams = {
@@ -53,12 +54,6 @@ const MaskingForm = (props: MaskingFormProps) => {
         setSelectedPreset(preset)
     }
 
-    const handleCustomModeClicked = () => {
-        setPresetView(false)
-        setSelectedPreset(undefined)
-        setRunParams(initialRunParams)
-    }
-
     const handlePresetParamRefinementClicked = () => {
         setPresetView(false)
     }
@@ -74,12 +69,13 @@ const MaskingForm = (props: MaskingFormProps) => {
             resultVideoId: uuidv4(),
             runData: runParams,
         }));
+
+        props.onClose();
     };
 
     return presetView ? (
         <PresetView
             onPresetSelected={handlePresetSelected}
-            onCustomModeClicked={handleCustomModeClicked}
             onPresetParamRefinementClicked={handlePresetParamRefinementClicked}
             maskVideo={maskVideo}
             selectedPreset={selectedPreset}

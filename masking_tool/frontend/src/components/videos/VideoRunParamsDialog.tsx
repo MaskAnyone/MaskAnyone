@@ -13,7 +13,7 @@ const VideoRunParamsDialog = (props: VideoRunParamsDialogProps) => {
         <Dialog open={props.open} onClose={props.onClose} fullWidth={true} maxWidth={'xl'}>
             <DialogTitle>Mask Video</DialogTitle>
             <Divider />
-            <MaskingForm videoIds={[props.videoId]} />
+            <MaskingForm videoIds={[props.videoId]} onClose={props.onClose} />
         </Dialog>
     );
 };

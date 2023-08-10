@@ -13,6 +13,7 @@ export const theme = createTheme({
             styleOverrides: {
                 root: {
                     borderRadius: 8,
+                    padding: '8px 24px',
                 },
             },
         },

@@ -5,10 +5,10 @@ import TuneIcon from '@mui/icons-material/Tune';
 import { useState } from "react";
 import { Preset, RunParams } from "../../../../state/types/Run";
 import { presetsDB } from "../../../../util/presets"
+import SelectableCard from "../../../common/SelectableCard";
 
 interface PresetSelectionProps {
     onPresetSelected: (preset: Preset) => void
-    onCustomModeClicked: () => void
     selectedPreset?: Preset
 }
 
@@ -21,27 +21,18 @@ const PresetSelection = (props: PresetSelectionProps) => {
     }
 
     return (
-        <Grid container rowSpacing={2} columnSpacing={{ xs: 1, sm: 2, md: 3 }} xs={12} marginTop={"10px"}>
-            {presets.map((preset, index) => (
-                <Grid item xs={4} key={preset.name}>
-                    <PresetItem
-                        name={preset.name}
-                        selected={selectedPreset ? selectedPreset.name == preset.name : false}
-                        previewImagePath={preset.previewImagePath}
-                        description={preset.detailText}
-                        onClick={() => onPresetClicked(preset)}
-                    />
-                </Grid>
-            ))}
-            <Grid item xs={4}>
-                <PresetItem
-                    name="Custom Run"
-                    icon={<TuneIcon />}
-                    selected={false}
-                    onClick={() => props.onCustomModeClicked()}
+        <Box component={'div'} sx={{ width: '100%', display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '24px'}}>
+            {presets.map(preset => (
+                <SelectableCard
+                    key={preset.name}
+                    title={preset.name}
+                    selected={selectedPreset?.name == preset.name}
+                    imagePath={preset.previewImagePath || ''}
+                    description={preset.detailText || ''}
+                    onSelect={() => onPresetClicked(preset)}
                 />
-            </Grid>
-        </Grid>
+            ))}
+        </Box>
     )
 }
 
