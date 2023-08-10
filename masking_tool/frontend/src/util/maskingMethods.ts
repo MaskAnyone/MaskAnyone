@@ -15,6 +15,9 @@ export const maskingMethods: MaskingMethods = {
             numPoses: 1,
             confidence: 0.5,
             timeseries: false
+        },
+        backendFormat: {
+            "body": "skeleton"
         }
     },
     faceMesh: {
@@ -26,6 +29,9 @@ export const maskingMethods: MaskingMethods = {
             numPoses: 1,
             confidence: 0.5,
             timeseries: false
+        },
+        backendFormat: {
+            "face": "faceMesh"
         }
     },
     faceMeshSkeleton: {
@@ -37,6 +43,10 @@ export const maskingMethods: MaskingMethods = {
             numPoses: 1,
             confidence: 0.5,
             timeseries: false
+        },
+        backendFormat: {
+            "body": "skeleton",
+            "face": "faceMesh"
         }
     }
 }
@@ -82,7 +92,7 @@ export const hidingMethods: HidingMethods = {
                     extraPixels: 0
                 }
             }
-        }
+        },
     },
     body: {
         none: {

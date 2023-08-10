@@ -21,6 +21,12 @@ interface MaskingArea {
 
 const maskingAreas: MaskingArea[] = [
     {
+        title: "None",
+        description: "Do not hide anything",
+        imagePath: "",
+        value: "none"
+    },
+    {
         title: "Face Only",
         description: "Only hide the face of the subjects",
         imagePath: "",
@@ -32,12 +38,7 @@ const maskingAreas: MaskingArea[] = [
         imagePath: "",
         value: "body"
     },
-    {
-        title: "None",
-        description: "Do not hide anything",
-        imagePath: "",
-        value: "none"
-    }
+
 ]
 
 const HidingStep = (props: StepProps) => {
@@ -76,25 +77,6 @@ const HidingStep = (props: StepProps) => {
         })
     }
 
-    const setHidingStrategyTarget = (hidingStrategy: string) => {
-        let params;
-        if (hidingStrategy != "none" && availableHidingMethodsTarget) {
-            params = availableHidingMethodsTarget[hidingStrategy].defaultValues
-        } else {
-            params = {}
-        }
-        onParamsChange({
-            ...runParams,
-            videoMasking: {
-                ...runParams.videoMasking,
-                hidingStrategyTarget: {
-                    key: "abc",
-                    params: params!
-                }
-            }
-        })
-    }
-
     const setHidingStrategyTargetParams = (params: any) => {
         onParamsChange({
             ...runParams,
@@ -103,25 +85,6 @@ const HidingStep = (props: StepProps) => {
                 hidingStrategyTarget: {
                     ...runParams.videoMasking.hidingStrategyTarget,
                     params
-                }
-            }
-        })
-    }
-
-    const setHidingStrategyBG = (hidingStrategy: string) => {
-        let params;
-        if (hidingStrategy != "none" && availableHidingMethodsBG) {
-            params = availableHidingMethodsBG[hidingStrategy].defaultValues
-        } else {
-            params = {}
-        }
-        onParamsChange({
-            ...runParams,
-            videoMasking: {
-                ...runParams.videoMasking,
-                hidingStrategyBG: {
-                    key: hidingStrategy,
-                    params: params!
                 }
             }
         })
@@ -141,21 +104,31 @@ const HidingStep = (props: StepProps) => {
     }
 
     const handleHidingStrategyTargetChanged = (newStrategy: string) => {
-        setHidingStrategyTarget(newStrategy)
-        if (newStrategy != "none") {
-            setHidingStrategyTargetParams(availableHidingMethodsTarget![newStrategy].defaultValues)
-        } else {
-            setHidingStrategyTargetParams(null)
-        }
+        const params = newStrategy == "none" ? {} : availableHidingMethodsTarget![newStrategy].defaultValues!
+        onParamsChange({
+            ...runParams,
+            videoMasking: {
+                ...runParams.videoMasking,
+                hidingStrategyTarget: {
+                    key: newStrategy,
+                    params: params
+                }
+            }
+        })
     }
 
     const handleHidingStrategyBGChanged = (newStrategy: string) => {
-        setHidingStrategyBG(newStrategy)
-        if (newStrategy != "none") {
-            setHidingStrategyBGParams(availableHidingMethodsBG![newStrategy].defaultValues)
-        } else {
-            setHidingStrategyBGParams(null)
-        }
+        const params = newStrategy == "none" ? {} : availableHidingMethodsBG![newStrategy].defaultValues!
+        onParamsChange({
+            ...runParams,
+            videoMasking: {
+                ...runParams.videoMasking,
+                hidingStrategyBG: {
+                    key: newStrategy,
+                    params: params
+                }
+            }
+        })
     }
 
     return (

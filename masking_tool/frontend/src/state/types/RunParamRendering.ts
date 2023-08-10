@@ -6,6 +6,9 @@ export type Method = {
     parameterSchema?: RJSFSchema
     uiSchema?: UiSchema
     defaultValues?: { [paramterName: string]: any }
+    backendFormat?: {
+        [target: string]: string
+    }
 }
 
 export type HidingMethods = {

@@ -23,7 +23,7 @@ interface SideBySideCardContentProps {
 const SideBySideCardContent = (props: SideBySideCardContentProps) => {
     return (
         <CardContent sx={{ width: 160 }}>
-            <Typography variant={'body1'} component="div" fontWeight={'bold'}>
+            <Typography variant={'body1'} component="div" fontWeight={'bold'} sx={{ lineHeight: "0.1" }}>
                 {props.selectable && (
                     <Radio checked={props.selected} onChange={props.onSelect} />
                 )}

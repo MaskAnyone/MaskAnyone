@@ -7,6 +7,7 @@ import {
     ApiFetchVideosResponse, ApiFetchWorkersResponse
 } from "./types";
 import { RunParams } from '../state/types/Run';
+import { asBackendRunData } from './helpers';
 
 const configuredAxios = axios.create({
     baseURL: Config.api.baseUrl,
@@ -68,7 +69,7 @@ const Api = {
             method: 'post',
             data: {
                 id,
-                run_data: runData,
+                run_data: asBackendRunData(runData),
                 video_ids: videoIds,
                 result_video_id: resultVideoId
             }
