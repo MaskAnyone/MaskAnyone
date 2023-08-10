@@ -109,6 +109,7 @@ const SideBar = (props: SideBarProps) => {
                     <List sx={{ display: 'flex', flexDirection: 'column', flex: 1, paddingBottom: 1 }} disablePadding={true}>
                         {videoList.map(video => (
                             <SideBarVideoItem
+                                key={video.id}
                                 video={video}
                                 badge={videoJobsRecord[video.id] || 0}
                                 onCheckboxClicked={handleCheckboxClicked}

@@ -1,6 +1,7 @@
 import SideBySideCardContent from "./SideBySideCardContent";
 import React from "react";
 import SideBySideCard from "./SideBySideCard";
+import {ButtonBase} from "@mui/material";
 
 interface CheckableCardProps {
     title: string;
@@ -12,15 +13,17 @@ interface CheckableCardProps {
 
 const CheckableCard = (props: CheckableCardProps) => {
     return (
-        <SideBySideCard>
-            <SideBySideCardContent
-                title={props.title}
-                description={props.description}
-                checkable={true}
-                selected={props.checked}
-                onSelect={props.onSelect}
-            />
-        </SideBySideCard>
+        <ButtonBase onClick={props.onSelect}>
+            <SideBySideCard>
+                <SideBySideCardContent
+                    title={props.title}
+                    description={props.description}
+                    checkable={true}
+                    selected={props.checked}
+                    onSelect={props.onSelect}
+                />
+            </SideBySideCard>
+        </ButtonBase>
     );
 };
 

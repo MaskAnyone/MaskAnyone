@@ -1,6 +1,7 @@
 import SideBySideCardContent from "./SideBySideCardContent";
 import React from "react";
 import SideBySideCard from "./SideBySideCard";
+import {ButtonBase} from "@mui/material";
 
 interface SelectableCardProps {
     title: string;
@@ -12,15 +13,17 @@ interface SelectableCardProps {
 
 const SelectableCard = (props: SelectableCardProps) => {
     return (
-        <SideBySideCard image={props.imagePath}>
-            <SideBySideCardContent
-                title={props.title}
-                description={props.description}
-                selectable={true}
-                selected={props.selected}
-                onSelect={props.onSelect}
-            />
-        </SideBySideCard>
+        <ButtonBase onClick={props.onSelect}>
+            <SideBySideCard image={props.imagePath}>
+                <SideBySideCardContent
+                    title={props.title}
+                    description={props.description}
+                    selectable={true}
+                    selected={props.selected}
+                    onSelect={props.onSelect}
+                />
+            </SideBySideCard>
+        </ButtonBase>
     );
 };
 
