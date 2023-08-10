@@ -4,6 +4,13 @@ import MasksIcon from '@mui/icons-material/Masks';
 import TuneIcon from '@mui/icons-material/Tune';
 import { Preset } from "../../../../state/types/Run";
 
+const styles = {
+    dialogActions: {
+        paddingBottom: 2,
+        paddingRight: 3,
+    },
+};
+
 interface PresetViewProps {
     onPresetSelected: (preset: Preset) => void
     onPresetParamRefinementClicked: () => void
@@ -19,11 +26,11 @@ const PresetView = (props: PresetViewProps) => {
                 onPresetSelected={props.onPresetSelected}
             />
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={styles.dialogActions}>
             <Button
                 startIcon={<TuneIcon />}
                 children={props.selectedPreset ? 'Customize Preset' : 'Use Custom Settings'}
-                onClick={() => props.onPresetParamRefinementClicked()}
+                onClick={() => setTimeout(() => props.onPresetParamRefinementClicked(), 150)}
             />
             <Button
                 variant={'contained'}

@@ -26,6 +26,13 @@ const steps = [
     }
 ]
 
+const styles = {
+    dialogActions: {
+        paddingBottom: 2,
+        paddingRight: 3,
+    },
+};
+
 interface RunSettingsContainerProps {
     runParams: RunParams
     onParamsChange: (runParams: RunParams) => void
@@ -65,7 +72,7 @@ const CustomSettingsContainer = (props: RunSettingsContainerProps) => {
                 <Box component="div" sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', marginTop: 1, marginBottom: 1 }}>
                     <Button
                         startIcon={<ArrowBackIcon />}
-                        onClick={() => setTimeout(props.onBackClicked, 200)}
+                        onClick={() => setTimeout(props.onBackClicked, 150)}
                         color={'inherit'}
                         children={'Presets'}
                     />
@@ -88,7 +95,7 @@ const CustomSettingsContainer = (props: RunSettingsContainerProps) => {
                 {currentStepContainer()}
             </Box>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={styles.dialogActions}>
             {activeStep > 0 && <Button onClick={() => handleBack()}>Go back</Button>}
             {activeStep < steps.length - 1 && <Button variant="contained" sx={{ marginLeft: "25px" }} onClick={() => handleNext()}>Next</Button>}
             {activeStep == steps.length - 1 && <Button variant="contained" color="primary" onClick={() => props.onRunClicked()} sx={{ marginLeft: "25px" }}>Mask Video!</Button>}
