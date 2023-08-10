@@ -29,6 +29,10 @@ export type VideoMaskingParams = {
     maskingStrategy: Strategy
 }
 
+export type VoiceMaskingParams = {
+    hidingStrategy: Strategy;
+}
+
 export type ThreeDModelCreationParams = {
     skeleton: boolean,
     skeletonParams: { [paramName: string]: any }
@@ -41,5 +45,5 @@ export type ThreeDModelCreationParams = {
 export type RunParams = {
     videoMasking: VideoMaskingParams
     threeDModelCreation: ThreeDModelCreationParams
-    voiceMasking: any
+    voiceMasking: VoiceMaskingParams
 }

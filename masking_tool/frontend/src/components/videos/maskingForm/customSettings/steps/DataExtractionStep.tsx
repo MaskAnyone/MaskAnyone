@@ -40,10 +40,15 @@ const DataExctactionStep = (props: StepProps) => {
 
     return (
         <>
-            <Typography variant="body1" sx={{ fontWeight: 500 }} mt={3}>
-                Additional Data to be exported
-            </Typography >
-            <Box component="div" sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '15px' }} mt={1}>
+            <Box component={'div'} sx={{ marginBottom: 3.5 }}>
+                <Typography variant="h6">
+                    Do you want to export additional data?
+                </Typography >
+                <Typography variant={'body2'}>
+                    If besides masking the video you also want to work with the kinematic information, you can extract them here. Please beware that this can slow down the masking process.
+                </Typography>
+            </Box>
+            <Box component="div" sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '24px' }} mt={1}>
                 <CheckableCard
                     title={"Blender 3D Character"}
                     description={"Will create a 3D model in Blender based on a MediaPipe Skeleton."}

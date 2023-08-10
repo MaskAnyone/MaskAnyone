@@ -29,7 +29,12 @@ export const presetsDB: Preset[] = [
                 blendshapes: false,
                 blendshapesParams: {}
             },
-            voiceMasking: {}
+            voiceMasking: {
+                hidingStrategy: {
+                    key: 'preserve',
+                    params: {},
+                }
+            }
         }
     },
     {
@@ -58,7 +63,12 @@ export const presetsDB: Preset[] = [
                 blendshapes: false,
                 blendshapesParams: {}
             },
-            voiceMasking: {}
+            voiceMasking: {
+                hidingStrategy: {
+                    key: 'preserve',
+                    params: {},
+                }
+            }
         }
     },
     {
@@ -87,7 +97,12 @@ export const presetsDB: Preset[] = [
                 blendshapes: false,
                 blendshapesParams: {}
             },
-            voiceMasking: {}
+            voiceMasking: {
+                hidingStrategy: {
+                    key: 'preserve',
+                    params: {},
+                }
+            }
         }
     },
     {
@@ -116,7 +131,12 @@ export const presetsDB: Preset[] = [
                 blendshapes: false,
                 blendshapesParams: {}
             },
-            voiceMasking: {}
+            voiceMasking: {
+                hidingStrategy: {
+                    key: 'preserve',
+                    params: {},
+                }
+            }
         }
     },
     {
@@ -145,7 +165,12 @@ export const presetsDB: Preset[] = [
                 blendshapes: false,
                 blendshapesParams: {}
             },
-            voiceMasking: {}
+            voiceMasking: {
+                hidingStrategy: {
+                    key: 'preserve',
+                    params: {},
+                }
+            }
         }
     },
 ]

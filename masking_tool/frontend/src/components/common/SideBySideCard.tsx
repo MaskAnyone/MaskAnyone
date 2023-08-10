@@ -5,6 +5,7 @@ const styles = {
     card: {
         width: 320,
         height: 170,
+        boxShadow: 3,
     },
     leftSideContainer: {
         display: 'flex',

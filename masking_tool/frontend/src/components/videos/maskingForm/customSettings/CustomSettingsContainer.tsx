@@ -54,19 +54,22 @@ const CustomSettingsContainer = (props: RunSettingsContainerProps) => {
 
     const currentStepContainer = () => {
         const StepContainer: ((props: StepProps) => JSX.Element) = steps[activeStep].component
-        return (<Box component="div" sx={{ minHeight: "300px" }}>
+        return (<Box component="div" sx={{ minHeight: "300px", paddingTop: 2 }}>
             <StepContainer runParams={props.runParams} onParamsChange={props.onParamsChange} />
         </Box>)
     }
 
     return (
         <Box component="div" sx={{ width: '100%' }}>
-            <Box component="div">
-                <IconButton onClick={() => props.onBackClicked()} >
-                    <ArrowBackIcon />
-                </IconButton>
-                Presets
-                <Stepper nonLinear activeStep={activeStep} sx={{ textAlign: "center", marginTop: "10px" }}>
+            <Box component="div" sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', marginTop: 1, marginBottom: 1 }}>
+                <Button
+                    startIcon={<ArrowBackIcon />}
+                    onClick={() => setTimeout(props.onBackClicked, 200)}
+                    color={'inherit'}
+                    children={'Presets'}
+                />
+
+                <Stepper nonLinear activeStep={activeStep} sx={{ width: 700 }}>
                     {steps.map((step, index) => {
                         return (
                             <Step key={step.name} completed={isStepCompleted(index)}>
@@ -77,6 +80,8 @@ const CustomSettingsContainer = (props: RunSettingsContainerProps) => {
                         );
                     })}
                 </Stepper>
+
+                {/* Spacer */}<Box component={'div'} sx={{ width: '100px' }}></Box>
             </Box>
 
             {currentStepContainer()}

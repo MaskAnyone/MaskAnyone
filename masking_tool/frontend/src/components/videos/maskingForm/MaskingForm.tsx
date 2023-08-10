@@ -35,7 +35,12 @@ const initialRunParams: RunParams = {
         blendshapes: false,
         blendshapesParams: {}
     },
-    voiceMasking: {}
+    voiceMasking: {
+        hidingStrategy: {
+            key: 'preserve',
+            params: {},
+        },
+    },
 }
 
 const MaskingForm = (props: MaskingFormProps) => {
