@@ -13,7 +13,7 @@ interface CheckableCardProps {
 
 const CheckableCard = (props: CheckableCardProps) => {
     return (
-        <ButtonBase onClick={props.onSelect}>
+        <ButtonBase onClick={props.onSelect} sx={{ textAlign: 'inherit' }}>
             <SideBySideCard>
                 <SideBySideCardContent
                     title={props.title}

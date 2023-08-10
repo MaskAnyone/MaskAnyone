@@ -13,7 +13,7 @@ interface SelectableCardProps {
 
 const SelectableCard = (props: SelectableCardProps) => {
     return (
-        <ButtonBase onClick={props.onSelect}>
+        <ButtonBase onClick={props.onSelect} sx={{ textAlign: 'inherit' }}>
             <SideBySideCard image={props.imagePath}>
                 <SideBySideCardContent
                     title={props.title}
