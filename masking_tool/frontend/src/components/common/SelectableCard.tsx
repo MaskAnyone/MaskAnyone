@@ -6,13 +6,13 @@ interface SelectableCardProps {
     title: string;
     description: string;
     selected: boolean;
-    imagePath: String;
+    imagePath: string;
     onSelect: () => void;
 }
 
 const SelectableCard = (props: SelectableCardProps) => {
     return (
-        <SideBySideCard>
+        <SideBySideCard image={props.imagePath}>
             <SideBySideCardContent
                 title={props.title}
                 description={props.description}
