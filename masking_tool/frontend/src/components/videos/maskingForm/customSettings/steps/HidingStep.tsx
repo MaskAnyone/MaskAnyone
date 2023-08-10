@@ -1,4 +1,4 @@
-import { Box, Grid, MenuItem, Select, Typography } from "@mui/material"
+import {Box, Collapse, Fade, Grid, MenuItem, Select, Typography} from "@mui/material"
 import { RunParams } from "../../../../../state/types/Run"
 import RadioCard from "../RadioCard"
 import MethodSettings from "../../MethodSettings"
@@ -133,10 +133,15 @@ const HidingStep = (props: StepProps) => {
 
     return (
         <>
-            <Typography variant="body1" sx={{ fontWeight: 500 }} mt={3}>
-                Area to Mask
-            </Typography >
-            <Box component="div" sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '15px' }}>
+            <Box component={'div'} sx={{ marginBottom: 3.5 }}>
+                <Typography variant="h6">
+                    What do you want to mask?
+                </Typography >
+                <Typography variant={'body2'}>
+                    Please select the are you want to mask. This can either be the persons head, the entire person, or nothing if you just want to mask the background.
+                </Typography>
+            </Box>
+            <Box component="div" sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '24px' }}>
                 {
                     maskingAreas.map((area) => {
                         return (
@@ -151,17 +156,17 @@ const HidingStep = (props: StepProps) => {
                     })
                 }
             </Box>
-            {
-                (hidingStrategyTarget && availableHidingMethodsTarget) && (
-                    <Box component="div">
-                        <Grid container pt={3}>
-                            <Grid xs={6} container>
-                                <Grid item xs={12} pb={1}>
-                                    <Typography variant="body1">
-                                        Hiding Strategy
-                                    </Typography>
-                                </Grid>
-                                <Grid item xs={10}>
+            <Fade in={Boolean(hidingStrategyTarget && availableHidingMethodsTarget)}>
+                <Box component="div">
+                    <Grid container pt={3}>
+                        <Grid xs={6} container>
+                            <Grid item xs={12} pb={1}>
+                                <Typography variant="body1">
+                                    Hiding Strategy
+                                </Typography>
+                            </Grid>
+                            <Grid item xs={10}>
+                                {availableHidingMethodsTarget && (
                                     <Select
                                         value={hidingStrategyTarget.key}
                                         onChange={(e) => { handleHidingStrategyTargetChanged(e.target.value) }}
@@ -173,8 +178,10 @@ const HidingStep = (props: StepProps) => {
                                             )
                                         })}
                                     </Select>
-                                </Grid>
-                                <Grid item xs={2} sx={{ display: 'flex', alignItems: 'center' }}>
+                                )}
+                            </Grid>
+                            <Grid item xs={2} sx={{ display: 'flex', alignItems: 'center' }}>
+                                {availableHidingMethodsTarget && (
                                     <MethodSettings
                                         methodName={hidingStrategyTarget.key}
                                         formSchema={availableHidingMethodsTarget[hidingStrategyTarget.key].parameterSchema}
@@ -182,41 +189,41 @@ const HidingStep = (props: StepProps) => {
                                         values={hidingStrategyTarget.params}
                                         onSet={setHidingStrategyTargetParams}
                                     />
-                                </Grid>
-                            </Grid>
-                            <Grid xs={6} container>
-                                <Grid item xs={12} pb={1}>
-                                    <Typography variant="body1">
-                                        Background Hiding Strategy
-                                    </Typography>
-                                </Grid>
-                                <Grid item xs={10}>
-                                    <Select
-                                        value={hidingStrategyBG.key}
-                                        onChange={(e) => { handleHidingStrategyBGChanged(e.target.value) }}
-                                        fullWidth
-                                    >
-                                        {Object.keys(availableHidingMethodsBG).map((hidingMethod: string) => {
-                                            return (
-                                                <MenuItem value={hidingMethod}>{upperFirst(availableHidingMethodsBG[hidingMethod].name)}</MenuItem>
-                                            )
-                                        })}
-                                    </Select>
-                                </Grid>
-                                <Grid item xs={2} sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <MethodSettings
-                                        methodName={hidingStrategyBG.key}
-                                        formSchema={availableHidingMethodsBG[hidingStrategyBG.key].parameterSchema}
-                                        uiSchema={availableHidingMethodsBG[hidingStrategyBG.key].uiSchema}
-                                        values={hidingStrategyBG.params}
-                                        onSet={setHidingStrategyBGParams}
-                                    />
-                                </Grid>
+                                )}
                             </Grid>
                         </Grid>
-                    </Box >
-                )
-            }
+                        <Grid xs={6} container>
+                            <Grid item xs={12} pb={1}>
+                                <Typography variant="body1">
+                                    Background Hiding Strategy
+                                </Typography>
+                            </Grid>
+                            <Grid item xs={10}>
+                                <Select
+                                    value={hidingStrategyBG.key}
+                                    onChange={(e) => { handleHidingStrategyBGChanged(e.target.value) }}
+                                    fullWidth
+                                >
+                                    {Object.keys(availableHidingMethodsBG).map((hidingMethod: string) => {
+                                        return (
+                                            <MenuItem value={hidingMethod}>{upperFirst(availableHidingMethodsBG[hidingMethod].name)}</MenuItem>
+                                        )
+                                    })}
+                                </Select>
+                            </Grid>
+                            <Grid item xs={2} sx={{ display: 'flex', alignItems: 'center' }}>
+                                <MethodSettings
+                                    methodName={hidingStrategyBG.key}
+                                    formSchema={availableHidingMethodsBG[hidingStrategyBG.key].parameterSchema}
+                                    uiSchema={availableHidingMethodsBG[hidingStrategyBG.key].uiSchema}
+                                    values={hidingStrategyBG.params}
+                                    onSet={setHidingStrategyBGParams}
+                                />
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </Box >
+            </Fade>
         </>
     )
 }

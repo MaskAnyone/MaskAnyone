@@ -9,6 +9,20 @@ const styles = {
         WebkitBoxOrient: 'vertical',
         overflow: 'hidden',
     },
+    checkbox: {
+        padding: 0.5,
+        marginTop: -0.5,
+        marginLeft: -0.5
+    },
+    radioButton: {
+        padding: 0.5,
+        marginTop: -0.5,
+        marginLeft: -0.5
+    },
+    title: {
+        display: 'flex',
+        alignItems: 'flex-start',
+    }
 };
 
 interface SideBySideCardContentProps {
@@ -23,12 +37,12 @@ interface SideBySideCardContentProps {
 const SideBySideCardContent = (props: SideBySideCardContentProps) => {
     return (
         <CardContent sx={{ width: 160 }}>
-            <Typography variant={'body1'} component="div" fontWeight={'bold'} sx={{ lineHeight: "0.1" }}>
+            <Typography variant={'body1'} component="div" fontWeight={'bold'} sx={styles.title}>
                 {props.selectable && (
-                    <Radio checked={props.selected} onChange={props.onSelect} />
+                    <Radio checked={props.selected} onChange={props.onSelect} sx={styles.radioButton} />
                 )}
                 {props.checkable && (
-                    <Checkbox checked={props.selected} onChange={props.onSelect} />
+                    <Checkbox checked={props.selected} onChange={props.onSelect}  sx={styles.checkbox} />
                 )}
                 {props.title}
             </Typography>

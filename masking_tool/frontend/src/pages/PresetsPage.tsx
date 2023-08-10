@@ -49,19 +49,17 @@ const PresetsPage = () => {
 
     return (
         <Box component={'div'}>
-            <Typography variant={'h3'}>
+            <Typography variant={'h4'}>
                 My Custom Presets
             </Typography>
 
-            <Box component={'div'} sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', marginTop: 2 }}>
+            <Box component={'div'} sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', marginTop: 2, gap: '24px' }}>
                 {presetList.map(preset => (
-                    <Box component={'div'} sx={{ paddingRight: 2, paddingBottom: 2 }}>
-                        <PresetPreview
-                            key={preset.id}
-                            preset={preset}
-                            onOpenMenu={anchorEl => openPresetPreviewMenu(anchorEl, preset.id)}
-                        />
-                    </Box>
+                    <PresetPreview
+                        key={preset.id}
+                        preset={preset}
+                        onOpenMenu={anchorEl => openPresetPreviewMenu(anchorEl, preset.id)}
+                    />
                 ))}
             </Box>
 

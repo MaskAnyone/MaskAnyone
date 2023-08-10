@@ -2,7 +2,6 @@ import {AppBar, Badge, Box, Button, IconButton, Toolbar, Typography} from "@mui/
 import MenuIcon from '@mui/icons-material/Menu';
 import { Link } from "react-router-dom";
 import MaskIcon from '@mui/icons-material/Masks';
-import SettingsIcon from '@mui/icons-material/Settings';
 import {useSelector} from "react-redux";
 import Selector from "../state/selector";
 import Paths from "../paths";
@@ -67,7 +66,7 @@ const TopBar = (props: TopBarProps) => {
                     sx={styles.navigationButton}
                     component={Link}
                     to={Paths.presets}
-                    children={'Presets'}
+                    children={'My Presets'}
                 />
             </Box>
             <Button

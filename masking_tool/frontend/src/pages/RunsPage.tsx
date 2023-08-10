@@ -89,7 +89,7 @@ const headCells: readonly HeadCell[] = [
   {
     id: 'progress',
     disablePadding: false,
-    label: 'Fortschritt',
+    label: 'Progress',
   }
 ];
 

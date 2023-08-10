@@ -1,4 +1,4 @@
-import { Box, Checkbox, Drawer, Fab, IconButton, List } from "@mui/material";
+import {Box, Button, Checkbox, Drawer, Fab, IconButton, List} from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import Selector from "../state/selector";
 import UploadIcon from '@mui/icons-material/Upload';
@@ -118,10 +118,9 @@ const SideBar = (props: SideBarProps) => {
                             />
                         ))}
                     </List>
-                    <Fab variant={'extended'} color={'primary'} onClick={openUploadDialog}>
-                        <UploadIcon sx={{ mr: 1 }} />
+                    <Button variant={'contained'} color={'primary'} size={'large'} onClick={openUploadDialog} startIcon={<UploadIcon />}>
                         Upload
-                    </Fab>
+                    </Button>
                     <UploadDialog open={uploadDialogOpen} onClose={closeUploadDialog} />
                 </Box >
             )}

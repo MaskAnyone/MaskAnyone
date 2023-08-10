@@ -1,5 +1,5 @@
 
-import { Dialog, DialogContent, DialogTitle } from "@mui/material";
+import {Dialog, DialogContent, DialogTitle, Divider} from "@mui/material";
 import MaskingForm from "./maskingForm/MaskingForm";
 
 interface VideoRunParamsDialogProps {
@@ -12,9 +12,8 @@ const VideoRunParamsDialog = (props: VideoRunParamsDialogProps) => {
     return (
         <Dialog open={props.open} onClose={props.onClose} fullWidth={true} maxWidth={'xl'}>
             <DialogTitle>Mask Video</DialogTitle>
-            <DialogContent>
-                <MaskingForm videoIds={[props.videoId]} />
-            </DialogContent>
+            <Divider />
+            <MaskingForm videoIds={[props.videoId]} onClose={props.onClose} />
         </Dialog>
     );
 };

@@ -1,4 +1,4 @@
-import { Box, Button, IconButton, Step, StepButton, Stepper } from "@mui/material"
+import {Box, Button, DialogActions, DialogContent, IconButton, Step, StepButton, Stepper} from "@mui/material"
 import { useState } from "react";
 import { RunParams } from "../../../../state/types/Run";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -54,40 +54,46 @@ const CustomSettingsContainer = (props: RunSettingsContainerProps) => {
 
     const currentStepContainer = () => {
         const StepContainer: ((props: StepProps) => JSX.Element) = steps[activeStep].component
-        return (<Box component="div" sx={{ minHeight: "300px" }}>
+        return (<Box component="div" sx={{ minHeight: "300px", paddingTop: 2 }}>
             <StepContainer runParams={props.runParams} onParamsChange={props.onParamsChange} />
         </Box>)
     }
 
-    return (
-        <Box component="div" sx={{ width: '100%' }}>
-            <Box component="div">
-                <IconButton onClick={() => props.onBackClicked()} >
-                    <ArrowBackIcon />
-                </IconButton>
-                Presets
-                <Stepper nonLinear activeStep={activeStep} sx={{ textAlign: "center", marginTop: "10px" }}>
-                    {steps.map((step, index) => {
-                        return (
-                            <Step key={step.name} completed={isStepCompleted(index)}>
-                                <StepButton color="inherit" onClick={() => handleStepChange(index)}>
-                                    {step.name}
-                                </StepButton>
-                            </Step>
-                        );
-                    })}
-                </Stepper>
-            </Box>
+    return (<>
+        <DialogContent sx={{ minHeight: 550, padding: '20px 32px' }}>
+            <Box component="div" sx={{ width: '100%' }}>
+                <Box component="div" sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', marginTop: 1, marginBottom: 1 }}>
+                    <Button
+                        startIcon={<ArrowBackIcon />}
+                        onClick={() => setTimeout(props.onBackClicked, 200)}
+                        color={'inherit'}
+                        children={'Presets'}
+                    />
 
-            {currentStepContainer()}
+                    <Stepper nonLinear activeStep={activeStep} sx={{ width: 700 }}>
+                        {steps.map((step, index) => {
+                            return (
+                                <Step key={step.name} completed={isStepCompleted(index)}>
+                                    <StepButton color="inherit" onClick={() => handleStepChange(index)}>
+                                        {step.name}
+                                    </StepButton>
+                                </Step>
+                            );
+                        })}
+                    </Stepper>
 
-            <Box display="flex" component="div" justifyContent="flex-end" alignItems="flex-end" mt={3}>
-                {activeStep > 0 && <Button variant="outlined" onClick={() => handleBack()}>Go back</Button>}
-                {activeStep < steps.length - 1 && <Button variant="contained" sx={{ marginLeft: "25px" }} onClick={() => handleNext()}>Next</Button>}
-                {activeStep == steps.length - 1 && <Button variant="contained" color="success" onClick={() => props.onRunClicked()} sx={{ marginLeft: "25px" }}>Mask Video!</Button>}
+                    {/* Spacer */}<Box component={'div'} sx={{ width: '100px' }}></Box>
+                </Box>
+
+                {currentStepContainer()}
             </Box>
-        </Box>
-    )
+        </DialogContent>
+        <DialogActions>
+            {activeStep > 0 && <Button onClick={() => handleBack()}>Go back</Button>}
+            {activeStep < steps.length - 1 && <Button variant="contained" sx={{ marginLeft: "25px" }} onClick={() => handleNext()}>Next</Button>}
+            {activeStep == steps.length - 1 && <Button variant="contained" color="primary" onClick={() => props.onRunClicked()} sx={{ marginLeft: "25px" }}>Mask Video!</Button>}
+        </DialogActions>
+    </>)
 }
 
 export default CustomSettingsContainer

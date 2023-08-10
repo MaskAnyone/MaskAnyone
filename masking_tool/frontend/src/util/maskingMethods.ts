@@ -176,3 +176,18 @@ export const hidingMethods: HidingMethods = {
         },
     }
 }
+
+export const voiceMaskingMethods: any = {
+    preserve: {
+        name: "Preserve",
+        description: "Leave the video's audio unaltered",
+    },
+    remove: {
+        name: "Remove",
+        description: "Remove the video's audio entirely",
+    },
+    switch: {
+        name: "Switch",
+        description: "Mask the original speaker by replacing their voice with the voice of another person",
+    },
+};

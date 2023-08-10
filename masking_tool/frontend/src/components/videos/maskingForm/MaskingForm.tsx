@@ -2,13 +2,13 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { v4 as uuidv4 } from 'uuid';
 import PresetView from "./presets/PresetView";
-import { Box } from "@mui/material";
 import { Preset, RunParams } from "../../../state/types/Run";
 import Command from "../../../state/actions/command";
 import CustomSettingsContainer from "./customSettings/CustomSettingsContainer";
 
 interface MaskingFormProps {
     videoIds: string[];
+    onClose: () => void;
 }
 
 const initialRunParams: RunParams = {
@@ -35,7 +35,12 @@ const initialRunParams: RunParams = {
         blendshapes: false,
         blendshapesParams: {}
     },
-    voiceMasking: {}
+    voiceMasking: {
+        hidingStrategy: {
+            key: 'preserve',
+            params: {},
+        },
+    },
 }
 
 const MaskingForm = (props: MaskingFormProps) => {
@@ -47,12 +52,6 @@ const MaskingForm = (props: MaskingFormProps) => {
     const handlePresetSelected = (preset: Preset) => {
         setRunParams(preset.runParams)
         setSelectedPreset(preset)
-    }
-
-    const handleCustomModeClicked = () => {
-        setPresetView(false)
-        setSelectedPreset(undefined)
-        setRunParams(initialRunParams)
     }
 
     const handlePresetParamRefinementClicked = () => {
@@ -70,26 +69,25 @@ const MaskingForm = (props: MaskingFormProps) => {
             resultVideoId: uuidv4(),
             runData: runParams,
         }));
+
+        props.onClose();
     };
 
-    return (
-        <Box component="div" sx={{ flexGrow: 1, bgcolor: 'background.paper', display: 'flex', minHeight: 224 }}>
-            {presetView ?
-                <PresetView
-                    onPresetSelected={handlePresetSelected}
-                    onCustomModeClicked={handleCustomModeClicked}
-                    onPresetParamRefinementClicked={handlePresetParamRefinementClicked}
-                    maskVideo={maskVideo}
-                    selectedPreset={selectedPreset}
-                /> :
-                <CustomSettingsContainer
-                    onBackClicked={() => setPresetView(true)}
-                    onParamsChange={setRunParams}
-                    onRunClicked={maskVideo}
-                    runParams={runParams}
-                />}
-        </Box>
-    )
+    return presetView ? (
+        <PresetView
+            onPresetSelected={handlePresetSelected}
+            onPresetParamRefinementClicked={handlePresetParamRefinementClicked}
+            maskVideo={maskVideo}
+            selectedPreset={selectedPreset}
+        />
+    ) : (
+        <CustomSettingsContainer
+            onBackClicked={() => setPresetView(true)}
+            onParamsChange={setRunParams}
+            onRunClicked={maskVideo}
+            runParams={runParams}
+        />
+    );
 }
 
 export default MaskingForm
