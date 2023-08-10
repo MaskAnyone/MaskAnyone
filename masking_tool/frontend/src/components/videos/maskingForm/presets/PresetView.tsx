@@ -1,4 +1,4 @@
-import { Box, Button, Grid } from "@mui/material"
+import {Box, Button, DialogActions, DialogContent, Grid} from "@mui/material"
 import PresetSelection from "./PresetSelection"
 import MasksIcon from '@mui/icons-material/Masks';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -13,41 +13,32 @@ interface PresetViewProps {
 }
 
 const PresetView = (props: PresetViewProps) => {
-    return (
-        <Box component="div" sx={{ flexGrow: 1, padding: "20px 40px" }}>
-            <Grid container>
-                <PresetSelection
-                    selectedPreset={props.selectedPreset}
-                    onPresetSelected={props.onPresetSelected}
-                    onCustomModeClicked={props.onCustomModeClicked}
-                />
+    return (<>
+        <DialogContent sx={{ padding: '20px 32px' }}>
+            <Box component="div" sx={{ flexGrow: 1, padding: "20px 40px" }}>
                 <Grid container>
-                    <Grid item xs={12}>
-                        <Box
-                            display="flex"
-                            component="div"
-                            justifyContent="flex-end"
-                            alignItems="flex-end"
-                            visibility={props.selectedPreset ? "visible" : "hidden"}
-                            paddingTop={"22px"}>
-                            <Button
-                                variant={'contained'}
-                                startIcon={<TuneIcon />}
-                                children={'Customize Params'}
-                                onClick={() => props.onPresetParamRefinementClicked()}
-                                sx={{ marginRight: "20px" }}
-                            />
-                            <Button
-                                variant={'contained'}
-                                startIcon={<MasksIcon />}
-                                onClick={() => props.maskVideo()}
-                                children={'Mask Video'}
-                            />
-                        </Box>
-                    </Grid>
+                    <PresetSelection
+                        selectedPreset={props.selectedPreset}
+                        onPresetSelected={props.onPresetSelected}
+                        onCustomModeClicked={props.onCustomModeClicked}
+                    />
                 </Grid>
-            </Grid>
-        </Box>)
+            </Box>
+        </DialogContent>
+        <DialogActions>
+            <Button
+                startIcon={<TuneIcon />}
+                children={'Customize Params'}
+                onClick={() => props.onPresetParamRefinementClicked()}
+            />
+            <Button
+                variant={'contained'}
+                startIcon={<MasksIcon />}
+                onClick={() => props.maskVideo()}
+                children={'Mask Video'}
+            />
+        </DialogActions>
+    </>);
 }
 
 export default PresetView

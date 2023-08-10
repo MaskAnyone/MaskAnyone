@@ -188,6 +188,6 @@ export const voiceMaskingMethods: any = {
     },
     switch: {
         name: "Switch",
-        description: "Mask the original speaker by replacing their voice",
+        description: "Mask the original speaker by replacing their voice with the voice of another person",
     },
 };
