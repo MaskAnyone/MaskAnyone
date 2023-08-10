@@ -23,4 +23,4 @@ RUN pip install \
     uvicorn[standard] \
     ultralytics \
     psycopg2 \
-    requests
+    requests \
