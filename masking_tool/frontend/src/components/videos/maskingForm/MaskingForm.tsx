@@ -36,7 +36,7 @@ const initialRunParams: RunParams = {
         blendshapesParams: {}
     },
     voiceMasking: {
-        hidingStrategy: {
+        maskingStrategy: {
             key: 'preserve',
             params: {},
         },

@@ -33,8 +33,9 @@ RUN pip install \
     ffmpeg-python \
     moviepy
 
+WORKDIR /
 RUN git clone https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI.git
-WORKDIR /app/Retrieval-based-Voice-Conversion-WebUI
+WORKDIR /Retrieval-based-Voice-Conversion-WebUI
 RUN pip install -r requirements.txt
 COPY scripts/ /scripts/
 RUN python3 /scripts/download_voice_models.py

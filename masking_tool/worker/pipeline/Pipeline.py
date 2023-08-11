@@ -9,6 +9,8 @@ from config import (
 )
 import json
 from backend_client import BackendClient
+from pipeline.audio_masking.KeepAudioMasker import KeepAudioMasker
+from pipeline.audio_masking.RVCAudioMasker import RVCAudioMasker
 from pipeline.mask_extraction.MediaPipeMaskExtractor import MediaPipeMaskExtractor
 
 from pipeline.detection.YoloDetector import YoloDetector
@@ -54,10 +56,14 @@ class Pipeline:
             hiding_strategies,
         ) = self.identify_requried_models(run_params)
         params_3d: Params3D = run_params["threeDModelCreation"]
+        voice_masking_strategy = run_params["voiceMasking"]["maskingStrategy"]
 
         self.init_detectors(required_detectors)
         self.init_maskers(required_maskers, params_3d)
         self.hider = Hider(hiding_strategies)
+        self.init_audio_masker(
+            voice_masking_strategy["key"], voice_masking_strategy["params"]
+        )
 
     def identify_requried_models(self, run_params: dict):
         # extract arguments from request and create initialization arguments for maskers, detectors and hider
@@ -153,10 +159,10 @@ class Pipeline:
     def init_audio_masker(self, audio_masker_name: str, params: dict):
         audio_maskers = {
             "remove": None,
-            "none": KeepVoiceAudioMasker,
-            "switch": SwitchVoiceAudioMasker,
+            "none": KeepAudioMasker,
+            "switch": RVCAudioMasker,
         }
-        return audio_maskers[audio_masker_name](params)
+        self.audio_masker = audio_maskers[audio_masker_name](params)
 
     def init_ts_file_handlers(self, video_id: str):
         for mask_extractor in self.mask_extractors:

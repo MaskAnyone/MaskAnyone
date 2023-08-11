@@ -1,6 +1,6 @@
 import os
 
-from masking_tool.worker.pipeline.audio_masking.BaseAudioMasker import BaseAudioMasker
+from pipeline.audio_masking.BaseAudioMasker import BaseAudioMasker
 from moviepy.editor import VideoFileClip
 
 

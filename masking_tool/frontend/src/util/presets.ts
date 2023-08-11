@@ -30,7 +30,7 @@ export const presetsDB: Preset[] = [
                 blendshapesParams: {}
             },
             voiceMasking: {
-                hidingStrategy: {
+                maskingStrategy: {
                     key: 'preserve',
                     params: {},
                 }
@@ -64,7 +64,7 @@ export const presetsDB: Preset[] = [
                 blendshapesParams: {}
             },
             voiceMasking: {
-                hidingStrategy: {
+                maskingStrategy: {
                     key: 'preserve',
                     params: {},
                 }
@@ -98,7 +98,7 @@ export const presetsDB: Preset[] = [
                 blendshapesParams: {}
             },
             voiceMasking: {
-                hidingStrategy: {
+                maskingStrategy: {
                     key: 'preserve',
                     params: {},
                 }
@@ -132,7 +132,7 @@ export const presetsDB: Preset[] = [
                 blendshapesParams: {}
             },
             voiceMasking: {
-                hidingStrategy: {
+                maskingStrategy: {
                     key: 'preserve',
                     params: {},
                 }
@@ -166,7 +166,7 @@ export const presetsDB: Preset[] = [
                 blendshapesParams: {}
             },
             voiceMasking: {
-                hidingStrategy: {
+                maskingStrategy: {
                     key: 'preserve',
                     params: {},
                 }
