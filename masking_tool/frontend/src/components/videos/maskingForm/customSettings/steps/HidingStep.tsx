@@ -23,19 +23,19 @@ const maskingAreas: MaskingArea[] = [
     {
         title: "None",
         description: "Do not hide anything",
-        imagePath: "",
+        imagePath: "/images/hiding_strategy/none.jpg",
         value: "none"
     },
     {
         title: "Face Only",
         description: "Only hide the face of the subjects",
-        imagePath: "",
+        imagePath: "/images/hiding_strategy/head_only.jpg",
         value: "face"
     },
     {
         title: "Full body",
         description: "Hide the complete body of the subject",
-        imagePath: "",
+        imagePath: "/images/hiding_strategy/fullbody.jpg",
         value: "body"
     },
 
@@ -148,7 +148,7 @@ const HidingStep = (props: StepProps) => {
                             <SelectableCard
                                 title={area.title}
                                 description={area.description}
-                                imagePath={area.imagePath}
+                                imagePath={process.env.PUBLIC_URL + area.imagePath}
                                 onSelect={() => setHidingTarget(area.value)}
                                 selected={hidingTarget == area.value}
                             />

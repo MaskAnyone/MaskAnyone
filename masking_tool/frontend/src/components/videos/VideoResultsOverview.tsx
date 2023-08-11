@@ -70,6 +70,7 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
             <Box component={'div'} sx={{ overflowX: 'auto', whiteSpace: 'nowrap', padding: 1.5, margin: '-4px -12px' }}>
                 {resultVideos.map(resultVideo => (
                     <VideoResultCard
+                        key={resultVideo.id}
                         resultVideo={resultVideo}
                         selected={props.resultVideoId === resultVideo.id}
                         onSelect={() => selectResultVideo(resultVideo.id)}

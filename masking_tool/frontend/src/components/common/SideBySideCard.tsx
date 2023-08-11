@@ -16,6 +16,7 @@ const styles = {
 
 interface SideBySideCardProps {
     children?: React.ReactElement|React.ReactElement[];
+    image?: string;
 }
 
 const SideBySideCard = (props: SideBySideCardProps) => {
@@ -25,7 +26,7 @@ const SideBySideCard = (props: SideBySideCardProps) => {
                 {props.children}
                 <CardMedia
                     component={'img'}
-                    image={'https://picsum.photos/150/150'}
+                    image={props.image || 'https://picsum.photos/150/150'}
                     sx={{ width: 160, height: 170 }}
                 />
             </Box>
