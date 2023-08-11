@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import DownloadMenu from "./videoTaskBar/DownloadMenu";
+import ShieldLogoIcon from "../common/ShieldLogoIcon";
 
 const styles = {
     container: {
@@ -35,7 +36,7 @@ const VideoTaskBar = (props: VideoTaskBarProps) => {
                     onClick={() => setVideoRunParamsOpen(true)}
                     children={'Mask Video'}
                     color={'secondary'}
-                    startIcon={<ManageAccountsIcon />}
+                    startIcon={<ShieldLogoIcon />}
                 />
             </Box>
             <Box component={'div'}>

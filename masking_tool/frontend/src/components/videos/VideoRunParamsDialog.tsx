@@ -1,4 +1,4 @@
-import {Box, Dialog, DialogContent, DialogTitle, Divider, IconButton} from "@mui/material";
+import {Box, Dialog, DialogTitle, Divider, IconButton} from "@mui/material";
 import MaskingForm from "./maskingForm/MaskingForm";
 import CloseIcon from '@mui/icons-material/Close';
 
