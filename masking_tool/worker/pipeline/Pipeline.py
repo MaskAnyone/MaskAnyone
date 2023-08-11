@@ -297,12 +297,15 @@ class Pipeline:
 
         if self.audio_masker:
             if not (self.hider or self.mask_extractors):
+                print("copying")
                 shutil.copyfile(video_in_path, video_out_path)
+            print(video_out_path)
+            print(os.path.exists(video_out_path))
             masked_audio_path = self.audio_masker.mask(video_in_path)
-            input_video = ffmpeg.input(video_out_path)
+            input_video = ffmpeg.input(video_in_path)
             input_audio = ffmpeg.input(masked_audio_path)
             output = ffmpeg.output(input_video.video, input_audio.audio, video_out_path)
-            ffmpeg.run(output)
+            ffmpeg.run(output, overwrite_output=True)
             print(f"Finished audio masking of {video_id}")
 
         print(f"Finished processing video {video_id}")
