@@ -1,4 +1,5 @@
 import os
+import shutil
 import time
 from typing import List
 from config import (
@@ -9,6 +10,8 @@ from config import (
 )
 import json
 from backend_client import BackendClient
+from pipeline.audio_masking.KeepAudioMasker import KeepAudioMasker
+from pipeline.audio_masking.RVCAudioMasker import RVCAudioMasker
 from pipeline.mask_extraction.MediaPipeMaskExtractor import MediaPipeMaskExtractor
 
 from pipeline.detection.YoloDetector import YoloDetector
@@ -28,6 +31,7 @@ from utils.app_utils import save_preview_image
 from models.docker_maskers import docker_maskers as known_docker_mask_extractors
 
 import cv2
+import ffmpeg
 
 
 class Pipeline:
@@ -37,6 +41,7 @@ class Pipeline:
         self.detectors = []
         self.mask_extractors = []
         self.docker_mask_extractors = {}
+        self.audio_masker = None
         self.ts_file_handlers = {}
 
         self.model_3d_only = False
@@ -52,10 +57,14 @@ class Pipeline:
             hiding_strategies,
         ) = self.identify_requried_models(run_params)
         params_3d: Params3D = run_params["threeDModelCreation"]
+        voice_masking_strategy = run_params["voiceMasking"]["maskingStrategy"]
 
         self.init_detectors(required_detectors)
         self.init_maskers(required_maskers, params_3d)
         self.hider = Hider(hiding_strategies)
+        self.init_audio_masker(
+            voice_masking_strategy["key"], voice_masking_strategy["params"]
+        )
 
     def identify_requried_models(self, run_params: dict):
         # extract arguments from request and create initialization arguments for maskers, detectors and hider
@@ -148,6 +157,14 @@ class Pipeline:
             if masker in known_docker_mask_extractors:
                 self.docker_mask_extractors[masker] = required_maskers[masker]
 
+    def init_audio_masker(self, audio_masker_name: str, params: dict):
+        audio_maskers = {
+            "remove": None,
+            "preserve": KeepAudioMasker,
+            "switch": RVCAudioMasker,
+        }
+        self.audio_masker = audio_maskers[audio_masker_name](params)
+
     def init_ts_file_handlers(self, video_id: str):
         for mask_extractor in self.mask_extractors:
             for part_to_mask in mask_extractor.parts_to_mask:
@@ -225,10 +242,6 @@ class Pipeline:
         self.num_frames = int(video_cap.get(cv2.CAP_PROP_FRAME_COUNT))
         index = 0
 
-        if not self.detectors and not self.mask_extractors:
-            # Nothing to do
-            return
-
         while True:
             ret, frame = video_cap.read()
             if not ret:
@@ -279,6 +292,16 @@ class Pipeline:
         self.close_bs_file_handle()
         out.release()
         video_cap.release()
+        print(f"Finished video masking of {video_id}")
+
+        if self.audio_masker:
+            masked_audio_path = self.audio_masker.mask(video_in_path)
+            input_video = ffmpeg.input(video_in_path)  # ToDo use masked output
+            input_audio = ffmpeg.input(masked_audio_path)
+            output = ffmpeg.output(input_video.video, input_audio.audio, video_out_path)
+            ffmpeg.run(output, overwrite_output=True)
+            print(f"Finished audio masking of {video_id}")
+
         print(f"Finished processing video {video_id}")
 
         if not self.model_3d_only:

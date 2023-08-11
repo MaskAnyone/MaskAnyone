@@ -30,7 +30,7 @@ export type VideoMaskingParams = {
 }
 
 export type VoiceMaskingParams = {
-    hidingStrategy: Strategy;
+    maskingStrategy: Strategy;
 }
 
 export type ThreeDModelCreationParams = {

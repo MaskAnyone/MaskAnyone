@@ -1,19 +1,19 @@
-import {Box, Typography} from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { StepProps } from "./HidingStep";
-import {voiceMaskingMethods} from "../../../../../util/maskingMethods";
+import { voiceMaskingMethods } from "../../../../../util/maskingMethods";
 import SelectableCard from "../../../../common/SelectableCard";
 
 const VoiceMaskingStep = (props: StepProps) => {
-    const hidingStrategy = props.runParams.voiceMasking.hidingStrategy;
+    const maskingStrategy = props.runParams.voiceMasking.maskingStrategy;
 
-    const setHidingStrategy = (newHidingStrategy: string) => {
+    const setMaskingStrategy = (newMaskingStrategy: string) => {
         props.onParamsChange({
             ...props.runParams,
             voiceMasking: {
                 ...props.runParams.voiceMasking,
-                hidingStrategy: {
-                    key: newHidingStrategy,
-                    params: voiceMaskingMethods[newHidingStrategy].defaultValues!
+                maskingStrategy: {
+                    key: newMaskingStrategy,
+                    params: voiceMaskingMethods[newMaskingStrategy].defaultValues!
                 }
             }
         })
@@ -37,8 +37,8 @@ const VoiceMaskingStep = (props: StepProps) => {
                                 title={voiceMaskingMethods[methodName].name}
                                 description={voiceMaskingMethods[methodName].description}
                                 imagePath={""}
-                                onSelect={() => setHidingStrategy(methodName)}
-                                selected={hidingStrategy.key == methodName}
+                                onSelect={() => setMaskingStrategy(methodName)}
+                                selected={maskingStrategy.key == methodName}
                             />
                         )
                     })

@@ -11,7 +11,7 @@ services:
 
   python:
     build:
-      context: ./docker/python
+      context: ./docker/python/backend
     command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
     environment:
       - TIMEOUT=600
@@ -24,7 +24,7 @@ services:
 
   python-worker:
     build:
-      context: ./docker/python
+      context: ./docker/python/worker
     command: "python worker.py "
     env_file:
       - ./app.env
