@@ -160,7 +160,7 @@ class Pipeline:
     def init_audio_masker(self, audio_masker_name: str, params: dict):
         audio_maskers = {
             "remove": None,
-            "none": KeepAudioMasker,
+            "preserve": KeepAudioMasker,
             "switch": RVCAudioMasker,
         }
         self.audio_masker = audio_maskers[audio_masker_name](params)
@@ -242,67 +242,61 @@ class Pipeline:
         self.num_frames = int(video_cap.get(cv2.CAP_PROP_FRAME_COUNT))
         index = 0
 
-        if self.hider or self.mask_extractors:
-            while True:
-                ret, frame = video_cap.read()
-                if not ret:
-                    break
+        while True:
+            ret, frame = video_cap.read()
+            if not ret:
+                break
 
-                frame_timestamp_ms = int(video_cap.get(cv2.CAP_PROP_POS_MSEC))
-                if not is_first_frame and frame_timestamp_ms == 0:
-                    continue
+            frame_timestamp_ms = int(video_cap.get(cv2.CAP_PROP_POS_MSEC))
+            if not is_first_frame and frame_timestamp_ms == 0:
+                continue
 
-                # Detect all relevant body/video parts (as pixelMasks)
-                detection_results: List[DetectionResult] = []
-                for detector in self.detectors:
-                    detection_result = detector.detect(frame, frame_timestamp_ms)
+            # Detect all relevant body/video parts (as pixelMasks)
+            detection_results: List[DetectionResult] = []
+            for detector in self.detectors:
+                detection_result = detector.detect(frame, frame_timestamp_ms)
 
-                    detection_results.extend(detection_result)
+                detection_results.extend(detection_result)
 
-                # applies the hiding method on each detected part of the frame and combines them into one frame
-                hidden_frame = frame.copy()
-                for detection_result in detection_results:
-                    hidden_frame = self.hider.hide_frame_part(
-                        hidden_frame, detection_result
-                    )
+            # applies the hiding method on each detected part of the frame and combines them into one frame
+            hidden_frame = frame.copy()
+            for detection_result in detection_results:
+                hidden_frame = self.hider.hide_frame_part(
+                    hidden_frame, detection_result
+                )
 
-                # Extracts the masks for each desired bodypart
-                mask_results = []
+            # Extracts the masks for each desired bodypart
+            mask_results = []
 
-                for mask_extractor in self.mask_extractors:
-                    masking_results: List[MaskingResult] = mask_extractor.extract_mask(
-                        frame, frame_timestamp_ms
-                    )
-                    mask_results.extend([result["mask"] for result in masking_results])
-                    self.write_timeseries(
-                        mask_extractor.get_newest_timeseries(), is_first_frame
-                    )
-                    self.write_blendshapes(
-                        mask_extractor.get_newest_blendshapes(), is_first_frame
-                    )
+            for mask_extractor in self.mask_extractors:
+                masking_results: List[MaskingResult] = mask_extractor.extract_mask(
+                    frame, frame_timestamp_ms
+                )
+                mask_results.extend([result["mask"] for result in masking_results])
+                self.write_timeseries(
+                    mask_extractor.get_newest_timeseries(), is_first_frame
+                )
+                self.write_blendshapes(
+                    mask_extractor.get_newest_blendshapes(), is_first_frame
+                )
 
-                if not self.model_3d_only:
-                    out_frame = overlay_frames(hidden_frame, mask_results)
-                    out.write(out_frame)
+            if not self.model_3d_only:
+                out_frame = overlay_frames(hidden_frame, mask_results)
+                out.write(out_frame)
 
-                is_first_frame = False
-                self.send_progress_update(job_id, index)
-                index += 1
+            is_first_frame = False
+            self.send_progress_update(job_id, index)
+            index += 1
 
-            self.close_ts_file_handles()
-            self.close_bs_file_handle()
-            out.release()
-            video_cap.release()
-            print(f"Finished video masking of {video_id}")
+        self.close_ts_file_handles()
+        self.close_bs_file_handle()
+        out.release()
+        video_cap.release()
+        print(f"Finished video masking of {video_id}")
 
         if self.audio_masker:
-            if not (self.hider or self.mask_extractors):
-                print("copying")
-                shutil.copyfile(video_in_path, video_out_path)
-            print(video_out_path)
-            print(os.path.exists(video_out_path))
             masked_audio_path = self.audio_masker.mask(video_in_path)
-            input_video = ffmpeg.input(video_in_path)
+            input_video = ffmpeg.input(video_in_path)  # ToDo use masked output
             input_audio = ffmpeg.input(masked_audio_path)
             output = ffmpeg.output(input_video.video, input_audio.audio, video_out_path)
             ffmpeg.run(output, overwrite_output=True)

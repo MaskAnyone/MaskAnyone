@@ -9,7 +9,7 @@ class KeepAudioMasker(BaseAudioMasker):
     def __init__(self, params: dict):
         pass
 
-    def mask(input_path):
+    def mask(self, input_path):
         output_path = os.path.splitext(input_path)[0] + ".mp3"
         video = VideoFileClip(input_path)
         audio = video.audio
