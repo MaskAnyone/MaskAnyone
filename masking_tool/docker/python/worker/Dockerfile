@@ -39,5 +39,8 @@ WORKDIR /Retrieval-based-Voice-Conversion-WebUI
 RUN pip install -r requirements.txt
 COPY scripts/ /scripts/
 RUN python3 /scripts/download_voice_models.py
+RUN python3 /scripts/adapt-lines.py
 
 WORKDIR /app
+
+RUN apt-get update && apt-get -y install ffmpeg

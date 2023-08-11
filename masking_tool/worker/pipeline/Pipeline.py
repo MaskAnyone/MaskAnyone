@@ -1,4 +1,5 @@
 import os
+import shutil
 import time
 from typing import List
 from config import (
@@ -295,10 +296,13 @@ class Pipeline:
             print(f"Finished video masking of {video_id}")
 
         if self.audio_masker:
+            if not (self.hider or self.mask_extractors):
+                shutil.copyfile(video_in_path, video_out_path)
             masked_audio_path = self.audio_masker.mask(video_in_path)
-            ffmpeg.concat(video_out_path, masked_audio_path).output(
-                video_out_path
-            ).run()
+            input_video = ffmpeg.input(video_out_path)
+            input_audio = ffmpeg.input(masked_audio_path)
+            output = ffmpeg.output(input_video.video, input_audio.audio, video_out_path)
+            ffmpeg.run(output)
             print(f"Finished audio masking of {video_id}")
 
         print(f"Finished processing video {video_id}")

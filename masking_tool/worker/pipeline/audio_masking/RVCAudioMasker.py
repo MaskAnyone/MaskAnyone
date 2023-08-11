@@ -27,7 +27,7 @@ class RVCAudioMasker(BaseAudioMasker):
             "python3",
             "/Retrieval-based-Voice-Conversion-WebUI/infer_cli.py",
             str(f0_up_key),
-            "/app/local_data/original/ted_kid.mp3",
+            f"/app/{input_mp3_path}",
             f"/app/{output_path}",
             model,
             file_index,
@@ -35,14 +35,10 @@ class RVCAudioMasker(BaseAudioMasker):
             f0_method,
         ]
 
-        print(args)
-        print(os.listdir("/app"))
-        print(os.path.exists(f"/app/{input_mp3_path}"))
-        print(os.listdir("/Retrieval-based-Voice-Conversion-WebUI/weights"))
-
-        res = subprocess.run(args, capture_output=True)
-        print(res.stdout)
-        print(res.stderr)
-        exit()
+        res = subprocess.run(
+            args,
+            capture_output=True,
+            cwd="/Retrieval-based-Voice-Conversion-WebUI",
+        )
 
         return output_path
