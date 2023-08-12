@@ -3,6 +3,10 @@ import subprocess
 
 from pipeline.audio_masking.BaseAudioMasker import BaseAudioMasker
 from moviepy.editor import VideoFileClip
+from config import (
+    VIDEOS_BASE_PATH,
+    RESULT_BASE_PATH,
+)
 
 
 class RVCAudioMasker(BaseAudioMasker):
@@ -10,9 +14,11 @@ class RVCAudioMasker(BaseAudioMasker):
     def __init__(self, params: dict):
         self.params = params
 
-    def mask(self, input_path):
-        input_mp3_path = os.path.splitext(input_path)[0] + "_tmp.mp3"
-        output_path = os.path.splitext(input_path)[0] + ".mp3"
+    def mask(self, video_id: str):
+        input_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
+        input_mp3_path = os.path.join(VIDEOS_BASE_PATH, video_id + "_tmp.mp3")
+        output_path = os.path.join(RESULT_BASE_PATH, video_id + ".mp3")
+
         video = VideoFileClip(input_path)
         audio = video.audio
         audio.write_audiofile(input_mp3_path)

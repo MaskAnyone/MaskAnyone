@@ -77,6 +77,17 @@ class BackendClient:
             json=data,
         )
 
+    def upload_result_audio_file(
+        self, video_id: str, result_video_id: str, data: bytes
+    ):
+        requests.post(
+            self._make_url(
+                "videos/" + video_id + "/results/" + result_video_id + "/audio_files"
+            ),
+            data=data,
+            headers={"Content-Type": "audio/mp3"},
+        )
+
     def update_progress(self, job_id: str, progress: int):
         requests.post(
             self._make_url("jobs/" + job_id + "/progress"),
