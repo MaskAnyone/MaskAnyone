@@ -11,16 +11,23 @@ export const theme = createTheme({
         },
         MuiButton: {
             styleOverrides: {
-                root: {
+                root: ({ ownerState }) => ({
                     borderRadius: 8,
-                    padding: '8px 24px',
-                },
+                    padding: ownerState.variant === 'contained' ? '8px 24px': undefined,
+                }),
             },
         },
         MuiCard: {
             styleOverrides: {
                 root: {
                     borderRadius: 8,
+                },
+            },
+        },
+        MuiDialog: {
+            styleOverrides: {
+                paper: {
+                    borderRadius: 12,
                 },
             },
         },

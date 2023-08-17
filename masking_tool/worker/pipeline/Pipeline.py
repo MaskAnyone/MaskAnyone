@@ -295,10 +295,14 @@ class Pipeline:
         print(f"Finished video masking of {video_id}")
 
         if self.audio_masker:
-            masked_audio_path = self.audio_masker.mask(video_in_path)
-            input_video = ffmpeg.input(video_in_path)  # ToDo use masked output
+            old_video_out_path = os.path.join(RESULT_BASE_PATH, video_id + "_old.mp4")
+            os.rename(video_out_path, old_video_out_path)
+
+            masked_audio_path = self.audio_masker.mask(video_id)
+            input_video = ffmpeg.input(old_video_out_path)
             input_audio = ffmpeg.input(masked_audio_path)
             output = ffmpeg.output(input_video.video, input_audio.audio, video_out_path)
+
             ffmpeg.run(output, overwrite_output=True)
             print(f"Finished audio masking of {video_id}")
 

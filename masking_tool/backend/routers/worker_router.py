@@ -11,6 +11,7 @@ from db.video_manager import VideoManager
 from db.result_video_manager import ResultVideoManager
 from db.result_mp_kinematics_manager import ResultMpKinematicsManager
 from db.result_blendshapes_manager import ResultBlendshapesManager
+from db.result_audio_files_manager import ResultAudioFilesManager
 from db.db_connection import DBConnection
 from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 from utils.request_utils import range_requests_response
@@ -21,6 +22,7 @@ video_manager = VideoManager(db_connection)
 result_video_manager = ResultVideoManager(db_connection)
 result_mp_kinematics_manager = ResultMpKinematicsManager(db_connection)
 result_blendshapes_manager = ResultBlendshapesManager(db_connection)
+result_audio_files_manager = ResultAudioFilesManager(db_connection)
 job_manager = JobManager(db_connection)
 worker_manager = WorkerManager(db_connection)
 
@@ -152,4 +154,15 @@ async def upload_result_blendshapes(
 
     result_blendshapes_manager.create_result_mp_kinematics_entry(
         str(uuid.uuid4()), result_video_id, video_id, job.id, await request.json()
+    )
+
+
+@router.post("/videos/{video_id}/results/{result_video_id}/audio_files")
+async def upload_result_audio_file(
+    worker_id: str, video_id: str, result_video_id: str, request: Request
+):
+    job = job_manager.fetch_job_by_result_video_id(result_video_id)
+
+    result_audio_files_manager.create_result_audio_files_entry(
+        str(uuid.uuid4()), result_video_id, video_id, job.id, await request.body()
     )

@@ -7,6 +7,7 @@ from utils.runparams_utils import (
     produces_blendshapes,
     produces_kinematics,
     produces_out_vid,
+    produces_out_audio
 )
 from pipeline.Pipeline import Pipeline
 from video_manager import VideoManager
@@ -63,6 +64,8 @@ def handle_job_basic_masking(job):
         video_manager.upload_result_kinematics(video_id, result_video_id)
     if produces_blendshapes(run_params):
         video_manager.upload_result_blendshapes(video_id, result_video_id)
+    if produces_out_audio(run_params):
+        video_manager.upload_result_audio_file(video_id, result_video_id)
     video_manager.cleanup_result_video_files(video_id)
 
 

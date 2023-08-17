@@ -1,8 +1,15 @@
-import {Box, Button, DialogActions, DialogContent, Grid} from "@mui/material"
+import {Button, DialogActions, DialogContent} from "@mui/material"
 import PresetSelection from "./PresetSelection"
-import MasksIcon from '@mui/icons-material/Masks';
 import TuneIcon from '@mui/icons-material/Tune';
 import { Preset } from "../../../../state/types/Run";
+import ShieldLogoIcon from "../../../common/ShieldLogoIcon";
+
+const styles = {
+    dialogActions: {
+        paddingBottom: 2,
+        paddingRight: 3,
+    },
+};
 
 interface PresetViewProps {
     onPresetSelected: (preset: Preset) => void
@@ -19,15 +26,15 @@ const PresetView = (props: PresetViewProps) => {
                 onPresetSelected={props.onPresetSelected}
             />
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={styles.dialogActions}>
             <Button
                 startIcon={<TuneIcon />}
                 children={props.selectedPreset ? 'Customize Preset' : 'Use Custom Settings'}
-                onClick={() => props.onPresetParamRefinementClicked()}
+                onClick={() => setTimeout(() => props.onPresetParamRefinementClicked(), 150)}
             />
             <Button
                 variant={'contained'}
-                startIcon={<MasksIcon />}
+                startIcon={<ShieldLogoIcon color={props.selectedPreset ? undefined : 'rgba(0, 0, 0, 0.26)'} />}
                 onClick={() => props.maskVideo()}
                 children={'Mask Video'}
                 disabled={!props.selectedPreset}

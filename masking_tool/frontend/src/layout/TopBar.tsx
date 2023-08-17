@@ -5,6 +5,7 @@ import MaskIcon from '@mui/icons-material/Masks';
 import {useSelector} from "react-redux";
 import Selector from "../state/selector";
 import Paths from "../paths";
+import Assets from "../assets/assets";
 
 const styles = {
     appBar: (theme: any) => ({
@@ -38,24 +39,13 @@ const TopBar = (props: TopBarProps) => {
     return (
         <AppBar position={'fixed'} color={'primary'} sx={styles.appBar}>
             <Toolbar sx={styles.toolbar}>
-            <MaskIcon sx={{ display: { xs: 'flex', md: 'flex' }, mr: 1 }} />
-            <Typography
-                variant="h6"
-                noWrap
-                component="a"
-                href="/"
-                sx={{
-                    mr: 2,
-                    display: { xs: 'none', md: 'flex' },
-                    fontFamily: 'monospace',
-                    fontWeight: 700,
-                    letterSpacing: '.12rem',
-                    color: 'inherit',
-                    textDecoration: 'none',
-                }}
-                children={'MaskAnyone'}
-            />
-            <Box component="div" sx={styles.navigationContainer}>
+                <Button component={Link} to={Paths.videos} sx={{ color: 'white', marginLeft: '-16px' }}>
+                    <img src={Assets.logos.logoWhite} height={50} style={{ pointerEvents: 'none' }} />
+                </Button>
+
+                <Box component="div" sx={styles.navigationContainer}>
+
+                </Box>
                 <Button
                     sx={styles.navigationButton}
                     component={Link}
@@ -64,22 +54,22 @@ const TopBar = (props: TopBarProps) => {
                 />
                 <Button
                     sx={styles.navigationButton}
+                    style={{ marginRight: '6px' }}
                     component={Link}
                     to={Paths.presets}
                     children={'My Presets'}
                 />
-            </Box>
-            <Button
-                sx={styles.navigationButton}
-                component={Link}
-                to={Paths.workers}
-                children={'Workers'}
-            />
-            {(!props.isLargeScreen) && (
-                <IconButton sx={{color: 'white'}} onClick={props.onOpenSideBar}>
-                    <MenuIcon />
-                </IconButton>
-            )}
+                <Button
+                    sx={styles.navigationButton}
+                    component={Link}
+                    to={Paths.workers}
+                    children={'Workers'}
+                />
+                {(!props.isLargeScreen) && (
+                    <IconButton sx={{color: 'white'}} onClick={props.onOpenSideBar}>
+                        <MenuIcon />
+                    </IconButton>
+                )}
             </Toolbar>
         </AppBar>
     );

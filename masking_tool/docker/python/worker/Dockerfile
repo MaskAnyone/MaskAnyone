@@ -15,6 +15,7 @@ RUN apt-get update \
     libpq-dev \
     gcc \
     git \
+    ffmpeg \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -33,13 +34,12 @@ RUN pip install \
     ffmpeg-python \
     moviepy
 
-WORKDIR /
-RUN git clone https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI.git
-WORKDIR /Retrieval-based-Voice-Conversion-WebUI
-RUN pip install -r requirements.txt
+
+# RVC
 COPY scripts/ /scripts/
-RUN python3 /scripts/download_voice_models.py
 
-WORKDIR /app
-
-RUN apt-get update && apt-get -y install ffmpeg
+RUN cd / \
+    && git clone https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI.git \
+    && cd Retrieval-based-Voice-Conversion-WebUI \
+    && pip install -r requirements.txt \
+    && python3 /scripts/download_voice_models.py

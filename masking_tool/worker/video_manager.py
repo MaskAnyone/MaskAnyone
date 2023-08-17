@@ -56,6 +56,15 @@ class VideoManager:
                 video_id, result_video_id, data
             )
 
+    def upload_result_audio_file(self, video_id: str, result_video_id):
+        path = os.path.join("results", video_id + ".mp3")
+        if self.__local_data_manager.path_exists(path):
+            data = self.__local_data_manager.read_binary(path)
+
+            self.__backend_client.upload_result_audio_file(
+                video_id, result_video_id, data
+            )
+
     def cleanup_result_video_files(self, video_id: str):
         result_path = os.path.join("results", video_id + ".mp4")
         preview_path = os.path.join("results", video_id + ".png")

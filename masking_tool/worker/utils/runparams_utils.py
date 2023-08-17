@@ -18,3 +18,9 @@ def produces_blendshapes(run_params: dict):
     if run_params["threeDModelCreation"]["blendshapes"]:
         return True
     return False
+
+def produces_out_audio(run_params: dict):
+    if run_params["voiceMasking"]["maskingStrategy"]["key"] == "switch":
+        return True
+
+    return False

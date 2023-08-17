@@ -18,6 +18,7 @@ from db.video_manager import VideoManager
 from db.result_video_manager import ResultVideoManager
 from db.result_mp_kinematics_manager import ResultMpKinematicsManager
 from db.result_blendshapes_manager import ResultBlendshapesManager
+from db.result_audio_files_manager import ResultAudioFilesManager
 from db.db_connection import DBConnection
 
 
@@ -26,6 +27,7 @@ video_manager = VideoManager(db_connection)
 result_video_manager = ResultVideoManager(db_connection)
 result_mp_kinematics_manager = ResultMpKinematicsManager(db_connection)
 result_blendshapes_manager = ResultBlendshapesManager(db_connection)
+result_audio_files_manager = ResultAudioFilesManager(db_connection)
 
 router = APIRouter(
     prefix="/videos",
@@ -171,6 +173,7 @@ def get_downloadable_result_files(video_id: str, result_video_id: str):
 
     blendshapes_entries = result_blendshapes_manager.find_entries(result_video_id)
     mp_kinematics_entries = result_mp_kinematics_manager.find_entries(result_video_id)
+    audio_file_entries = result_audio_files_manager.find_entries(result_video_id)
 
     for blendshapes_id in blendshapes_entries:
         files.append(
@@ -198,6 +201,21 @@ def get_downloadable_result_files(video_id: str, result_video_id: str):
                 + result_video_id
                 + "/mp-kinematics/"
                 + mp_kinematics_id
+                + "/download",
+            }
+        )
+
+    for audio_file_id in audio_file_entries:
+        files.append(
+            {
+                "id": audio_file_id,
+                "title": "Masked Voice (mp3)",
+                "url": "/videos/"
+                + video_id
+                + "/results/"
+                + result_video_id
+                + "/audio_files/"
+                + audio_file_id
                 + "/download",
             }
         )
@@ -235,3 +253,23 @@ def download_blendshapes(
 
     response.headers["Content-Disposition"] = 'attachment; filename="' + file_name + '"'
     return result_blendshapes.data
+
+
+@router.get(
+    "/{video_id}/results/{result_video_id}/audio_files/{audio_file_id}/download"
+)
+def download_audio_file(
+    video_id: str, result_video_id: str, audio_file_id: str
+):
+    file_name = result_video_id + "_masked_voice.mp3"
+
+    result_audio_file = result_audio_files_manager.fetch_result_audio_files_entry(
+        audio_file_id
+    )
+
+    print(result_audio_file.data)
+
+    response = Response(content=bytes(result_audio_file.data), media_type="audio/mp3")
+    response.headers["Content-Disposition"] = 'attachment; filename="' + file_name + '"'
+
+    return response
