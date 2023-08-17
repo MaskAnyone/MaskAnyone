@@ -3,6 +3,7 @@ import Config from "../../config";
 import { useEffect, useRef, useState } from "react";
 import PoseRenderer3D from "./PoseRenderer3D";
 import BlendshapesRenderer3D from "./BlendshapesRenderer3D";
+import poseTed from '../../mockData/ted_kid_pose.json';
 
 
 interface DoubleVideoProps {
@@ -22,6 +23,9 @@ const DoubleVideo = (props: DoubleVideoProps) => {
     const originalPath = Config.api.baseUrl + '/videos/' + props.videoId;
     const resultPath = originalPath + '/results/' + props.resultVideoId;
     const [view, setView] = useState<views>(views.video)
+    const [frame, setFrame] = useState<number>(0);
+    const frameRef = useRef<number>(frame);
+    frameRef.current = frame;
 
     const displaySelectedView = () => {
         if (view === views.video && props.resultVideoId) {
@@ -35,9 +39,29 @@ const DoubleVideo = (props: DoubleVideoProps) => {
             return (<BlendshapesRenderer3D resultVideoId={props.resultVideoId} />)
         }
         if (view === views.skeleton3D) {
-            return <PoseRenderer3D />
+            return (
+                <PoseRenderer3D
+                    pose={poseTed}
+                    frame={frame}
+                />
+            )
         }
-    }
+    };
+
+    useEffect(() => {
+        if (view !== views.skeleton3D) {
+            return;
+        }
+
+        setFrame(0);
+        const animateFrame = () => {
+            setFrame(frameRef.current + 1);
+            if (frameRef.current < 200) {
+                setTimeout(animateFrame, 100);
+            }
+        }
+        animateFrame();
+    }, [view]);
 
     useEffect(() => {
         if (!video1Ref.current || !video2Ref.current) {
@@ -63,6 +87,18 @@ const DoubleVideo = (props: DoubleVideoProps) => {
         video1Ref.current.addEventListener('seeking', updateCurrentVideoTime);
 
         video1Ref.current.addEventListener('seeked', updateCurrentVideoTime);
+
+        let pollTimeout: any;
+
+        /*const pollCurrentVideoFrame = () => {
+            console.log(video1Ref.current!.currentTime, Math.round(video1Ref.current!.currentTime * 30));
+            pollTimeout = setTimeout(pollCurrentVideoFrame, 15);
+        };
+
+        // pollCurrentVideoFrame();
+
+        return () => clearTimeout(pollTimeout);*/
+
     }, [originalPath, resultPath]);
 
     return (
