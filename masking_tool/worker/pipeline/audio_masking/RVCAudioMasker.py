@@ -16,14 +16,16 @@ class RVCAudioMasker(BaseAudioMasker):
         self.params = params
 
     def load_voice_model(self):
-        if self.params["voice"] == "kanyeWest":
-            model = "/Retrieval-based-Voice-Conversion-WebUI/weights/weights/KanyeV2_Redux_40khz.pth"
-            file_index = "/Retrieval-based-Voice-Conversion-WebUI/weights/logs/KanyeV2_Redux_40khz/added_IVF1663_Flat_nprobe_1_KanyeV2_Redux_40khz_v2.index"
-        elif self.params["voice"] == "arianaGrande":
-            model = "/Retrieval-based-Voice-Conversion-WebUI/weights/arianagrandev2.pth"
-            file_index = "/Retrieval-based-Voice-Conversion-WebUI/weights/added_IVF1033_Flat_nprobe_1_v2.index"
-        else:
-            raise ValueError("Invalid voice model specified")
+        model = os.path.join(
+            "/Retrieval-based-Voice-Conversion-WebUI/weights",
+            self.params["voice"],
+            "model.pth",
+        )
+        file_index = os.path.join(
+            "/Retrieval-based-Voice-Conversion-WebUI/weights",
+            self.params["voice"],
+            "index_file.index",
+        )
         return model, file_index
 
     def auto_load_voice_model(self):
@@ -67,4 +69,6 @@ class RVCAudioMasker(BaseAudioMasker):
             cwd="/Retrieval-based-Voice-Conversion-WebUI",
         )
 
+        print(res.stdout)
+        print(res.stderr)
         return output_path

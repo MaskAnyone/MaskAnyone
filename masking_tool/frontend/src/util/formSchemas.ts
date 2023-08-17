@@ -254,7 +254,7 @@ export const rvcSchema: RJSFSchema = {
               title: 'Masking Voice',
               description: 'The selected voice will replace the original voice of the speaker',
               type: 'string',
-              enum: ['arianaGrande', 'kanyeWest'],
+              enum: ['arianaGrande', 'kanyeWest', 'mrKrabs', 'donaldTrump'],
               default: 'arianaGrande',
             },
           }
