@@ -2,6 +2,7 @@ import os
 import gdown
 from huggingface_hub import hf_hub_download
 from zipfile import ZipFile
+import shutil
 
 if not os.path.exists("/Retrieval-based-Voice-Conversion-WebUI"):
     raise Exception("RVC not installed properly")
@@ -72,5 +73,77 @@ for f in onnx_dereverb_files:
 id = "1yCb7d9RH-8GV0rH8fllqLeoBqF5bgBz0"  # ariana grande voice
 output_path = os.path.join(model_base_path, "weights", "voice.zip")
 gdown.download(id=id, output=output_path, quiet=False)
+store_path = os.path.join(model_base_path, "weights", "arianaGrande")
+os.mkdir(store_path)
 with ZipFile(output_path, "r") as zObject:
-    zObject.extractall(os.path.join(model_base_path, "weights"))
+    zObject.extractall(store_path)
+    os.rename(
+        os.path.join(store_path, "arianagrandev2.pth"),
+        os.path.join(store_path, "model.pth"),
+    )
+    os.rename(
+        os.path.join(store_path, "added_IVF1033_Flat_nprobe_1_v2.index"),
+        os.path.join(store_path, "index_file.pth"),
+    )
+
+id = "1JNV7cleePeQZRSoz4xTtei_QbZ0SPr0X"  # kanye
+output_path = os.path.join(model_base_path, "weights", "voice2.zip")
+gdown.download(id=id, output=output_path, quiet=False)
+store_path = os.path.join(model_base_path, "weights", "kanyeWest")
+os.mkdir(store_path)
+with ZipFile(output_path, "r") as zObject:
+    zObject.extractall(store_path)
+    shutil.copyfile(
+        os.path.join(store_path, "weights", "KanyeV2_Redux_40khz.pth"),
+        os.path.join(store_path, "model.pth"),
+    )
+    shutil.copyfile(
+        os.path.join(
+            store_path,
+            "logs",
+            "KanyeV2_Redux_40khz",
+            "added_IVF1663_Flat_nprobe_1_KanyeV2_Redux_40khz_v2.index",
+        ),
+        os.path.join(
+            store_path,
+            "index_file.index",
+        ),
+    )
+
+id = "1Ny2aZ5xea1mIS92EPyfuDpcl4a5niaZN"  # mrKrabs
+output_path = os.path.join(model_base_path, "weights", "voice3.zip")
+gdown.download(id=id, output=output_path, quiet=False)
+store_path = os.path.join(model_base_path, "weights", "mrKrabs")
+os.mkdir(store_path)
+with ZipFile(output_path, "r") as zObject:
+    zObject.extractall(store_path)
+    shutil.copyfile(
+        os.path.join(store_path, "MrKrabs", "weights", "MrKrabs.pth"),
+        os.path.join(store_path, "model.pth"),
+    )
+    shutil.copyfile(
+        os.path.join(
+            store_path,
+            "MrKrabs",
+            "logs",
+            "MrKrabs",
+            "added_IVF1490_Flat_nprobe_1.index",
+        ),
+        os.path.join(store_path, "index_file.index"),
+    )
+
+id = "1Q5dJ9w_H2RG1vMLHBx4UsAlmcrgmN6_e"  # donald trump
+output_path = os.path.join(model_base_path, "weights", "voice4.zip")
+gdown.download(id=id, output=output_path, quiet=False)
+store_path = os.path.join(model_base_path, "weights", "donaldTrump")
+os.mkdir(store_path)
+with ZipFile(output_path, "r") as zObject:
+    zObject.extractall(store_path)
+    os.rename(
+        os.path.join(store_path, "trump.pth"),
+        os.path.join(store_path, "model.pth"),
+    )
+    os.rename(
+        os.path.join(store_path, "added_IVF2572_Flat_nprobe_1_v2.index"),
+        os.path.join(store_path, "index_file.pth"),
+    )

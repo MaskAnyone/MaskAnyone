@@ -1,5 +1,6 @@
 import os
 import subprocess
+import torch
 
 from pipeline.audio_masking.BaseAudioMasker import BaseAudioMasker
 from moviepy.editor import VideoFileClip
@@ -14,6 +15,22 @@ class RVCAudioMasker(BaseAudioMasker):
     def __init__(self, params: dict):
         self.params = params
 
+    def load_voice_model(self):
+        model = os.path.join(
+            "/Retrieval-based-Voice-Conversion-WebUI/weights",
+            self.params["voice"],
+            "model.pth",
+        )
+        file_index = os.path.join(
+            "/Retrieval-based-Voice-Conversion-WebUI/weights",
+            self.params["voice"],
+            "index_file.index",
+        )
+        return model, file_index
+
+    def auto_load_voice_model(self):
+        return None, None
+
     def mask(self, video_id: str):
         input_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
         input_mp3_path = os.path.join(VIDEOS_BASE_PATH, video_id + "_tmp.mp3")
@@ -24,10 +41,15 @@ class RVCAudioMasker(BaseAudioMasker):
         audio.write_audiofile(input_mp3_path)
 
         f0_up_key = 0  # transpose value
-        model = "/Retrieval-based-Voice-Conversion-WebUI/weights/arianagrandev2.pth"
-        file_index = "/Retrieval-based-Voice-Conversion-WebUI/weights/added_IVF1033_Flat_nprobe_1_v2.index"
-        device = "cpu"
+        device = "cuda:0" if torch.cuda.is_available() else "cpu"
         f0_method = "crepe"
+
+        if self.params["mode"] == "manual":
+            model, file_index = self.load_voice_model()
+        elif self.params["mode"] == "auto":
+            model, file_index = self.auto_load_voice_model()
+        else:
+            raise ValueError("Invalid mode")
 
         args = [
             "python3",
@@ -47,4 +69,6 @@ class RVCAudioMasker(BaseAudioMasker):
             cwd="/Retrieval-based-Voice-Conversion-WebUI",
         )
 
+        print(res.stdout)
+        print(res.stderr)
         return output_path

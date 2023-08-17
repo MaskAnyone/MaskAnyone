@@ -1,5 +1,5 @@
 import { HidingMethods, MaskingMethods } from "../state/types/RunParamRendering";
-import { blackoutFormSchemaBG, blackoutFormSchemaSubject, blackoutFormSchemaSubjectUI, blurFormSchemaBG, blurFormSchemaSubject, blurFormSchemaSubjectUI, bodyMeshFormSchema, faceMeshFormSchema, skeletonFormSchema } from "./formSchemas";
+import { blackoutFormSchemaBG, blackoutFormSchemaSubject, blackoutFormSchemaSubjectUI, blurFormSchemaBG, blurFormSchemaSubject, blurFormSchemaSubjectUI, bodyMeshFormSchema, faceMeshFormSchema, rvcSchema, skeletonFormSchema } from "./formSchemas";
 
 export const maskingMethods: MaskingMethods = {
     none: {
@@ -191,6 +191,10 @@ export const voiceMaskingMethods: any = {
     switch: {
         name: "Switch",
         description: "Mask the original speaker by replacing their voice with the voice of another person",
-        defaultValues: {}
+        parameterSchema: rvcSchema,
+        defaultValues: {
+            mode: 'manual',
+            voice: "arianaGrande",
+        }
     },
 };

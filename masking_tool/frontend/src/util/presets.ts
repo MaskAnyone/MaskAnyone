@@ -173,4 +173,41 @@ export const presetsDB: Preset[] = [
             }
         }
     },
+    {
+        name: "Switch Voice",
+        runParams: {
+            videoMasking: {
+                hidingTarget: "none",
+                hidingStrategyTarget: {
+                    key: "none",
+                    params: {}
+                },
+                hidingStrategyBG: {
+                    key: "none",
+                    params: {}
+                },
+                maskingStrategy: {
+                    key: "none",
+                    params: {}
+                }
+            },
+            threeDModelCreation: {
+                skeleton: false,
+                skeletonParams: {},
+                blender: false,
+                blenderParams: {},
+                blendshapes: false,
+                blendshapesParams: {}
+            },
+            voiceMasking: {
+                maskingStrategy: {
+                    key: 'switch',
+                    params: {
+                        'mode': 'manual',
+                        'voice': 'arianaGrande'
+                    },
+                }
+            }
+        }
+    },
 ]

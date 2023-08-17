@@ -41,5 +41,6 @@ COPY scripts/ /scripts/
 RUN cd / \
     && git clone https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI.git \
     && cd Retrieval-based-Voice-Conversion-WebUI \
-    && pip install -r requirements.txt \
-    && python3 /scripts/download_voice_models.py
+    && pip install -r requirements.txt
+
+RUN python3 /scripts/download_voice_models.py

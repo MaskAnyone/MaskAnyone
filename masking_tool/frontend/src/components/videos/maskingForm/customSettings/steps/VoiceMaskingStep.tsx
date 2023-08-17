@@ -1,7 +1,8 @@
-import { Box, Typography } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import { StepProps } from "./HidingStep";
 import { voiceMaskingMethods } from "../../../../../util/maskingMethods";
 import SelectableCard from "../../../../common/SelectableCard";
+import MethodSettings from "../../MethodSettings";
 
 const VoiceMaskingStep = (props: StepProps) => {
     const maskingStrategy = props.runParams.voiceMasking.maskingStrategy;
@@ -14,6 +15,19 @@ const VoiceMaskingStep = (props: StepProps) => {
                 maskingStrategy: {
                     key: newMaskingStrategy,
                     params: voiceMaskingMethods[newMaskingStrategy].defaultValues!
+                }
+            }
+        })
+    }
+
+    const setVoiceMaskingStrategyParams = (newParams: object) => {
+        props.onParamsChange({
+            ...props.runParams,
+            voiceMasking: {
+                ...props.runParams.voiceMasking,
+                maskingStrategy: {
+                    ...props.runParams.voiceMasking.maskingStrategy,
+                    params: newParams
                 }
             }
         })
@@ -44,6 +58,18 @@ const VoiceMaskingStep = (props: StepProps) => {
                     })
                 }
             </Box>
+            <Typography variant="body1" sx={{ fontWeight: 500 }} mt={3}>
+                Edit fine-grained settings of selected masking method:
+                <Button>
+                    <MethodSettings
+                        methodName={maskingStrategy.key}
+                        formSchema={voiceMaskingMethods[maskingStrategy.key].parameterSchema}
+                        uiSchema={voiceMaskingMethods[maskingStrategy.key].uiSchema}
+                        values={maskingStrategy.params}
+                        onSet={setVoiceMaskingStrategyParams}
+                    />
+                </Button>
+            </Typography >
         </>
     )
 }

@@ -220,8 +220,13 @@ class Pipeline:
     def send_progress_update(self, job_id: str, current_index: int):
         if self.should_send_progress_message(current_index):
             progress = int((float(current_index) / float(self.num_frames)) * 100.0)
+            if self.audio_masker:
+                progress = int(progress / 2)
             self.backend_client.update_progress(job_id, progress)
             self.progress_message_sent_time = time.time()
+
+    def masks_audio_only(self):
+        return self.audio_masker and len(self.detectors) == 0
 
     def run(self, video_id: str, job_id: str):
         print(f"Running job on video {video_id}")
@@ -297,6 +302,11 @@ class Pipeline:
         if self.audio_masker:
             old_video_out_path = os.path.join(RESULT_BASE_PATH, video_id + "_old.mp4")
             os.rename(video_out_path, old_video_out_path)
+            if self.masks_audio_only():  # no masking of video was performed
+                shutil.copyfile(
+                    os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4"),
+                    old_video_out_path,
+                )
 
             masked_audio_path = self.audio_masker.mask(video_id)
             input_video = ffmpeg.input(old_video_out_path)

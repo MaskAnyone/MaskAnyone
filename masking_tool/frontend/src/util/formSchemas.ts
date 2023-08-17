@@ -238,3 +238,28 @@ export const bodyMeshFormSchema: RJSFSchema = {
     timeseries: { type: 'boolean', title: 'Save output as timeseries in CSV', default: false },
   },
 };
+
+export const rvcSchema: RJSFSchema = {
+  type: 'object',
+  properties: {
+    mode: { type: 'string', title: 'Masking mode', default: 'manual', enum: ["manual", "auto"], description: 'Manual mode allows you to select the masking voice yourself. Auto mode will automatically find a voice that is most likely to deliver good results for the given speaker' },
+  },
+  dependencies: {
+    mode: {
+      oneOf: [
+        {
+          properties: {
+            mode: { enum: ['manual'] },
+            voice: {
+              title: 'Masking Voice',
+              description: 'The selected voice will replace the original voice of the speaker',
+              type: 'string',
+              enum: ['arianaGrande', 'kanyeWest', 'mrKrabs', 'donaldTrump'],
+              default: 'arianaGrande',
+            },
+          }
+        },
+      ]
+    }
+  }
+};
