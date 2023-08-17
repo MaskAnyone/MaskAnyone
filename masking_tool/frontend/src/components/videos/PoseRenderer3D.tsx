@@ -31,6 +31,7 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
     private readonly stats: Stats;
     private readonly spheres: THREE.Mesh[];
     private readonly connections: THREE.Line[];
+    private animationId: any;
 
     constructor(props: PoseRenderer3DProps) {
         super(props);
@@ -53,10 +54,14 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
         this.animate();
     }
 
+    componentWillUnmount() {
+        cancelAnimationFrame(this.animationId);
+    }
+
     render() {
         return (
             <div id={'three-renderer'} style={styles.container}>
-                <span style={styles.frameOverlay}>{this.props.frame}</span>
+                <span style={styles.frameOverlay}>{this.props.frame} / {this.props.pose.length}</span>
             </div>
         );
     }
@@ -108,15 +113,15 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
     }
 
     private animate() {
-        const currentPose = this.props.pose[this.props.frame];
+        this.animationId = requestAnimationFrame(this.animate);
+
+        const currentPose = this.props.pose[Math.min(this.props.frame, this.props.pose.length - 1)];
 
         this.animateLandmarks(currentPose);
         this.animateConnections(currentPose);
 
         this.renderer.render(this.scene, this.camera);
         this.stats.update();
-
-        requestAnimationFrame(this.animate)
     }
 
     private animateLandmarks(pose: number[][]) {
@@ -159,106 +164,5 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
         }
     }
 }
-
-/*const PoseRenderer3D = () => {
-    const sceneRef = useRef<THREE.Scene>(new THREE.Scene());
-    const cameraRef = useRef<THREE.Camera>(new THREE.PerspectiveCamera(75, 800 / 450, 0.1, 1000));
-    const rendererRef = useRef<THREE.Renderer>(new THREE.WebGLRenderer({ alpha: true}));
-    const orbitControlsRef = useRef<OrbitControls>(new OrbitControls(cameraRef.current, rendererRef.current.domElement));
-    const spheresRef = useRef<THREE.Mesh[]>([]);
-    const [pose, setPose] = useState<number[][][]>(poseTed);
-
-    useEffect(() => {
-        rendererRef.current.setSize(800, 350);
-        document.getElementById('three-renderer')!.appendChild(rendererRef.current.domElement);
-
-        cameraRef.current.position.z = 1;
-        orbitControlsRef.current.update();
-
-        sceneRef.current.background = new THREE.Color(0xdddddd);
-
-        const stats = new Stats();
-        // @ts-ignore
-        stats.domElement.style.position = 'absolute';
-        document.getElementById('three-renderer')!.appendChild(stats.dom)
-
-        let currentRealPose = 0;
-        let currentPose = 0;
-
-        const dotMaterial = new THREE.MeshBasicMaterial( { color: 0x000000 } );
-        const lineMaterial = new THREE.LineBasicMaterial({
-            color: 0x0000ff,
-            linewidth: 2,
-        });
-
-        const axesHelper = new THREE.AxesHelper(0.2);
-        sceneRef.current.add( axesHelper );
-
-        for (const landmark of pose[currentPose]) {
-            const geometry = new THREE.SphereGeometry( 0.01, 16, 8 );
-            const sphere = new THREE.Mesh(geometry, dotMaterial);
-
-            sceneRef.current.add(sphere);
-            spheresRef.current.push(sphere);
-        }
-
-        const animate = () => {
-            requestAnimationFrame(animate);
-
-            // @ts-ignore
-            const xAvg = pose[currentPose].map(landmark => landmark[0]).reduce((acc, pos) => acc + pos, 0.0) / pose[currentPose].length;
-            // @ts-ignore
-            const yAvg = pose[currentPose].map(landmark => landmark[1]).reduce((acc, pos) => acc + pos, 0.0) / pose[currentPose].length;
-
-            for (const landmarkIndex in pose[currentPose]) {
-                const landmark = pose[currentPose][landmarkIndex];
-                const sphere = spheresRef.current[landmarkIndex];
-
-                sphere.position.x = landmark[0] - xAvg;
-                // @ts-ignore
-                sphere.position.y = -(landmark[1] - yAvg);
-                // @ts-ignore
-                sphere.position.z = landmark[2];
-            }
-
-            /*for (const connectionFrom of Object.keys(connections).map(Number)) {
-                // @ts-ignore
-                for (const connectionTo of connections[connectionFrom]) {
-                    const geo = new THREE.BufferGeometry().setFromPoints([
-                        // @ts-ignore
-                        new THREE.Vector3(pose[currentPose][connectionFrom][0] - xAvg, -(pose[currentPose][connectionFrom][1] - yAvg), pose[currentPose][connectionFrom][2]),
-                        // @ts-ignore
-                        new THREE.Vector3(pose[currentPose][connectionTo][0] - xAvg, -(pose[currentPose][connectionTo][1] - yAvg), pose[currentPose][connectionTo][2]),
-                    ]);
-
-                    const line = new THREE.Line(geo, lineMaterial);
-                    sceneRef.current.add(line);
-                }
-            }*
-
-            rendererRef.current.render(sceneRef.current, cameraRef.current);
-            currentRealPose += 0.2;
-            currentPose = Math.round(currentRealPose);
-
-            if (!pose[currentPose]) {
-                currentPose = 0;
-                currentRealPose = 0;
-            }
-
-            /*for( var i = sceneRef.current.children.length - 1; i >= 0; i--) {
-                const obj = sceneRef.current.children[i];
-                sceneRef.current.remove(obj);
-            }*
-
-            stats.update();
-        }
-        animate();
-    }, [pose]);
-
-    return (
-        <div id={'three-renderer'} style={{ position: 'relative' }}>
-        </div>
-    );
-};*/
 
 export default PoseRenderer3D;

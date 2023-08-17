@@ -1,9 +1,11 @@
 import { Box, FormControl, FormControlLabel, Grid, Radio, RadioGroup } from "@mui/material";
 import Config from "../../config";
-import { useEffect, useRef, useState } from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 import PoseRenderer3D from "./PoseRenderer3D";
 import BlendshapesRenderer3D from "./BlendshapesRenderer3D";
 import poseTed from '../../mockData/ted_kid_pose.json';
+import {useSelector} from "react-redux";
+import Selector from "../../state/selector";
 
 
 interface DoubleVideoProps {
@@ -18,6 +20,7 @@ enum views {
 }
 
 const DoubleVideo = (props: DoubleVideoProps) => {
+    const videoList = useSelector(Selector.Video.videoList);
     const video1Ref = useRef<HTMLVideoElement>(null);
     const video2Ref = useRef<HTMLVideoElement>(null);
     const originalPath = Config.api.baseUrl + '/videos/' + props.videoId;
@@ -26,6 +29,11 @@ const DoubleVideo = (props: DoubleVideoProps) => {
     const [frame, setFrame] = useState<number>(0);
     const frameRef = useRef<number>(frame);
     frameRef.current = frame;
+
+    const videoFPS = useMemo(
+        () => videoList.find(video => video.id === props.videoId)?.videoInfo.fps || 0,
+        [videoList, props.videoId],
+    );
 
     const displaySelectedView = () => {
         if (view === views.video && props.resultVideoId) {
@@ -54,13 +62,15 @@ const DoubleVideo = (props: DoubleVideoProps) => {
         }
 
         setFrame(0);
-        const animateFrame = () => {
-            setFrame(frameRef.current + 1);
-            if (frameRef.current < 200) {
-                setTimeout(animateFrame, 100);
-            }
-        }
-        animateFrame();
+
+        const interval = setInterval(
+            () => {
+                setFrame(Math.round(video1Ref.current!.currentTime * videoFPS));
+            },
+            16, // Poll often enough for 60fps
+        );
+
+        return () => clearInterval(interval);
     }, [view]);
 
     useEffect(() => {
@@ -87,18 +97,6 @@ const DoubleVideo = (props: DoubleVideoProps) => {
         video1Ref.current.addEventListener('seeking', updateCurrentVideoTime);
 
         video1Ref.current.addEventListener('seeked', updateCurrentVideoTime);
-
-        let pollTimeout: any;
-
-        /*const pollCurrentVideoFrame = () => {
-            console.log(video1Ref.current!.currentTime, Math.round(video1Ref.current!.currentTime * 30));
-            pollTimeout = setTimeout(pollCurrentVideoFrame, 15);
-        };
-
-        // pollCurrentVideoFrame();
-
-        return () => clearTimeout(pollTimeout);*/
-
     }, [originalPath, resultPath]);
 
     return (
