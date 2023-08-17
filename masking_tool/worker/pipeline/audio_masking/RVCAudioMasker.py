@@ -39,7 +39,7 @@ class RVCAudioMasker(BaseAudioMasker):
         audio.write_audiofile(input_mp3_path)
 
         f0_up_key = 0  # transpose value
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        device = "cuda:0" if torch.cuda.is_available() else "cpu"
         f0_method = "crepe"
 
         if self.params["mode"] == "manual":

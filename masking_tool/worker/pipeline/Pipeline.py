@@ -220,6 +220,8 @@ class Pipeline:
     def send_progress_update(self, job_id: str, current_index: int):
         if self.should_send_progress_message(current_index):
             progress = int((float(current_index) / float(self.num_frames)) * 100.0)
+            if self.audio_masker:
+                progress = int(progress / 2)
             self.backend_client.update_progress(job_id, progress)
             self.progress_message_sent_time = time.time()
 
