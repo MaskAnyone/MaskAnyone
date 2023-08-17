@@ -2,6 +2,7 @@ import os
 import gdown
 from huggingface_hub import hf_hub_download
 from zipfile import ZipFile
+import shutil
 
 if not os.path.exists("/Retrieval-based-Voice-Conversion-WebUI"):
     raise Exception("RVC not installed properly")
@@ -71,6 +72,12 @@ for f in onnx_dereverb_files:
 
 id = "1yCb7d9RH-8GV0rH8fllqLeoBqF5bgBz0"  # ariana grande voice
 output_path = os.path.join(model_base_path, "weights", "voice.zip")
+gdown.download(id=id, output=output_path, quiet=False)
+with ZipFile(output_path, "r") as zObject:
+    zObject.extractall(os.path.join(model_base_path, "weights"))
+
+id = "1JNV7cleePeQZRSoz4xTtei_QbZ0SPr0X"  # kanye
+output_path = os.path.join(model_base_path, "weights", "voice2.zip")
 gdown.download(id=id, output=output_path, quiet=False)
 with ZipFile(output_path, "r") as zObject:
     zObject.extractall(os.path.join(model_base_path, "weights"))
