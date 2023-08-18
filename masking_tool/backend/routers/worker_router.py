@@ -50,10 +50,9 @@ def fetch_next_job(job_type: str, worker_id: str):
 
 @router.post("/jobs/create/{job_type}")
 def create_job(job_type: str, run_params: RunParams):
-    print("aa")
-    job_manager.create_new_job(
+    job_manager.create_new_jobs(
         run_params.id,
-        run_params.video_id,
+        run_params.video_ids,
         run_params.result_video_id,
         run_params.run_data,
         job_type,

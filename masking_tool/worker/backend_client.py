@@ -1,3 +1,4 @@
+from typing import List
 import uuid
 import requests
 from enum import Enum
@@ -97,10 +98,10 @@ class BackendClient:
     def _make_url(self, path: str) -> str:
         return BASE_PATH + self._worker_id + "/" + path
 
-    def create_job(self, job_type: str, video_id: str, arguments: dict):
+    def create_job(self, job_type: str, video_id: List[str], arguments: dict):
         run_params = {
             "id": str(uuid.uuid4()),
-            "video_id": video_id,
+            "video_ids": [video_id],
             "result_video_id": str(uuid.uuid4()),
             "run_data": arguments,
         }

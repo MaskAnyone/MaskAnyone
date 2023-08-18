@@ -1,0 +1,13 @@
+{
+    "image_name": "roop",
+    "run_command": "python3",
+    "entry_point": "run.py",
+    "can_send_progress_update": true,
+    "accepted_subjects": [
+        "face"
+    ],
+    "argument_schema": {
+        "type": "object",
+        "properties": {}
+    }
+}

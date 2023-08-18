@@ -42,16 +42,16 @@ services:
     #        - driver: nvidia
     #          capabilities: [ gpu ]+
 
-    # python-worker-vibe:
-    #  build:
-    #    context: ./worker/models/docker_models/vibe
-    #  command: "python worker.py "
-    #  env_file:
-    #    - ./app.env
-    #  volumes:
-    #    - ./worker:/app
-    #  environment:
-    #    WORKER_TYPE: "vibe"
+  python-worker-roop:
+    build:
+      context: ./worker/models/docker_models/roop
+    command: "python worker.py "
+    env_file:
+      - ./app.env
+    volumes:
+      - ./worker:/app
+    environment:
+      WORKER_TYPE: "roop"
 
   postgres:
     build:
