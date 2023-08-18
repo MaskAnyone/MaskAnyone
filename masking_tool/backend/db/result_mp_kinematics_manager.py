@@ -25,6 +25,19 @@ class ResultMpKinematicsManager:
 
         return ResultMpKinematics(*result_mp_kinematics_data_list[0])
 
+    def fetch_result_mp_kinematics_entry_by_resvid_id(self, result_video_id: str):
+        result_mp_kinematics_data_list = self.__db_connection.select_all(
+            "SELECT * FROM result_mp_kinematics WHERE result_video_id=%(result_video_id)s",
+            {"result_video_id": result_video_id},
+        )
+
+        if not result_mp_kinematics_data_list:
+            raise Exception(
+                f"No mp kinematics for result video id {result_video_id} found"
+            )
+
+        return ResultMpKinematics(*result_mp_kinematics_data_list[0])
+
     def find_entries(self, result_video_id: str):
         result = []
 

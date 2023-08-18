@@ -42,6 +42,14 @@ const Api = {
 
         return result.data;
     },
+    fetchMpKinematics: async (resultVideoId: string): Promise<any> => {
+        const result = await sendApiRequest({
+            url: `/results/${resultVideoId}/mp-kinematics`,
+            method: 'get'
+        });
+
+        return result.data;
+    },
     fetchDownloadableResultFiles: async (videoId: string, resultVideoId: string): Promise<ApiFetchDownloadableResultFilesResponse> => {
         const result = await sendApiRequest({
             url: `videos/${videoId}/results/${resultVideoId}/result-files`,

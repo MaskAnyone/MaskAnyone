@@ -10,6 +10,8 @@ import {fetchWorkerListFlow} from "./sagas/worker/fetchWorkerListFlow";
 import {fetchPresetListFlow} from "./sagas/preset/fetchPresetListFlow";
 import {deletePresetFlow} from "./sagas/preset/deletePresetFlow";
 import {createNewPresetFlow} from "./sagas/preset/createNewPresetFlow";
+import {fetchBlendshapesFlow} from "./sagas/video/fetchBlendshapesFlow";
+import {fetchMpKinematicsFlow} from "./sagas/video/fetchMpKinematicsFlow";
 
 /**
  * Prevents the root saga from terminating entirely due to some error in another saga
@@ -43,6 +45,8 @@ const sagas: any[] = [
     maskVideoFlow,
     fetchResultVideoListFlow,
     fetchDownloadableResultFilesFlow,
+    fetchBlendshapesFlow,
+    fetchMpKinematicsFlow,
 
     uploadFilesFlow,
     uploadProgressWatcherFlow,

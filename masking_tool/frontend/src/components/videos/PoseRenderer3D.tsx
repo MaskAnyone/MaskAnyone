@@ -3,7 +3,7 @@ import React from "react";
 // @ts-ignore
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import Stats from 'three/examples/jsm/libs/stats.module'
-import { connections } from '../../util/skeletonConnections';
+import {skeletonConnections, skeletonLandmarks} from '../../util/skeletonConnections';
 
 const styles = {
     container: {
@@ -19,7 +19,7 @@ const styles = {
 };
 
 interface PoseRenderer3DProps {
-    pose: number[][][];
+    mpKinematics: any[];
     frame: number;
 }
 
@@ -29,7 +29,7 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
     private readonly renderer: THREE.Renderer;
     private readonly orbitControls: OrbitControls;
     private readonly stats: Stats;
-    private readonly spheres: THREE.Mesh[];
+    private readonly spheres: Record<string, THREE.Mesh>;
     private readonly connections: THREE.Line[];
     private animationId: any;
 
@@ -41,7 +41,7 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
         this.renderer = new THREE.WebGLRenderer({ alpha: true});
         this.orbitControls = new OrbitControls(this.camera, this.renderer.domElement);
         this.stats = new Stats();
-        this.spheres = [];
+        this.spheres = {};
         this.connections = [];
 
         this.animate = this.animate.bind(this);
@@ -61,7 +61,7 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
     render() {
         return (
             <div id={'three-renderer'} style={styles.container}>
-                <span style={styles.frameOverlay}>{this.props.frame} / {this.props.pose.length}</span>
+                <span style={styles.frameOverlay}>{this.props.frame} / {this.props.mpKinematics.length}</span>
             </div>
         );
     }
@@ -85,13 +85,12 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
 
     private initLandmarks() {
         const dotMaterial = new THREE.MeshBasicMaterial( { color: 0x000000 } );
-
-        for (const landmarkIndex in this.props.pose[0]) {
+        for (let i = 0; i < skeletonLandmarks.length; i++) {
             const geometry = new THREE.SphereGeometry( 0.01, 16, 8 );
             const sphere = new THREE.Mesh(geometry, dotMaterial);
 
             this.scene.add(sphere);
-            this.spheres.push(sphere);
+            this.spheres[skeletonLandmarks[i]] = sphere;
         }
     }
 
@@ -101,9 +100,9 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
             linewidth: 2,
         });
 
-        for (const connectionFrom of Object.keys(connections).map(Number)) {
+        for (const connectionFrom of Object.keys(skeletonConnections)) {
             // @ts-ignore
-            for (const connectionTo of connections[connectionFrom]) {
+            for (const connectionTo of skeletonConnections[connectionFrom]) {
                 const geo = new THREE.BufferGeometry();
                 const line = new THREE.Line(geo, lineMaterial);
                 this.scene.add(line);
@@ -115,7 +114,7 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
     private animate() {
         this.animationId = requestAnimationFrame(this.animate);
 
-        const currentPose = this.props.pose[Math.min(this.props.frame, this.props.pose.length - 1)];
+        const currentPose = this.props.mpKinematics[Math.min(this.props.frame, this.props.mpKinematics.length - 1)]['world_landmarks'];
 
         this.animateLandmarks(currentPose);
         this.animateConnections(currentPose);
@@ -124,39 +123,38 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
         this.stats.update();
     }
 
-    private animateLandmarks(pose: number[][]) {
-        const xAvg = pose.map(landmark => landmark[0]).reduce((acc, pos) => acc + pos, 0.0) / pose.length;
-        // @ts-ignore
-        const yAvg = pose.map(landmark => landmark[1]).reduce((acc, pos) => acc + pos, 0.0) / pose.length;
+    private animateLandmarks(pose: Record<string, /*number|*/{x: number, y: number, z: number}>) {
+        for (const identifier of skeletonLandmarks) {
+            console.log(identifier, pose[identifier]);
+        }
 
-        for (const landmarkIndex in pose) {
-            const landmark = pose[landmarkIndex];
-            const sphere = this.spheres[landmarkIndex];
+        const xAvg = skeletonLandmarks.map(identifier => pose[identifier].x).reduce((acc, pos) => acc + pos, 0.0) / skeletonLandmarks.length;
+        const yAvg = skeletonLandmarks.map(identifier => pose[identifier].y).reduce((acc, pos) => acc + pos, 0.0) / skeletonLandmarks.length;
 
-            sphere.position.x = landmark[0] - xAvg;
-            // @ts-ignore
-            sphere.position.y = -(landmark[1] - yAvg);
-            // @ts-ignore
-            sphere.position.z = landmark[2];
+        for (const identifier of skeletonLandmarks) {
+            console.log(identifier, pose[identifier]);
+            const landmark = pose[identifier];
+            const sphere = this.spheres[identifier];
+
+            sphere.position.x = landmark.x - xAvg;
+            sphere.position.y = -(landmark.y - yAvg);
+            sphere.position.z = landmark.z;
         }
     }
 
-    private animateConnections(pose: number[][]) {
-        const xAvg = pose.map(landmark => landmark[0]).reduce((acc, pos) => acc + pos, 0.0) / pose.length;
-        // @ts-ignore
-        const yAvg = pose.map(landmark => landmark[1]).reduce((acc, pos) => acc + pos, 0.0) / pose.length;
+    private animateConnections(pose: Record<string, /*number|*/{x: number, y: number, z: number}>) {
+        const xAvg = skeletonLandmarks.map(identifier => pose[identifier].x).reduce((acc, pos) => acc + pos, 0.0) / skeletonLandmarks.length;
+        const yAvg = skeletonLandmarks.map(identifier => pose[identifier].y).reduce((acc, pos) => acc + pos, 0.0) / skeletonLandmarks.length;
 
         let index = 0;
-        for (const connectionFrom of Object.keys(connections).map(Number)) {
+        for (const connectionFrom of Object.keys(skeletonConnections)) {
             // @ts-ignore
-            for (const connectionTo of connections[connectionFrom]) {
+            for (const connectionTo of skeletonConnections[connectionFrom]) {
                 const connection = this.connections[index];
 
                 connection.geometry.setFromPoints([
-                    // @ts-ignore
-                    new THREE.Vector3(pose[connectionFrom][0] - xAvg, -(pose[connectionFrom][1] - yAvg), pose[connectionFrom][2]),
-                    // @ts-ignore
-                    new THREE.Vector3(pose[connectionTo][0] - xAvg, -(pose[connectionTo][1] - yAvg), pose[connectionTo][2]),
+                    new THREE.Vector3(pose[connectionFrom].x - xAvg, -(pose[connectionFrom].y - yAvg), pose[connectionFrom].z),
+                    new THREE.Vector3(pose[connectionTo].x - xAvg, -(pose[connectionTo].y - yAvg), pose[connectionTo].z),
                 ]);
 
                 index++;
