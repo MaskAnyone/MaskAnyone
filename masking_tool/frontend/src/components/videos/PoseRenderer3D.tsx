@@ -9,7 +9,7 @@ const styles = {
     container: {
         position: 'relative' as const,
         width: 600,
-        height: 350,
+        height: 400,
     },
     frameOverlay: {
         position: 'absolute' as const,
@@ -19,7 +19,7 @@ const styles = {
 };
 
 interface PoseRenderer3DProps {
-    mpKinematics: any[];
+    mpKinematics?: any[];
     frame: number;
 }
 
@@ -37,7 +37,7 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
         super(props);
 
         this.scene = new THREE.Scene();
-        this.camera = new THREE.PerspectiveCamera(75, 600 / 350, 0.1, 1000);
+        this.camera = new THREE.PerspectiveCamera(75, 600 / 400, 0.1, 1000);
         this.renderer = new THREE.WebGLRenderer({ alpha: true});
         this.orbitControls = new OrbitControls(this.camera, this.renderer.domElement);
         this.stats = new Stats();
@@ -59,6 +59,10 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
     }
 
     render() {
+        if (!this.props.mpKinematics) {
+            return null;
+        }
+
         return (
             <div id={'three-renderer'} style={styles.container}>
                 <span style={styles.frameOverlay}>{this.props.frame} / {this.props.mpKinematics.length}</span>
@@ -67,10 +71,11 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
     }
 
     private init(containerElement: HTMLElement) {
-        this.renderer.setSize(600, 350);
+        this.renderer.setSize(600, 400);
         containerElement.appendChild(this.renderer.domElement);
 
-        this.camera.position.z = 1;
+        this.camera.position.z = 1.5;
+
         this.orbitControls.update();
         this.scene.background = new THREE.Color(0xdddddd);
 
@@ -84,9 +89,9 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
     }
 
     private initLandmarks() {
-        const dotMaterial = new THREE.MeshBasicMaterial( { color: 0x000000 } );
+        const dotMaterial = new THREE.MeshBasicMaterial( { color: 0x444444 } );
         for (let i = 0; i < skeletonLandmarks.length; i++) {
-            const geometry = new THREE.SphereGeometry( 0.01, 16, 8 );
+            const geometry = new THREE.SphereGeometry( 0.02, 16, 8 );
             const sphere = new THREE.Mesh(geometry, dotMaterial);
 
             this.scene.add(sphere);
@@ -96,8 +101,8 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
 
     private initConnections() {
         const lineMaterial = new THREE.LineBasicMaterial({
-            color: 0x0000ff,
-            linewidth: 2,
+            color: 0xff8b28,
+            linewidth: 4,
         });
 
         for (const connectionFrom of Object.keys(skeletonConnections)) {
@@ -114,7 +119,7 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
     private animate() {
         this.animationId = requestAnimationFrame(this.animate);
 
-        const currentPose = this.props.mpKinematics[Math.min(this.props.frame, this.props.mpKinematics.length - 1)]['world_landmarks'];
+        const currentPose = this.props.mpKinematics![Math.min(this.props.frame, this.props.mpKinematics!.length - 1)]['world_landmarks'];
 
         this.animateLandmarks(currentPose);
         this.animateConnections(currentPose);
@@ -125,27 +130,16 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
 
     private animateLandmarks(pose: Record<string, /*number|*/{x: number, y: number, z: number}>) {
         for (const identifier of skeletonLandmarks) {
-            console.log(identifier, pose[identifier]);
-        }
-
-        const xAvg = skeletonLandmarks.map(identifier => pose[identifier].x).reduce((acc, pos) => acc + pos, 0.0) / skeletonLandmarks.length;
-        const yAvg = skeletonLandmarks.map(identifier => pose[identifier].y).reduce((acc, pos) => acc + pos, 0.0) / skeletonLandmarks.length;
-
-        for (const identifier of skeletonLandmarks) {
-            console.log(identifier, pose[identifier]);
             const landmark = pose[identifier];
             const sphere = this.spheres[identifier];
 
-            sphere.position.x = landmark.x - xAvg;
-            sphere.position.y = -(landmark.y - yAvg);
+            sphere.position.x = landmark.x;
+            sphere.position.y = -landmark.y;
             sphere.position.z = landmark.z;
         }
     }
 
     private animateConnections(pose: Record<string, /*number|*/{x: number, y: number, z: number}>) {
-        const xAvg = skeletonLandmarks.map(identifier => pose[identifier].x).reduce((acc, pos) => acc + pos, 0.0) / skeletonLandmarks.length;
-        const yAvg = skeletonLandmarks.map(identifier => pose[identifier].y).reduce((acc, pos) => acc + pos, 0.0) / skeletonLandmarks.length;
-
         let index = 0;
         for (const connectionFrom of Object.keys(skeletonConnections)) {
             // @ts-ignore
@@ -153,8 +147,8 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
                 const connection = this.connections[index];
 
                 connection.geometry.setFromPoints([
-                    new THREE.Vector3(pose[connectionFrom].x - xAvg, -(pose[connectionFrom].y - yAvg), pose[connectionFrom].z),
-                    new THREE.Vector3(pose[connectionTo].x - xAvg, -(pose[connectionTo].y - yAvg), pose[connectionTo].z),
+                    new THREE.Vector3(pose[connectionFrom].x, -pose[connectionFrom].y, pose[connectionFrom].z),
+                    new THREE.Vector3(pose[connectionTo].x, -pose[connectionTo].y, pose[connectionTo].z),
                 ]);
 
                 index++;

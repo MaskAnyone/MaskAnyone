@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.7.1-cudnn8-devel-ubuntu22.04
+FROM ubuntu:22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -13,14 +13,11 @@ RUN apt-get update \
     libgl1 \
     libglib2.0-0 \
     libpq-dev \
-    gcc \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install \
     fastapi \
-    mediapipe \
     uvicorn[standard] \
-    ultralytics \
     psycopg2 \
-    requests \
+    requests

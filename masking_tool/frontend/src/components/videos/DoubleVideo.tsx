@@ -40,6 +40,8 @@ const DoubleVideo = (props: DoubleVideoProps) => {
     );
 
     useEffect(() => {
+        setView(views.video);
+
         if (!props.resultVideoId) {
             return;
         }
