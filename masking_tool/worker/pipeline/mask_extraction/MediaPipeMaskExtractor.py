@@ -1,6 +1,6 @@
 from typing import List
 import numpy as np
-from utils.timeseries import create_header_mp, list_positions_mp
+from utils.timeseries import create_header_mp, list_positions_mp_body, list_positions_mp_face
 from pipeline.mask_extraction.BaseMaskExtractor import BaseMaskExtractor
 import os
 
@@ -123,7 +123,8 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
     def compute_pose_landmarks(self, frame: np.ndarray, timestamp_ms: int):
         frame_mp = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
         pose_result = self.models["pose"].detect_for_video(frame_mp, timestamp_ms)
-        return pose_result.pose_landmarks
+
+        return pose_result
 
     def is_face_required(self):
         return any(
@@ -149,7 +150,8 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
             lm.visibility = 0.0
 
     def mask_body(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
-        pose_landmarks_list = self.compute_pose_landmarks(frame, timestamp_ms)
+        pose_landmark_data = self.compute_pose_landmarks(frame, timestamp_ms)
+        pose_landmarks_list = pose_landmark_data.pose_landmarks
         hand_landmark_list = self.compute_hand_landmarks(frame, timestamp_ms)
 
         # Hide hand points from pose, since if already have the detailed ones
@@ -161,8 +163,11 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
             self.hide_pose_face_landmarks(pose_landmarks_list)
 
         if self.get_part_to_mask("body")["save_timeseries"]:
+            #self.store_ts(
+            #    "body", pose_landmarks_list + hand_landmark_list, timestamp_ms
+            #)
             self.store_ts(
-                "body", pose_landmarks_list + hand_landmark_list, timestamp_ms
+                "body", pose_landmark_data, timestamp_ms
             )
 
         # only draw an output frame, if we require an output video and do not
@@ -190,7 +195,8 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
         if body_result:
             return
 
-        body_result = self.compute_pose_landmarks(frame, timestamp_ms)
+        pose_landmark_data = self.compute_pose_landmarks(frame, timestamp_ms)
+        body_result = pose_landmark_data.pose_landmarks
         self.hide_pose_face_landmarks(body_result)
 
         output_image = np.zeros((frame.shape), dtype=np.uint8)
@@ -236,9 +242,10 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
         return
 
     def store_ts(self, video_part, landmarks, timestamp_ms):
-        self.timeseries[video_part] = list_positions_mp(
-            landmarks, video_part, timestamp_ms
-        )
+        if video_part == "face":
+            self.timeseries[video_part] = list_positions_mp_face(landmarks, timestamp_ms)
+        else:
+            self.timeseries[video_part] = list_positions_mp_body(landmarks, timestamp_ms)
 
     def draw_pose_landmarks(self, output_image, pose_landmarks_list):
         for idx in range(len(pose_landmarks_list)):

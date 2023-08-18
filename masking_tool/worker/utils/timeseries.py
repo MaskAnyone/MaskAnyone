@@ -106,19 +106,50 @@ def create_header_mp(part_name: Literal["body", "face"]):
     else:
         raise Exception("Invalid part name specified for ts header creation")
 
+def create_landmark_object(mp_landmark):
+    lm = {"x": mp_landmark.x, "y": mp_landmark.y, "z": mp_landmark.z}
 
-def list_positions_mp(
-    landmark_results, type: Literal["face", "body"], timestamp_ms: int
+    if hasattr(mp_landmark, "visibility"):
+        lm["visibility"] = mp_landmark.visibility
+    if hasattr(mp_landmark, "presence"):
+        lm["presence"] = mp_landmark.presence
+
+    return lm
+
+
+def list_positions_mp_body(
+    pose_landmark_data, timestamp_ms: int
 ):
-    keys = markersbody if type == "body" else facemarks
+    landmarks = {}
+    world_landmarks = {}
+
+    for result in pose_landmark_data.pose_landmarks:
+        landmarks["time"] = timestamp_ms
+
+        for i, landmark in enumerate(result):
+            landmarks[markersbody[i]] = create_landmark_object(landmark)
+
+    for result in pose_landmark_data.pose_world_landmarks:
+        world_landmarks["time"] = timestamp_ms
+
+        for i, landmark in enumerate(result):
+            world_landmarks[markersbody[i]] = create_landmark_object(landmark)
+
+    return {
+        'landmarks': landmarks,
+        'world_landmarks': world_landmarks,
+    }
+
+
+def list_positions_mp_face(
+    landmark_results, timestamp_ms: int
+):
     output_obj = {}
+
     for result in landmark_results:
         output_obj["time"] = timestamp_ms
+
         for i, landmark in enumerate(result):
-            lm = {"x": landmark.x, "y": landmark.y, "z": landmark.z}
-            if hasattr(landmark, "visibility"):
-                lm["visibility"] = landmark.visibility
-            if hasattr(landmark, "presence"):
-                lm["presence"] = landmark.presence
-            output_obj[keys[i]] = json.dumps(lm)
+            output_obj[facemarks[i]] = create_landmark_object(landmark)
+
     return output_obj
