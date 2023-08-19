@@ -6,7 +6,7 @@ markersbody = [
     "LEFT_EYE_INNER",
     "LEFT_EYE",
     "LEFT_EYE_OUTER",
-    "RIGHT_EYE_OUTER",
+    "RIGHT_EYE_INNER",
     "RIGHT_EYE",
     "RIGHT_EYE_OUTER",
     "LEFT_EAR",

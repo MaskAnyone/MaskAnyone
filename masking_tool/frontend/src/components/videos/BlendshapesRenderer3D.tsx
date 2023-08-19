@@ -3,7 +3,7 @@ import { Character } from "./BlendshapeCharacter"
 import { Color } from "three"
 
 interface BlendshapesRenderer3DProps {
-    resultVideoId: string
+    blendshapes: any;
 }
 
 const BlendshapesRenderer3D = (props: BlendshapesRenderer3DProps) => {
@@ -16,7 +16,7 @@ const BlendshapesRenderer3D = (props: BlendshapesRenderer3DProps) => {
             <pointLight position={[10, 10, 10]} color={new Color(1, 1, 0)} intensity={0.5} castShadow />
             <pointLight position={[-10, 0, 10]} color={new Color(1, 0, 0)} intensity={0.5} castShadow />
             <pointLight position={[0, 0, 10]} intensity={0.5} castShadow />
-            <Character resultVideoId={props.resultVideoId} />
+            <Character blendshapes={props.blendshapes} />
         </Canvas>
 
     )

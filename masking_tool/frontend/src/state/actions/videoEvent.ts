@@ -18,10 +18,22 @@ export interface DownloadableResultFilesFetchedPayload {
     files: DownloadableResultFile[];
 }
 
+export interface BlendshapesFetchedPayload {
+    resultVideoId: string;
+    blendshapes: any;
+}
+
+export interface MpKinematicsFetchedPayload {
+    resultVideoId: string;
+    mpKinematics: any;
+}
+
 const VideoEvent = {
     videoListFetched: createVideoEvent<VideoListFetchedPayload>('VIDEO_LIST_FETCHED'),
     resultVideoListFetched: createVideoEvent<ResultVideoListFetchedPayload>('RESULT_VIDEO_LIST_FETCHED'),
     downloadableResultFilesFetched: createVideoEvent<DownloadableResultFilesFetchedPayload>('DOWNLOADABLE_RESULT_FILES_FETCHED'),
+    blendshapesFetched: createVideoEvent<BlendshapesFetchedPayload>('BLENDSHAPES_FETCHED'),
+    mpKinematicsFetched: createVideoEvent<MpKinematicsFetchedPayload>('MP_KINEMATICS_FETCHED'),
 };
 
 export default VideoEvent;

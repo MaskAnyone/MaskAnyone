@@ -3,9 +3,9 @@ import Config from "../../config";
 import {useEffect, useMemo, useRef, useState} from "react";
 import PoseRenderer3D from "./PoseRenderer3D";
 import BlendshapesRenderer3D from "./BlendshapesRenderer3D";
-import poseTed from '../../mockData/ted_kid_pose.json';
-import {useSelector} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import Selector from "../../state/selector";
+import Command from "../../state/actions/command";
 
 
 interface DoubleVideoProps {
@@ -20,20 +20,35 @@ enum views {
 }
 
 const DoubleVideo = (props: DoubleVideoProps) => {
+    const dispatch = useDispatch();
     const videoList = useSelector(Selector.Video.videoList);
+    const blendshapesList = useSelector(Selector.Video.blendshapesList);
+    const mpKinematicsList = useSelector(Selector.Video.mpKinematicsList);
     const video1Ref = useRef<HTMLVideoElement>(null);
     const video2Ref = useRef<HTMLVideoElement>(null);
     const originalPath = Config.api.baseUrl + '/videos/' + props.videoId;
     const resultPath = originalPath + '/results/' + props.resultVideoId;
     const [view, setView] = useState<views>(views.video)
     const [frame, setFrame] = useState<number>(0);
-    const frameRef = useRef<number>(frame);
-    frameRef.current = frame;
+
+    const blendshapes = blendshapesList[props.resultVideoId || '']
+    const mpKinematics = mpKinematicsList[props.resultVideoId || '']
 
     const videoFPS = useMemo(
         () => videoList.find(video => video.id === props.videoId)?.videoInfo.fps || 0,
         [videoList, props.videoId],
     );
+
+    useEffect(() => {
+        setView(views.video);
+
+        if (!props.resultVideoId) {
+            return;
+        }
+
+        dispatch(Command.Video.fetchBlendshapes({ resultVideoId: props.resultVideoId }));
+        dispatch(Command.Video.fetchMpKinematics({ resultVideoId: props.resultVideoId }));
+    }, [props.resultVideoId]);
 
     const displaySelectedView = () => {
         if (view === views.video && props.resultVideoId) {
@@ -44,12 +59,16 @@ const DoubleVideo = (props: DoubleVideoProps) => {
             );
         }
         if (view === views.blendshapes3D && props.resultVideoId) {
-            return (<BlendshapesRenderer3D resultVideoId={props.resultVideoId} />)
+            return (
+                <BlendshapesRenderer3D
+                    blendshapes={blendshapes}
+                />
+            )
         }
         if (view === views.skeleton3D) {
             return (
                 <PoseRenderer3D
-                    pose={poseTed}
+                    mpKinematics={mpKinematics}
                     frame={frame}
                 />
             )
@@ -114,14 +133,15 @@ const DoubleVideo = (props: DoubleVideoProps) => {
                     <Grid container>
                         <Grid item xs={6}></Grid>
                         <Grid item xs={6} sx={{ textAlign: "center" }}>
-                            {(
+                            {props.resultVideoId && (
                                 <FormControl>
                                     <RadioGroup row value={view} onChange={(e, v) => setView(views[v as keyof typeof views])}>
                                         <FormControlLabel value={views.video} control={<Radio />} label="Show Masked Video" />
-                                        <FormControlLabel value={views.skeleton3D} control={<Radio />} label="Show 3D Skeleton" />
-                                        <FormControlLabel value={views.blendshapes3D} control={<Radio />} label="Show animated 3D Face" />
+                                        {Boolean(mpKinematics) && <FormControlLabel value={views.skeleton3D} control={<Radio />} label="Show 3D Skeleton" />}
+                                        {Boolean(blendshapes) && <FormControlLabel value={views.blendshapes3D} control={<Radio />} label="Show animated 3D Face" />}
                                     </RadioGroup>
-                                </FormControl>)}
+                                </FormControl>
+                            )}
                         </Grid>
                     </Grid>
                 </Grid>
