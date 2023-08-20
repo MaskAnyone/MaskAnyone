@@ -37,6 +37,19 @@ def clear_temp_dir():
             os.remove(os.path.join(TEMP_PATH, f))
 
 
+def clear_results_dir():
+    print("Cleaning results dir")
+    if os.path.exists(RESULT_BASE_PATH):
+        for f in os.listdir(RESULT_BASE_PATH):
+            if os.path.isfile(os.path.join(RESULT_BASE_PATH, f)):
+                os.remove(os.path.join(RESULT_BASE_PATH, f))
+
+
+def clear_dirs():
+    clear_temp_dir()
+    clear_results_dir()
+
+
 def save_preview_image(masked_video_path):
     print("Saving preview image of masked video")
     video_cap = cv2.VideoCapture(masked_video_path)

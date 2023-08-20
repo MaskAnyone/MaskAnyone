@@ -69,6 +69,6 @@ class RVCAudioMasker(BaseAudioMasker):
             cwd="/Retrieval-based-Voice-Conversion-WebUI",
         )
 
-        print(res.stdout)
-        print(res.stderr)
+        # print(res.stdout)
+        # print(res.stderr)
         return output_path

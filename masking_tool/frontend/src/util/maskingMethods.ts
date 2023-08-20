@@ -1,5 +1,5 @@
 import { HidingMethods, MaskingMethods } from "../state/types/RunParamRendering";
-import { blackoutFormSchemaBG, blackoutFormSchemaSubject, blackoutFormSchemaSubjectUI, blurFormSchemaBG, blurFormSchemaSubject, blurFormSchemaSubjectUI, bodyMeshFormSchema, faceMeshFormSchema, rvcSchema, skeletonFormSchema } from "./formSchemas";
+import { faceswapFormSchema, blackoutFormSchemaBG, blackoutFormSchemaSubject, blackoutFormSchemaSubjectUI, blurFormSchemaBG, blurFormSchemaSubject, blurFormSchemaSubjectUI, bodyMeshFormSchema, faceMeshFormSchema, rvcSchema, skeletonFormSchema } from "./formSchemas";
 
 export const maskingMethods: MaskingMethods = {
     none: {
@@ -18,6 +18,18 @@ export const maskingMethods: MaskingMethods = {
         },
         backendFormat: {
             "body": "skeleton"
+        }
+    },
+    faceSwap: {
+        name: "Face Swap",
+        description: "Swaps the face of the subject with the face of another person",
+        parameterSchema: faceswapFormSchema,
+        defaultValues: {
+            sourceImage: "neutral",
+            maskingModel: "roop"
+        },
+        backendFormat: {
+            "face": "swap"
         }
     },
     faceMesh: {

@@ -1,1 +1,1 @@
-docker_maskers = ["vibe"]
+docker_maskers = ["vibe", "roop"]

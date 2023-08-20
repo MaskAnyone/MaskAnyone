@@ -115,7 +115,10 @@ class Pipeline:
                     masking_method = video_part_params["maskingStrategy"]["key"]
                     masking_params = video_part_params["maskingStrategy"]["params"]
                     masking_model_name = masking_params["maskingModel"]
-                    save_timeseries = masking_params["timeseries"]
+                    if "timeseries" in masking_params:
+                        save_timeseries = masking_params["timeseries"]
+                    else:
+                        save_timeseries = False
 
                     if not masking_model_name in required_maskers:
                         required_maskers[masking_model_name] = []
@@ -159,10 +162,13 @@ class Pipeline:
 
     def init_audio_masker(self, audio_masker_name: str, params: dict):
         audio_maskers = {
-            "remove": None,
             "preserve": KeepAudioMasker,
             "switch": RVCAudioMasker,
         }
+        if audio_masker_name == "remove":
+            return None
+        elif audio_masker_name not in audio_maskers:
+            raise Exception(f"Unknown audio masking method {audio_masker_name}")
         self.audio_masker = audio_maskers[audio_masker_name](params)
 
     def init_ts_file_handlers(self, video_id: str):
@@ -236,7 +242,9 @@ class Pipeline:
         if self.docker_mask_extractors:
             for mask_extractor in self.docker_mask_extractors:
                 self.backend_client.create_job(
-                    mask_extractor, video_id, {"arg1": "someVal"}
+                    mask_extractor,
+                    video_id,
+                    self.docker_mask_extractors[mask_extractor][0]["params"],
                 )
 
         video_cap, out = setup_video_processing(video_in_path, video_out_path)
