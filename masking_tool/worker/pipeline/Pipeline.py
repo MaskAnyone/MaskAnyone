@@ -162,10 +162,13 @@ class Pipeline:
 
     def init_audio_masker(self, audio_masker_name: str, params: dict):
         audio_maskers = {
-            "remove": None,
             "preserve": KeepAudioMasker,
             "switch": RVCAudioMasker,
         }
+        if audio_masker_name == "remove":
+            return None
+        elif audio_masker_name not in audio_maskers:
+            raise Exception(f"Unknown audio masking method {audio_masker_name}")
         self.audio_masker = audio_maskers[audio_masker_name](params)
 
     def init_ts_file_handlers(self, video_id: str):
@@ -237,7 +240,6 @@ class Pipeline:
         video_out_path = os.path.join(RESULT_BASE_PATH, video_id + ".mp4")
 
         if self.docker_mask_extractors:
-            print(self.docker_mask_extractors)
             for mask_extractor in self.docker_mask_extractors:
                 self.backend_client.create_job(
                     mask_extractor,

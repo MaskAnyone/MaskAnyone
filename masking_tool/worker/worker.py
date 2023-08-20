@@ -2,7 +2,7 @@ import json
 import os
 from backend_client import BackendClient
 from local_data_manager import LocalDataManager
-from config import TEMP_PATH, VIDEOS_BASE_PATH
+from config import TEMP_PATH, VIDEOS_BASE_PATH, RESULT_BASE_PATH
 from utils.runparams_utils import (
     produces_blendshapes,
     produces_kinematics,
@@ -14,7 +14,7 @@ from video_manager import VideoManager
 import time
 import sys
 import uuid
-from utils.app_utils import init_directories
+from utils.app_utils import clear_dirs, init_directories, save_preview_image
 import subprocess
 import re
 
@@ -85,36 +85,40 @@ def handle_job_custom_model(job):
         arguments = job["data"]
         run_command = data["run_command"]
         entry_point = data["entry_point"]
-        entry_point = os.path.join("models", "docker_models", model_name, entry_point)
-        video_out_path = os.path.join(TEMP_PATH, f"{job['id']}.mp4")
+        video_out_path = os.path.join(RESULT_BASE_PATH, f"{job['video_id']}.mp4")
         if "maskingModel" in arguments:
             arguments.pop("maskingModel")
-        argument_list = [f"--{kebabify(key)} {arguments[key]}" for key in arguments]
+        argument_list = []
+        for key in arguments:
+            argument_list.append(f"--{kebabify(key)}")
+            argument_list.append(str(arguments[key]))
         backend_progress_path = backend_client._make_url(
             "jobs/" + job["id"] + "/progress"
-        )
-        print("XXXXXXXXXXXx Handling custom jop XXXXXXXXXXXXX")
-        print(argument_list)
-        print(
-            f"--in-path {video_in_path}",
-            f"--out-path {video_out_path}",
-            f"--backend-update-url {backend_progress_path}",
         )
         command = [
             run_command,
             entry_point,
-            f"--in-path {video_in_path}",
-            f"--out-path {video_out_path}",
-            f"--backend-update-url {backend_progress_path}",
+            f"--in-path",
+            video_in_path,
+            f"--out-path",
+            video_out_path,
+            f"--backend-update-url",
+            backend_progress_path,
             *argument_list,
         ]
-        print(os.listdir("/"))
-        print(os.listdir("/app"))
-        print(os.listdir("/app/models/docker_models/roop"))
-        print(os.listdir("/app/roop-for-de-identifiction"))
-        res = subprocess.run(command, capture_output=True)
+
+        res = subprocess.run(command, shell=False, capture_output=True)
         print(res.stderr)
         print(res.stdout)
+
+        if not res.returncode == 0:
+            raise Exception(f"Error while running docker image {model_name}")
+        save_preview_image(video_out_path)
+        if os.path.exists(video_out_path):
+            video_manager.upload_result_video(job["video_id"], job["result_video_id"])
+            video_manager.upload_result_video_preview_image(
+                job["video_id"], job["result_video_id"]
+            )
 
 
 while True:
@@ -124,6 +128,7 @@ while True:
         print("No suitable job found")
     else:
         try:
+            clear_dirs()
             handle_job(job)
             backend_client.mark_job_as_finished(job["id"])
         except Exception as error:

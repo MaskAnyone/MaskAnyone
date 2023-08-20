@@ -24,10 +24,10 @@ RUN pip uninstall onnxruntime onnxruntime-gpu \
     && pip install onnxruntime-gpu==1.15.1
 
 
-RUN git clone https://github.com/rohansaw/roop-for-de-identifiction \
-    && cd /app/roop-for-de-identifiction \
+RUN cd / \
+    && git clone https://github.com/rohansaw/roop-for-de-identifiction \
+    && cd /roop-for-de-identifiction \
     && pip install -r requirements.txt
-
 
 RUN pip install \
     fastapi \

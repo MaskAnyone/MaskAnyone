@@ -90,6 +90,7 @@ def get_video_stream(worker_id: str, video_id: str, request: Request):
 async def upload_result_video(
     worker_id: str, video_id: str, result_video_id: str, request: Request
 ):
+    print("XXXXXXXXXX in upload")
     result_dir = os.path.join(RESULT_BASE_PATH, video_id)
     if not os.path.exists(result_dir):
         os.mkdir(result_dir)
