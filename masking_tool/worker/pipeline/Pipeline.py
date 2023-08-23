@@ -10,6 +10,7 @@ from config import (
 )
 import json
 from backend_client import BackendClient
+from video_manager import VideoManager
 from pipeline.audio_masking.KeepAudioMasker import KeepAudioMasker
 from pipeline.audio_masking.RVCAudioMasker import RVCAudioMasker
 from pipeline.mask_extraction.MediaPipeMaskExtractor import MediaPipeMaskExtractor
@@ -26,7 +27,7 @@ from pipeline.PipelineTypes import (
     PartToDetect,
     PartToMask,
 )
-from utils.video_utils import setup_video_processing
+from utils.video_utils import merge_results, setup_video_processing
 from utils.app_utils import save_preview_image
 from models.docker_maskers import docker_maskers as known_docker_mask_extractors
 
@@ -35,8 +36,14 @@ import ffmpeg
 
 
 class Pipeline:
-    def __init__(self, run_params: dict, backend_client: BackendClient):
+    def __init__(
+        self,
+        run_params: dict,
+        backend_client: BackendClient,
+        video_manager: VideoManager,
+    ):
         self.backend_client = backend_client
+        self.video_manager = video_manager
 
         self.detectors = []
         self.mask_extractors = []
@@ -234,6 +241,19 @@ class Pipeline:
     def masks_audio_only(self):
         return self.audio_masker and len(self.detectors) == 0
 
+    def handle_docker_model_finished(
+        self, job_id: str, original_video_path: str, basic_masking_res_path: str
+    ):
+        docker_res_path = self.video_manager.load_result_video(job_id)
+        print("Local path", docker_res_path)
+        if len(self.detectors) == 0:
+            # no basic hiding or masking
+            print("copying file only")
+            shutil.copyfile(docker_res_path, basic_masking_res_path)
+        else:
+            print("merging results")
+            merge_results(original_video_path, docker_res_path, basic_masking_res_path)
+
     def run(self, video_id: str, job_id: str):
         print(f"Running job on video {video_id}")
         video_in_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
@@ -241,7 +261,7 @@ class Pipeline:
 
         if self.docker_mask_extractors:
             for mask_extractor in self.docker_mask_extractors:
-                self.backend_client.create_job(
+                docker_job_id = self.backend_client.create_job(
                     mask_extractor,
                     video_id,
                     self.docker_mask_extractors[mask_extractor][0]["params"],
@@ -305,7 +325,34 @@ class Pipeline:
         self.close_bs_file_handle()
         out.release()
         video_cap.release()
-        print(f"Finished video masking of {video_id}")
+        print(f"Finished basic_masking and hiding of {video_id}")
+
+        if self.docker_mask_extractors:
+            print("Waiting for docker output to finish")
+            count = 0
+            timeout_max = 2160  # 6hours
+            while (
+                self.backend_client.fetch_job_status(docker_job_id)
+                not in ["finished", "failed"]
+                and count < timeout_max
+            ):
+                print(
+                    "XXXXXXXXX",
+                    self.backend_client.fetch_job_status(docker_job_id),
+                    count,
+                )
+                time.sleep(1)
+                count = count + 1
+            status = self.backend_client.fetch_job_status(docker_job_id)
+            print("ZZZZZZZZZZZZZ", status, count)
+            if status == "finished":
+                self.handle_docker_model_finished(
+                    docker_job_id, video_in_path, video_out_path
+                )
+            elif status == "failed":
+                raise Exception("Docker job failed")
+            else:
+                raise Exception("Docker job timed out")
 
         if self.audio_masker:
             old_video_out_path = os.path.join(RESULT_BASE_PATH, video_id + "_old.mp4")

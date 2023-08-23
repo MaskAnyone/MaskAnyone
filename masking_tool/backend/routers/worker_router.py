@@ -86,11 +86,25 @@ def get_video_stream(worker_id: str, video_id: str, request: Request):
     )
 
 
+@router.get("/jobs/{job_id}/status")
+def get_job_status(worker_id: str, job_id: str):
+    return {"status": job_manager.get_job_status(job_id)}
+
+
+@router.get("/results/video{job_id}")
+def get_video_stream(worker_id: str, job_id: str, request: Request):
+    video_id = job_manager.get_result_video_id(job_id)
+    video_path = os.path.join(RESULT_BASE_PATH, video_id + ".mp4")
+
+    return range_requests_response(
+        request, file_path=video_path, content_type="video/mp4"
+    )
+
+
 @router.post("/videos/{video_id}/results/{result_video_id}")
 async def upload_result_video(
     worker_id: str, video_id: str, result_video_id: str, request: Request
 ):
-    print("XXXXXXXXXX in upload")
     result_dir = os.path.join(RESULT_BASE_PATH, video_id)
     if not os.path.exists(result_dir):
         os.mkdir(result_dir)

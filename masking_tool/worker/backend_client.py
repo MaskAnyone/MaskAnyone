@@ -99,10 +99,20 @@ class BackendClient:
         return BASE_PATH + self._worker_id + "/" + path
 
     def create_job(self, job_type: str, video_id: List[str], arguments: dict):
+        job_id = str(uuid.uuid4())
         run_params = {
-            "id": str(uuid.uuid4()),
+            "id": job_id,
             "video_ids": [video_id],
             "result_video_id": str(uuid.uuid4()),
             "run_data": arguments,
         }
         requests.post(self._make_url(f"jobs/create/{job_type}"), json=run_params)
+        return job_id
+
+    def fetch_job_status(self, job_id: str):
+        response = requests.get(self._make_url(f"jobs/{job_id}/status"))
+        return response.json()["status"]
+
+    def fetch_result_video(self, job_id: str):
+        response = requests.get(self._make_url("results/video/" + job_id))
+        return response.content

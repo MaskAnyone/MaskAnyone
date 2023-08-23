@@ -101,3 +101,25 @@ class JobManager:
             "UPDATE jobs SET status=%(status)s, finished_at=current_timestamp, progress=100 WHERE id=%(id)s",
             {"status": "failed", "id": job_id},
         )
+
+    def get_job_status(self, job_id: str):
+        job_data_list = self.__db_connection.select_all(
+            "SELECT * FROM jobs WHERE id=%(id)s",
+            {"id": job_id},
+        )
+
+        if len(job_data_list) < 1:
+            raise Exception("Could not find job for result video " + job_id)
+
+        return Job(*job_data_list[0]).status
+
+    def get_result_video_id(self, job_id: str):
+        job_data_list = self.__db_connection.select_all(
+            "SELECT * FROM jobs WHERE id=%(id)s",
+            {"id": job_id},
+        )
+
+        if len(job_data_list) < 1:
+            raise Exception("Could not find job for result video " + job_id)
+
+        return Job(*job_data_list[0]).result_video_id

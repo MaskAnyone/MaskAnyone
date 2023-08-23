@@ -21,6 +21,14 @@ class VideoManager:
             os.path.join("original", video_id + ".mp4"), video_data
         )
 
+    def load_result_video(self, job_id: str):
+        # download a result video of a job from the backend
+        video_data = self.__backend_client.fetch_result_video(job_id)
+        local_path = self.__local_data_manager.write_binary(
+            os.path.join("results", job_id + ".mp4"), video_data
+        )
+        return local_path
+
     def upload_result_video(self, video_id: str, result_video_id: str):
         path = os.path.join("results", video_id + ".mp4")
         if self.__local_data_manager.path_exists(path):

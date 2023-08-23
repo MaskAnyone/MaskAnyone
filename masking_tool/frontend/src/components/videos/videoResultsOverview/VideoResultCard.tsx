@@ -1,7 +1,7 @@
-import {Card, CardContent, CardMedia, IconButton, Typography} from "@mui/material";
+import { Card, CardContent, CardMedia, IconButton, Typography } from "@mui/material";
 import Config from "../../../config";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-import {ResultVideo} from "../../../state/types/ResultVideo";
+import { ResultVideo } from "../../../state/types/ResultVideo";
 import React from "react";
 
 interface VideoResultCardProps {
@@ -21,7 +21,7 @@ const VideoResultCard = (props: VideoResultCardProps) => {
     return (
         <Card
             variant={'outlined'}
-            sx={{ width: '250px', display: 'inline-block', marginRight: '16px', cursor: 'pointer', '&:hover': { boxShadow: '0 0 13px 0 #c8c8c8' }, '&.selected': { boxShadow: '0 0 13px 0 #777'}}}
+            sx={{ width: '250px', display: 'inline-block', marginRight: '16px', cursor: 'pointer', '&:hover': { boxShadow: '0 0 13px 0 #c8c8c8' }, '&.selected': { boxShadow: '0 0 13px 0 #777' } }}
             className={props.selected ? 'selected' : undefined}
             onClick={props.onSelect}
         >

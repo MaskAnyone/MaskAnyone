@@ -18,9 +18,11 @@ class LocalDataManager:
         return os.path.exists(os.path.join(self.__base_dir, path))
 
     def write_binary(self, file_path: str, content):
-        file = open(os.path.join(self.__base_dir, file_path), "wb")
+        to_path = os.path.join(self.__base_dir, file_path)
+        file = open(to_path, "wb")
         file.write(content)
         file.close()
+        return to_path
 
     def read_binary(self, file_path: str):
         file = open(os.path.join(self.__base_dir, file_path), "rb")

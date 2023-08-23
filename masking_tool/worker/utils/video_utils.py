@@ -1,5 +1,6 @@
 import cv2
 import os
+import numpy as np
 
 from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 
@@ -26,3 +27,59 @@ def setup_video_processing(video_in_path: str, video_out_path: str):
     )
 
     return video_cap, out
+
+
+def merge_results(
+    original_video_path: str, diff_video_path: str, hidden_video_path: str
+):
+    cap1 = cv2.VideoCapture(original_video_path)
+    cap2 = cv2.VideoCapture(diff_video_path)
+    cap3 = cv2.VideoCapture(hidden_video_path)
+
+    # Check if videos are opened successfully
+    if not (cap1.isOpened() and cap2.isOpened() and cap3.isOpened()):
+        print("Error opening video files!")
+        return
+
+    # Get video properties
+    frame_width = int(cap1.get(3))
+    frame_height = int(cap1.get(4))
+    fps = cap1.get(cv2.CAP_PROP_FPS)
+
+    # Define the codec and create VideoWriter object
+    fourcc = cv2.VideoWriter_fourcc(*"XVID")
+    out = cv2.VideoWriter(hidden_video_path, fourcc, fps, (frame_width, frame_height))
+
+    while True:
+        ret1, frame1 = cap1.read()
+        ret2, frame2 = cap2.read()
+        ret3, frame3 = cap3.read()
+
+        if not (ret1 and ret2 and ret3):
+            break
+
+        # Compute the difference between video1 and video2 frames
+        diff = cv2.absdiff(frame1, frame2)
+
+        # Create a mask where the difference is significant
+        _, mask = cv2.threshold(
+            cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY), 10, 255, cv2.THRESH_BINARY
+        )
+
+        # Expand dimensions of mask to match the frame dimensions
+        mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+
+        # Use the mask to copy the modified part from video2 to video3
+        np.copyto(frame3, frame2, where=mask.astype(bool))
+
+        out.write(frame3)
+
+    # Release everything
+    cap1.release()
+    cap2.release()
+    cap3.release()
+    out.release()
+    cv2.destroyAllWindows()
+    print("Done merging results")
+
+    return hidden_video_path
