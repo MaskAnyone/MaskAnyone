@@ -52,6 +52,7 @@ class Pipeline:
         self.ts_file_handlers = {}
 
         self.model_3d_only = False
+        self.masks_audio = False
         self.blendshapes_file_handle = None
 
         self.num_frames = 0
@@ -172,6 +173,8 @@ class Pipeline:
             "preserve": KeepAudioMasker,
             "switch": RVCAudioMasker,
         }
+        if audio_masker_name != "none" or audio_masker_name != "preserve":
+            self.masks_audio = True
         if audio_masker_name == "remove":
             return None
         elif audio_masker_name not in audio_maskers:
@@ -233,7 +236,7 @@ class Pipeline:
     def send_progress_update(self, job_id: str, current_index: int):
         if self.should_send_progress_message(current_index):
             progress = int((float(current_index) / float(self.num_frames)) * 100.0)
-            if self.audio_masker:
+            if self.masks_audio:
                 progress = int(progress / 2)
             self.backend_client.update_progress(job_id, progress)
             self.progress_message_sent_time = time.time()
@@ -328,7 +331,6 @@ class Pipeline:
         print(f"Finished basic_masking and hiding of {video_id}")
 
         if self.docker_mask_extractors:
-            print("Waiting for docker output to finish")
             count = 0
             timeout_max = 2160  # 6hours
             while (
@@ -336,15 +338,9 @@ class Pipeline:
                 not in ["finished", "failed"]
                 and count < timeout_max
             ):
-                print(
-                    "XXXXXXXXX",
-                    self.backend_client.fetch_job_status(docker_job_id),
-                    count,
-                )
                 time.sleep(1)
                 count = count + 1
             status = self.backend_client.fetch_job_status(docker_job_id)
-            print("ZZZZZZZZZZZZZ", status, count)
             if status == "finished":
                 self.handle_docker_model_finished(
                     docker_job_id, video_in_path, video_out_path

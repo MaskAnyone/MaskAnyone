@@ -91,10 +91,12 @@ def get_job_status(worker_id: str, job_id: str):
     return {"status": job_manager.get_job_status(job_id)}
 
 
-@router.get("/results/video{job_id}")
-def get_video_stream(worker_id: str, job_id: str, request: Request):
-    video_id = job_manager.get_result_video_id(job_id)
-    video_path = os.path.join(RESULT_BASE_PATH, video_id + ".mp4")
+@router.get("/results/video/{job_id}")
+def get_result_video_stream(worker_id: str, job_id: str, request: Request):
+    result_video_id = job_manager.get_result_video_id(job_id)
+    video_id = job_manager.get_video_id(job_id)
+    video_path = os.path.join(RESULT_BASE_PATH, video_id, result_video_id + ".mp4")
+    print("AAAAAAAAAAAAAAAAAAIIIIIIIIIIII", os.path.exists(video_path))
 
     return range_requests_response(
         request, file_path=video_path, content_type="video/mp4"

@@ -1,3 +1,4 @@
+import shutil
 import cv2
 import os
 import numpy as np
@@ -32,9 +33,12 @@ def setup_video_processing(video_in_path: str, video_out_path: str):
 def merge_results(
     original_video_path: str, diff_video_path: str, hidden_video_path: str
 ):
+    new_hidden_path = os.path.splitext(hidden_video_path)[0] + "_copy.mp4"
+    out_path = hidden_video_path
+    shutil.move(hidden_video_path, new_hidden_path)
     cap1 = cv2.VideoCapture(original_video_path)
     cap2 = cv2.VideoCapture(diff_video_path)
-    cap3 = cv2.VideoCapture(hidden_video_path)
+    cap3 = cv2.VideoCapture(new_hidden_path)
 
     # Check if videos are opened successfully
     if not (cap1.isOpened() and cap2.isOpened() and cap3.isOpened()):
@@ -48,7 +52,8 @@ def merge_results(
 
     # Define the codec and create VideoWriter object
     fourcc = cv2.VideoWriter_fourcc(*"XVID")
-    out = cv2.VideoWriter(hidden_video_path, fourcc, fps, (frame_width, frame_height))
+    out = cv2.VideoWriter(out_path, fourcc, fps, (frame_width, frame_height))
+    count = 0
 
     while True:
         ret1, frame1 = cap1.read()
@@ -63,7 +68,7 @@ def merge_results(
 
         # Create a mask where the difference is significant
         _, mask = cv2.threshold(
-            cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY), 10, 255, cv2.THRESH_BINARY
+            cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY), 5, 255, cv2.THRESH_BINARY
         )
 
         # Expand dimensions of mask to match the frame dimensions

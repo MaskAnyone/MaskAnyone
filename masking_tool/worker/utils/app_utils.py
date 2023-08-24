@@ -12,6 +12,8 @@ from config import (
 
 def init_directories():
     print("Initializing directories")
+    if not os.path.exists("/local_data"):
+        os.mkdir("/local_data")
     if not os.path.exists(RESULT_BASE_PATH):
         os.mkdir(RESULT_BASE_PATH)
 
@@ -27,7 +29,7 @@ def init_directories():
     if not os.path.exists(TEMP_PATH):
         os.mkdir(TEMP_PATH)
     else:
-        clear_temp_dir()
+        clear_dirs()
 
 
 def clear_temp_dir():

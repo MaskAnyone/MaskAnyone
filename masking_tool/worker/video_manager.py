@@ -25,7 +25,7 @@ class VideoManager:
         # download a result video of a job from the backend
         video_data = self.__backend_client.fetch_result_video(job_id)
         local_path = self.__local_data_manager.write_binary(
-            os.path.join("results", job_id + ".mp4"), video_data
+            os.path.join("results", job_id + "_docker_res.mp4"), video_data
         )
         return local_path
 

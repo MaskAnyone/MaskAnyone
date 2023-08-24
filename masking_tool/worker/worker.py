@@ -18,7 +18,7 @@ from utils.app_utils import clear_dirs, init_directories, save_preview_image
 import subprocess
 import re
 
-DATA_BASE_DIR = "local_data"
+DATA_BASE_DIR = "/local_data"
 worker_id = str(uuid.uuid4())
 worker_type = os.environ["WORKER_TYPE"]
 
@@ -42,6 +42,7 @@ def fetch_next_job():
 
 def handle_job(job):
     print("Start working on job " + job["id"])
+    clear_dirs()
 
     video_manager.load_original_video(job["video_id"])
 
@@ -67,13 +68,14 @@ def handle_job_basic_masking(job):
         video_manager.upload_result_blendshapes(video_id, result_video_id)
     if produces_out_audio(run_params):
         video_manager.upload_result_audio_file(video_id, result_video_id)
-    video_manager.cleanup_result_video_files(video_id)
 
 
 def handle_job_custom_model(job):
     model_name = job["type"]
     video_in_path = os.path.join(VIDEOS_BASE_PATH, job["video_id"] + ".mp4")
     config_path = os.path.join("models", "docker_models", model_name, "config.json")
+    print(video_in_path)
+    print(os.path.exists(video_in_path))
 
     def kebabify(key: str):
         return re.sub(r"(?<!^)(?=[A-Z])", "-", key).lower()
@@ -111,6 +113,10 @@ def handle_job_custom_model(job):
         print(res.stderr)
         print(res.stdout)
 
+        print(os.path.exists("/local_data"))
+        print(os.path.exists(video_out_path))
+        print(video_out_path)
+
         if not res.returncode == 0:
             raise Exception(f"Error while running docker image {model_name}")
         save_preview_image(video_out_path)
@@ -128,7 +134,6 @@ while True:
         print("No suitable job found")
     else:
         try:
-            clear_dirs()
             handle_job(job)
             backend_client.mark_job_as_finished(job["id"])
         except Exception as error:
