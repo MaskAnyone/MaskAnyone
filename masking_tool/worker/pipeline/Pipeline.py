@@ -17,6 +17,8 @@ from pipeline.mask_extraction.MediaPipeMaskExtractor import MediaPipeMaskExtract
 
 from pipeline.detection.YoloDetector import YoloDetector
 from pipeline.detection.MediaPipeDetector import MediaPipeDetector
+from pipeline.detection.STTNMaskCreator import STTNMaskCreator
+from pipeline.detection.STTNVideoInpainter import STTNVideoInpainter
 from utils.drawing_utils import overlay_frames
 from pipeline.hiding import Hider
 from pipeline.PipelineTypes import (
@@ -70,9 +72,12 @@ class Pipeline:
         self.init_detectors(required_detectors)
         self.init_maskers(required_maskers, params_3d)
         self.hider = Hider(hiding_strategies)
+
         self.init_audio_masker(
             voice_masking_strategy["key"], voice_masking_strategy["params"]
         )
+
+        self.is_inpainting = run_params["videoMasking"]["body"]["hidingStrategy"]["key"] == "inpaint"
 
     def identify_requried_models(self, run_params: dict):
         # extract arguments from request and create initialization arguments for maskers, detectors and hider
@@ -87,6 +92,7 @@ class Pipeline:
             if (
                 "hidingStrategy" in video_part_params
                 and video_part_params["hidingStrategy"]["key"] != "none"
+                and video_part_params["hidingStrategy"]["key"] != "inpaint"
             ):
                 hiding_settings = video_part_params["hidingStrategy"]["params"]
                 hiding_params = hiding_settings["hidingParams"]
@@ -261,6 +267,15 @@ class Pipeline:
         print(f"Running job on video {video_id}")
         video_in_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
         video_out_path = os.path.join(RESULT_BASE_PATH, video_id + ".mp4")
+        inpainted_video_in_cap = None
+
+        if self.is_inpainting:
+            sttn_mask_creator = STTNMaskCreator()
+            inpaint_mask_dir = sttn_mask_creator.run(video_id)
+
+            sttn_video_inpainter = STTNVideoInpainter()
+            inpainted_video_in_path = sttn_video_inpainter.run(video_in_path, inpaint_mask_dir)
+            inpainted_video_in_cap = cv2.VideoCapture(inpainted_video_in_path)
 
         if self.docker_mask_extractors:
             for mask_extractor in self.docker_mask_extractors:
@@ -283,6 +298,10 @@ class Pipeline:
             if not ret:
                 break
 
+            inpainted_frame = None
+            if inpainted_video_in_cap:
+                _ret, inpainted_frame = inpainted_video_in_cap.read()
+
             frame_timestamp_ms = int(video_cap.get(cv2.CAP_PROP_POS_MSEC))
             if not is_first_frame and frame_timestamp_ms == 0:
                 continue
@@ -294,12 +313,15 @@ class Pipeline:
 
                 detection_results.extend(detection_result)
 
-            # applies the hiding method on each detected part of the frame and combines them into one frame
-            hidden_frame = frame.copy()
-            for detection_result in detection_results:
-                hidden_frame = self.hider.hide_frame_part(
-                    hidden_frame, detection_result
-                )
+            if inpainted_frame:
+                hidden_frame = inpainted_frame
+            else:
+                # applies the hiding method on each detected part of the frame and combines them into one frame
+                hidden_frame = frame.copy()
+                for detection_result in detection_results:
+                    hidden_frame = self.hider.hide_frame_part(
+                        hidden_frame, detection_result
+                    )
 
             # Extracts the masks for each desired bodypart
             mask_results = []

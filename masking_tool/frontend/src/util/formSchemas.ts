@@ -121,6 +121,59 @@ export const blackoutFormSchemaSubjectUI: UiSchema = {
   'ui:order': ['subjectDetection', 'detectionModel', 'detectionParams', 'hidingParams'],
 };
 
+export const inpaintFormSchemaSubject: RJSFSchema = {
+  type: 'object',
+  properties: {
+    subjectDetection: {
+      type: 'string',
+      enum: ['silhouette', 'boundingbox'],
+      default: 'silhouette',
+      description: 'Bounding box lays a bounding box over the subject for hiding, while silhouette hides the subject within its exact contours only.'
+    },
+    detectionParams: {
+      type: "object",
+      properties: {
+        numPoses: { type: 'number', title: 'Num Subjects', default: 1, description: 'The maximum number of subjects which can be detected' },
+        confidence: { type: 'number', title: 'Confidence', default: 0.5, description: 'The minimum confidence score for the detection to be considered successful.' },
+      }
+    }
+  },
+  dependencies: {
+    subjectDetection: {
+      oneOf: [
+        {
+          properties: {
+            subjectDetection: { enum: ['silhouette'] },
+            detectionModel: {
+              title: 'AI-Model for Subject Detection',
+              description: 'Pre-trained models that detect (localize) the subject in the video.',
+              type: 'string',
+              enum: ['mediapipe', 'yolo'],
+              default: 'mediapipe',
+            },
+          }
+        },
+        {
+          properties: {
+            subjectDetection: { enum: ['boundingbox'] },
+            detectionModel: {
+              title: 'AI-Model for Subject Detection',
+              description: 'Pre-trained models that detect (localize) the subject in the video.',
+              type: 'string',
+              enum: ['yolo'],
+              default: 'yolo',
+            },
+          }
+        }
+      ]
+    },
+  },
+};
+
+export const inpaintFormSchemaSubjectUI: UiSchema = {
+  'ui:order': ['subjectDetection', 'detectionModel', 'detectionParams'],
+};
+
 export const blurFormSchemaBG: RJSFSchema = {
   type: 'object',
   properties: {

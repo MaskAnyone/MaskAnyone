@@ -1,5 +1,5 @@
 import { HidingMethods, MaskingMethods } from "../state/types/RunParamRendering";
-import { faceswapFormSchema, blackoutFormSchemaBG, blackoutFormSchemaSubject, blackoutFormSchemaSubjectUI, blurFormSchemaBG, blurFormSchemaSubject, blurFormSchemaSubjectUI, bodyMeshFormSchema, faceMeshFormSchema, rvcSchema, skeletonFormSchema } from "./formSchemas";
+import { faceswapFormSchema, blackoutFormSchemaBG, blackoutFormSchemaSubject, blackoutFormSchemaSubjectUI, blurFormSchemaBG, blurFormSchemaSubject, blurFormSchemaSubjectUI, bodyMeshFormSchema, faceMeshFormSchema, inpaintFormSchemaSubject, inpaintFormSchemaSubjectUI, rvcSchema, skeletonFormSchema } from "./formSchemas";
 
 export const maskingMethods: MaskingMethods = {
     none: {
@@ -105,6 +105,20 @@ export const hidingMethods: HidingMethods = {
                 }
             }
         },
+        inpaint: {
+            name : "Inpainting (Background Estimation)",
+            description: "Attempt to estimate the background behind the subject and fill the subject area with it",
+            parameterSchema: inpaintFormSchemaSubject,
+            uiSchema: inpaintFormSchemaSubjectUI,
+            defaultValues: {
+                subjectDetection: "boundingbox",
+                detectionModel: "yolo",
+                detectionParams: {
+                    numPoses: 1,
+                    confidence: 0.5
+                }
+            }
+        },
     },
     body: {
         none: {
@@ -145,7 +159,20 @@ export const hidingMethods: HidingMethods = {
                     color: 0,
                     extraPixels: 0
                 }
-
+            }
+        },
+        inpaint: {
+            name : "Inpainting (Background Estimation)",
+            description: "Attempt to estimate the background behind the subject and fill the subject area with it",
+            parameterSchema: inpaintFormSchemaSubject,
+            uiSchema: inpaintFormSchemaSubjectUI,
+            defaultValues: {
+                subjectDetection: "silhouette",
+                detectionModel: "mediapipe",
+                detectionParams: {
+                    numPoses: 1,
+                    confidence: 0.5
+                },
             }
         },
     },
