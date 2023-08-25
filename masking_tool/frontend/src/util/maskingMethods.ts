@@ -105,20 +105,6 @@ export const hidingMethods: HidingMethods = {
                 }
             }
         },
-        inpaint: {
-            name : "Inpainting (Background Estimation)",
-            description: "Attempt to estimate the background behind the subject and fill the subject area with it",
-            parameterSchema: inpaintFormSchemaSubject,
-            uiSchema: inpaintFormSchemaSubjectUI,
-            defaultValues: {
-                subjectDetection: "boundingbox",
-                detectionModel: "yolo",
-                detectionParams: {
-                    numPoses: 1,
-                    confidence: 0.5
-                }
-            }
-        },
     },
     body: {
         none: {
@@ -162,16 +148,13 @@ export const hidingMethods: HidingMethods = {
             }
         },
         inpaint: {
-            name : "Inpainting (Background Estimation)",
+            name : "Inpainting (Background Estimation; Experimental, 432x240 only)",
             description: "Attempt to estimate the background behind the subject and fill the subject area with it",
             parameterSchema: inpaintFormSchemaSubject,
             uiSchema: inpaintFormSchemaSubjectUI,
             defaultValues: {
-                subjectDetection: "silhouette",
-                detectionModel: "mediapipe",
                 detectionParams: {
                     numPoses: 1,
-                    confidence: 0.5
                 },
             }
         },

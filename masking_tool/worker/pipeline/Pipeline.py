@@ -70,6 +70,8 @@ class Pipeline:
         voice_masking_strategy = run_params["voiceMasking"]["maskingStrategy"]
 
         self.is_inpainting = run_params["videoMasking"]["body"]["hidingStrategy"]["key"] == "inpaint"
+        self.inpaining_num_poses = run_params["videoMasking"]["body"]["hidingStrategy"]["params"]["detectionParams"]["numPoses"] if self.is_inpainting else 0
+
         self.init_detectors(required_detectors)
         self.init_maskers(required_maskers, params_3d)
         self.hider = Hider(hiding_strategies)
@@ -271,7 +273,7 @@ class Pipeline:
 
         if self.is_inpainting:
             sttn_mask_creator = STTNMaskCreator()
-            inpaint_mask_dir = sttn_mask_creator.run(video_id)
+            inpaint_mask_dir = sttn_mask_creator.run(video_id, self.inpaining_num_poses)
 
             sttn_video_inpainter = STTNVideoInpainter()
             inpainted_video_in_path = sttn_video_inpainter.run(video_in_path, inpaint_mask_dir)

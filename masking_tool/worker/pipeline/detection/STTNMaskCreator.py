@@ -20,13 +20,6 @@ PoseLandmarker = mp.tasks.vision.PoseLandmarker
 PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
 VisionRunningMode = mp.tasks.vision.RunningMode
 
-# Create a pose landmarker instance with the video mode:
-options = PoseLandmarkerOptions(
-    base_options=BaseOptions(model_asset_path=model_path),
-    running_mode=VisionRunningMode.VIDEO,
-    output_segmentation_masks=True,
-    num_poses=1)
-
 
 class STTNMaskCreator:
     _mask_colors = [
@@ -35,12 +28,19 @@ class STTNMaskCreator:
         [128, 0, 0]
     ]
 
-    def run(self, video_id: str):
+    def run(self, video_id: str, num_poses: int):
         video_in_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
         mask_out_dir = os.path.join(VIDEOS_BASE_PATH, video_id + "_inpainted")
 
         if not os.path.exists(mask_out_dir):
             os.makedirs(mask_out_dir)
+
+        # Create a pose landmarker instance with the video mode:
+        options = PoseLandmarkerOptions(
+            base_options=BaseOptions(model_asset_path=model_path),
+            running_mode=VisionRunningMode.VIDEO,
+            output_segmentation_masks=True,
+            num_poses=num_poses)
 
         frame_count = 0
         with PoseLandmarker.create_from_options(options) as landmarker:
