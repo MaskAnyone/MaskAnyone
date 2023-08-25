@@ -1,10 +1,11 @@
+import tempfile
 import bpy
 import os
 import time
 import sys
 import argparse
 
-def render_blender_file(video_path, file_path, smoothing_coefficient, export, render, output_video_path, output_file_path):
+def render_blender_file(video_path, file_path, smoothing_coefficient, export, render, output_video_path, output_file_path, backend_url):
 
     bpy.ops.preferences.addon_enable(module="rigify")
     bpy.ops.preferences.addon_enable(module='BlendArMocap')
@@ -18,7 +19,23 @@ def render_blender_file(video_path, file_path, smoothing_coefficient, export, re
     bpy.data.scenes["Scene"].cgtinker_mediapipe.enum_detection_type = "HOLISTIC"
     #bpy.data.scenes["Scene"].frame_end = 10
 
+    """if render == 1:
+        mode = 50
+    else:
+        mode = 100"""
+    mode = 100
+
+    f = open('tmp.txt', 'w')
+    f.write(f'{backend_url},{mode}')
+    f.close()
+
     bpy.ops.wm.cgt_feature_detection_operator()
+
+    if os.path.isfile('tmp.txt'):
+        os.remove('tmp.txt')
+    else:
+        print("Error: tmp.txt file not found")
+
 
     bpy.data.scenes["Scene"].cgtinker_transfer.selected_driver_collection = bpy.data.collections["cgt_DRIVERS"]
     bpy.data.scenes["Scene"].cgtinker_transfer.selected_rig = bpy.data.objects["rig"]
@@ -42,9 +59,10 @@ def main():
     argParser.add_argument('-r', '--render', type=int, help="Should the video be rendered (1-yes, 0-no)")
     argParser.add_argument('-e', '--export', type=int, help="Should the blender file be exported (1-yes, 0-no)")
     argParser.add_argument('-s', '--smoothing', type=int, help="Smoothing coefficient")
+    argParser.add_argument('-b', '--backurl', type=int, help="Backend URL")
 
     args = argParser.parse_args()
 
-    render_blender_file(args.invid, args.charfile, args.smoothing, args.export, args.render, args.outvid, args.outfile)
+    render_blender_file(args.invid, args.charfile, args.smoothing, args.export, args.render, args.outvid, args.outfile, args.backurl)
 
 main()
