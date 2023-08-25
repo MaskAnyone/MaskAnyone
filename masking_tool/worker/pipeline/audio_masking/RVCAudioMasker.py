@@ -55,8 +55,8 @@ class RVCAudioMasker(BaseAudioMasker):
             "python3",
             "/Retrieval-based-Voice-Conversion-WebUI/infer_cli.py",
             str(f0_up_key),
-            f"/app/{input_mp3_path}",
-            f"/app/{output_path}",
+            input_mp3_path,
+            output_path,
             model,
             file_index,
             device,
@@ -68,6 +68,9 @@ class RVCAudioMasker(BaseAudioMasker):
             capture_output=True,
             cwd="/Retrieval-based-Voice-Conversion-WebUI",
         )
+
+        if res.stderr:
+            print(res)
 
         # print(res.stdout)
         # print(res.stderr)

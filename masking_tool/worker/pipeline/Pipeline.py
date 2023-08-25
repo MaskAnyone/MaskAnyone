@@ -69,6 +69,7 @@ class Pipeline:
         params_3d: Params3D = run_params["threeDModelCreation"]
         voice_masking_strategy = run_params["voiceMasking"]["maskingStrategy"]
 
+        self.is_inpainting = run_params["videoMasking"]["body"]["hidingStrategy"]["key"] == "inpaint"
         self.init_detectors(required_detectors)
         self.init_maskers(required_maskers, params_3d)
         self.hider = Hider(hiding_strategies)
@@ -76,8 +77,6 @@ class Pipeline:
         self.init_audio_masker(
             voice_masking_strategy["key"], voice_masking_strategy["params"]
         )
-
-        self.is_inpainting = run_params["videoMasking"]["body"]["hidingStrategy"]["key"] == "inpaint"
 
     def identify_requried_models(self, run_params: dict):
         # extract arguments from request and create initialization arguments for maskers, detectors and hider
@@ -155,8 +154,9 @@ class Pipeline:
             self.detectors.append(YoloDetector(parts_to_detect))
 
     def init_maskers(self, required_maskers: dict, params_3d: Params3D):
-        if not required_maskers and not self.detectors:
+        if not required_maskers and not self.detectors and not self.is_inpainting:
             self.model_3d_only = True
+
         if (
             "mediapipe" in required_maskers
             or params_3d["blendshapes"]
@@ -248,7 +248,7 @@ class Pipeline:
             self.progress_message_sent_time = time.time()
 
     def masks_audio_only(self):
-        return self.audio_masker and len(self.detectors) == 0
+        return self.audio_masker and len(self.detectors) == 0 and not self.is_inpainting
 
     def handle_docker_model_finished(
         self, job_id: str, original_video_path: str, basic_masking_res_path: str
@@ -299,7 +299,7 @@ class Pipeline:
                 break
 
             inpainted_frame = None
-            if inpainted_video_in_cap:
+            if inpainted_video_in_cap is not None:
                 _ret, inpainted_frame = inpainted_video_in_cap.read()
 
             frame_timestamp_ms = int(video_cap.get(cv2.CAP_PROP_POS_MSEC))
@@ -313,8 +313,8 @@ class Pipeline:
 
                 detection_results.extend(detection_result)
 
-            if inpainted_frame:
-                hidden_frame = inpainted_frame
+            if inpainted_frame is not None:
+                hidden_frame = inpainted_frame.copy()
             else:
                 # applies the hiding method on each detected part of the frame and combines them into one frame
                 hidden_frame = frame.copy()
@@ -350,6 +350,9 @@ class Pipeline:
         self.close_bs_file_handle()
         out.release()
         video_cap.release()
+        if inpainted_video_in_cap is not None:
+            inpainted_video_in_cap.release()
+
         print(f"Finished basic_masking and hiding of {video_id}")
 
         if self.docker_mask_extractors:
