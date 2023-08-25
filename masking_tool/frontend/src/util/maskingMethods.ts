@@ -1,5 +1,20 @@
 import { HidingMethods, MaskingMethods } from "../state/types/RunParamRendering";
-import { faceswapFormSchema, blackoutFormSchemaBG, blackoutFormSchemaSubject, blackoutFormSchemaSubjectUI, blurFormSchemaBG, blurFormSchemaSubject, blurFormSchemaSubjectUI, bodyMeshFormSchema, faceMeshFormSchema, inpaintFormSchemaSubject, inpaintFormSchemaSubjectUI, rvcSchema, skeletonFormSchema } from "./formSchemas";
+import {
+    faceswapFormSchema,
+    blackoutFormSchemaBG,
+    blackoutFormSchemaSubject,
+    blackoutFormSchemaSubjectUI,
+    blurFormSchemaBG,
+    blurFormSchemaSubject,
+    blurFormSchemaSubjectUI,
+    bodyMeshFormSchema,
+    faceMeshFormSchema,
+    inpaintFormSchemaSubject,
+    inpaintFormSchemaSubjectUI,
+    rvcSchema,
+    skeletonFormSchema,
+    contourFormSchemaSubject, contourFormSchemaSubjectUI
+} from "./formSchemas";
 
 export const maskingMethods: MaskingMethods = {
     none: {
@@ -144,6 +159,23 @@ export const hidingMethods: HidingMethods = {
                 hidingParams: {
                     color: 0,
                     extraPixels: 0
+                }
+            }
+        },
+        contour: {
+            name: "Contours (Edge Detection)",
+            description: "Hide the subject by only preserving their contours",
+            parameterSchema: contourFormSchemaSubject,
+            uiSchema: contourFormSchemaSubjectUI,
+            defaultValues: {
+                subjectDetection: "silhouette",
+                detectionModel: "mediapipe",
+                detectionParams: {
+                    numPoses: 1,
+                    confidence: 0.5
+                },
+                hidingParams: {
+                    level: 3,
                 }
             }
         },
