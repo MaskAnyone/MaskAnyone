@@ -1,5 +1,5 @@
 import { HidingMethods, MaskingMethods } from "../state/types/RunParamRendering";
-import { faceswapFormSchema, blackoutFormSchemaBG, blackoutFormSchemaSubject, blackoutFormSchemaSubjectUI, blurFormSchemaBG, blurFormSchemaSubject, blurFormSchemaSubjectUI, bodyMeshFormSchema, faceMeshFormSchema, rvcSchema, skeletonFormSchema } from "./formSchemas";
+import { faceswapFormSchema, blackoutFormSchemaBG, blackoutFormSchemaSubject, blackoutFormSchemaSubjectUI, blurFormSchemaBG, blurFormSchemaSubject, blurFormSchemaSubjectUI, bodyMeshFormSchema, faceMeshFormSchema, inpaintFormSchemaSubject, inpaintFormSchemaSubjectUI, rvcSchema, skeletonFormSchema } from "./formSchemas";
 
 export const maskingMethods: MaskingMethods = {
     none: {
@@ -145,7 +145,17 @@ export const hidingMethods: HidingMethods = {
                     color: 0,
                     extraPixels: 0
                 }
-
+            }
+        },
+        inpaint: {
+            name : "Inpainting (Background Estimation; Experimental, 432x240 only)",
+            description: "Attempt to estimate the background behind the subject and fill the subject area with it",
+            parameterSchema: inpaintFormSchemaSubject,
+            uiSchema: inpaintFormSchemaSubjectUI,
+            defaultValues: {
+                detectionParams: {
+                    numPoses: 1,
+                },
             }
         },
     },

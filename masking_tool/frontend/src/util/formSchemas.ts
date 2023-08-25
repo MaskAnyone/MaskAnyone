@@ -121,6 +121,22 @@ export const blackoutFormSchemaSubjectUI: UiSchema = {
   'ui:order': ['subjectDetection', 'detectionModel', 'detectionParams', 'hidingParams'],
 };
 
+export const inpaintFormSchemaSubject: RJSFSchema = {
+  type: 'object',
+  properties: {
+    detectionParams: {
+      type: "object",
+      properties: {
+        numPoses: { type: 'number', title: 'Num Subjects', default: 1, description: 'The maximum number of subjects which can be detected' },
+      }
+    }
+  },
+};
+
+export const inpaintFormSchemaSubjectUI: UiSchema = {
+  'ui:order': ['detectionParams'],
+};
+
 export const blurFormSchemaBG: RJSFSchema = {
   type: 'object',
   properties: {
