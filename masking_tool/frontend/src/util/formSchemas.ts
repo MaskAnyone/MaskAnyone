@@ -268,7 +268,15 @@ export const faceswapFormSchema: RJSFSchema = {
   type: 'object',
   properties: {
     sourceImage: { title: 'The face that should be used for replacement', type: 'string', default: 'neutral', enum: ['neutral'] },
-    maskginModel: { title: 'The pretrained deep learning model that should be used to swap faces', type: 'string', default: 'roop', enum: ['roop'] },
+    maskingModel: { title: 'The pretrained deep learning model that should be used to swap faces', type: 'string', default: 'roop', enum: ['roop'] },
 
   },
 };
+
+export const blenderMocapFormSchema: RJSFSchema = {
+  properties: {
+    character: { title: 'The character that should be used for rigging', type: 'string', default: 'rigged_char', enum: ['rigged_char_36', 'rigged_char'] },
+    export: { title: 'Should the blender file be exported', type: 'boolean', default: false },
+    smoothing: { title: 'Smoothing factor to make the result look more natural', type: 'integer', default: 0 },
+  },
+}

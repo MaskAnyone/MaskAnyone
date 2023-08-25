@@ -1,5 +1,5 @@
 import { HidingMethods, MaskingMethods } from "../state/types/RunParamRendering";
-import { faceswapFormSchema, blackoutFormSchemaBG, blackoutFormSchemaSubject, blackoutFormSchemaSubjectUI, blurFormSchemaBG, blurFormSchemaSubject, blurFormSchemaSubjectUI, bodyMeshFormSchema, faceMeshFormSchema, rvcSchema, skeletonFormSchema } from "./formSchemas";
+import { faceswapFormSchema, blackoutFormSchemaBG, blenderMocapFormSchema, blackoutFormSchemaSubject, blackoutFormSchemaSubjectUI, blurFormSchemaBG, blurFormSchemaSubject, blurFormSchemaSubjectUI, bodyMeshFormSchema, faceMeshFormSchema, rvcSchema, skeletonFormSchema } from "./formSchemas";
 
 export const maskingMethods: MaskingMethods = {
     none: {
@@ -59,6 +59,21 @@ export const maskingMethods: MaskingMethods = {
         backendFormat: {
             "body": "skeleton",
             "face": "faceMesh"
+        }
+    },
+    blenderMocap: {
+        name: "Blender Avatar",
+        description: "Displays a rigged avatar based on mediapipe and rendered in blender",
+        parameterSchema: blenderMocapFormSchema,
+        defaultValues: {
+            maskingModel: "blender",
+            character: "rigged_char",
+            render: true,
+            export: false,
+            smoothing: 0
+        },
+        backendFormat: {
+            "body": "avatar"
         }
     }
 }

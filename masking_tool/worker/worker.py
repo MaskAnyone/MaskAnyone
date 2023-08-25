@@ -104,18 +104,24 @@ def handle_job_custom_model(job):
             video_in_path,
             f"--out-path",
             video_out_path,
-            f"--backend-update-url",
-            backend_progress_path,
             *argument_list,
         ]
+
+        if data["can_send_progress_update"]:
+            command.append(f"--backend-update-url")
+            command.append(backend_progress_path)
+
+        if data["can_produce_extra_file"]:
+            command.append(f"--out-path-extra")
+            file_ending = data["extra_file_ending"]
+            command.append(
+                os.path.join(RESULT_BASE_PATH, f"{job['video_id']}.{file_ending}")
+            )
 
         res = subprocess.run(command, shell=False, capture_output=True)
         print(res.stderr)
         print(res.stdout)
-
-        print(os.path.exists("/local_data"))
-        print(os.path.exists(video_out_path))
-        print(video_out_path)
+        print(res.returncode)
 
         if not res.returncode == 0:
             raise Exception(f"Error while running docker image {model_name}")
@@ -125,6 +131,13 @@ def handle_job_custom_model(job):
             video_manager.upload_result_video_preview_image(
                 job["video_id"], job["result_video_id"]
             )
+
+        file_ending = data["extra_file_ending"]
+        if data["can_produce_extra_file"] and os.path.exists(
+            os.path.join(RESULT_BASE_PATH, f"{job['video_id']}.{file_ending}")
+        ):
+            print("extra file found, uploading...")
+            pass
 
 
 while True:

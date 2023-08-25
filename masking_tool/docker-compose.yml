@@ -34,7 +34,7 @@ services:
       WORKER_TYPE: "basic_masking"
     mem_limit: 3072m
     cpus: 4
-    scale: 2
+    scale: 1
     #deploy:
     #  resources:
     #    reservations:
@@ -42,16 +42,27 @@ services:
     #        - driver: nvidia
     #          capabilities: [ gpu ]+
 
-  python-worker-roop:
+    # python-worker-roop:
+    #   build:
+    #     context: ./worker/models/docker_models/roop
+    #   command: "python worker.py "
+    #   env_file:
+    #     - ./app.env
+    #   volumes:
+    #     - ./worker:/app
+    #   environment:
+    #     WORKER_TYPE: "roop"
+
+  python-worker-blender:
     build:
-      context: ./worker/models/docker_models/roop
-    command: "python worker.py "
+      context: ./worker/models/docker_models/blender
+    command: "python worker.py"
     env_file:
       - ./app.env
     volumes:
       - ./worker:/app
     environment:
-      WORKER_TYPE: "roop"
+      WORKER_TYPE: "blender"
 
   postgres:
     build:
