@@ -2,10 +2,9 @@ import bpy
 import os
 import time
 import sys
-import configparser
-import getopt
+import argparse
 
-def render_blender_file(video_path, file_path, smoothing_coefficient, export, render):
+def render_blender_file(video_path, file_path, smoothing_coefficient, export, render, output_video_path, output_file_path):
 
     bpy.ops.preferences.addon_enable(module="rigify")
     bpy.ops.preferences.addon_enable(module='BlendArMocap')
@@ -27,23 +26,25 @@ def render_blender_file(video_path, file_path, smoothing_coefficient, export, re
     bpy.ops.button.cgt_object_apply_properties()
 
     if export:
-        bpy.ops.wm.save_as_mainfile(filepath="/Docker/output.blend")
+        bpy.ops.wm.save_as_mainfile(filepath=output_file_path)
     if render:
         bpy.data.scenes["Scene"].render.image_settings.file_format = "FFMPEG"
-        bpy.data.scenes["Scene"].render.filepath = "/Docker/"
+        bpy.data.scenes["Scene"].render.filepath = output_video_path
         bpy.ops.render.render(animation=True, use_viewport=True)
 
 
 def main():
-    cfg = configparser.ConfigParser()
-    cfg.read("/Docker/config.ini")
+    argParser = argparse.ArgumentParser()
+    argParser.add_argument('-i', '--invid', type=str, help="Input video path")
+    argParser.add_argument('-c', '--charfile', type=str, help="Blender rig file path")
+    argParser.add_argument('-o', '--outvid', type=str, help="Output video path")
+    argParser.add_argument('-f', '--outfile', type=str, help="Output blender file path")
+    argParser.add_argument('-r', '--render', type=int, help="Should the video be rendered (1-yes, 0-no)")
+    argParser.add_argument('-e', '--export', type=int, help="Should the blender file be exported (1-yes, 0-no)")
+    argParser.add_argument('-s', '--smoothing', type=int, help="Smoothing coefficient")
 
-    video_path = cfg["INPUT"]['VideoPath']
-    file_path = cfg["INPUT"]['FilePath']
-    smoothing_coefficient = cfg["PARAMETERS"].getint('SmoothingCoefficient')
-    export = cfg["OUTPUT"].getboolean('Export')
-    render = cfg["OUTPUT"].getboolean('Render')
+    args = argParser.parse_args()
 
-    render_blender_file(video_path, file_path, smoothing_coefficient, export, render)
+    render_blender_file(args.invid, args.charfile, args.smoothing, args.export, args.render, args.outvid, args.outfile)
 
 main()
