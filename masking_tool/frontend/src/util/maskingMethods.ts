@@ -68,8 +68,8 @@ export const maskingMethods: MaskingMethods = {
         defaultValues: {
             maskingModel: "blender",
             character: "rigged_char",
-            render: true,
-            export: false,
+            render: 0,
+            export: 1,
             smoothing: 0
         },
         backendFormat: {

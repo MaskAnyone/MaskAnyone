@@ -12,6 +12,7 @@ from db.result_video_manager import ResultVideoManager
 from db.result_mp_kinematics_manager import ResultMpKinematicsManager
 from db.result_blendshapes_manager import ResultBlendshapesManager
 from db.result_audio_files_manager import ResultAudioFilesManager
+from db.result_extra_files_manager import ResultExtraFilesManager
 from db.db_connection import DBConnection
 from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 from utils.request_utils import range_requests_response
@@ -23,6 +24,7 @@ result_video_manager = ResultVideoManager(db_connection)
 result_mp_kinematics_manager = ResultMpKinematicsManager(db_connection)
 result_blendshapes_manager = ResultBlendshapesManager(db_connection)
 result_audio_files_manager = ResultAudioFilesManager(db_connection)
+result_extra_files_manager = ResultExtraFilesManager(db_connection)
 job_manager = JobManager(db_connection)
 worker_manager = WorkerManager(db_connection)
 
@@ -96,7 +98,6 @@ def get_result_video_stream(worker_id: str, job_id: str, request: Request):
     result_video_id = job_manager.get_result_video_id(job_id)
     video_id = job_manager.get_video_id(job_id)
     video_path = os.path.join(RESULT_BASE_PATH, video_id, result_video_id + ".mp4")
-    print("AAAAAAAAAAAAAAAAAAIIIIIIIIIIII", os.path.exists(video_path))
 
     return range_requests_response(
         request, file_path=video_path, content_type="video/mp4"
@@ -182,3 +183,25 @@ async def upload_result_audio_file(
     result_audio_files_manager.create_result_audio_files_entry(
         str(uuid.uuid4()), result_video_id, video_id, job.id, await request.body()
     )
+
+
+@router.post("/videos/{video_id}/results/{result_video_id}/extra_files/{file_ending}")
+async def upload_result_extra_file(
+    worker_id: str,
+    video_id: str,
+    result_video_id: str,
+    file_ending: str,
+    request: Request,
+):
+    job = job_manager.fetch_job_by_result_video_id(result_video_id)
+    print("a5")
+
+    result_extra_files_manager.create_result_extra_files_entry(
+        str(uuid.uuid4()),
+        result_video_id,
+        video_id,
+        job.id,
+        file_ending,
+        await request.body(),
+    )
+    print("a6")

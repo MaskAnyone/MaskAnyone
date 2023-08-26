@@ -73,7 +73,9 @@ def handle_job_basic_masking(job):
 def handle_job_custom_model(job):
     model_name = job["type"]
     video_in_path = os.path.join(VIDEOS_BASE_PATH, job["video_id"] + ".mp4")
-    config_path = os.path.join("models", "docker_models", model_name, "config.json")
+    config_path = os.path.join(
+        "/app", "models", "docker_models", model_name, "config.json"
+    )
     print(video_in_path)
     print(os.path.exists(video_in_path))
 
@@ -125,8 +127,8 @@ def handle_job_custom_model(job):
 
         if not res.returncode == 0:
             raise Exception(f"Error while running docker image {model_name}")
-        save_preview_image(video_out_path)
         if os.path.exists(video_out_path):
+            save_preview_image(video_out_path)
             video_manager.upload_result_video(job["video_id"], job["result_video_id"])
             video_manager.upload_result_video_preview_image(
                 job["video_id"], job["result_video_id"]
@@ -137,7 +139,9 @@ def handle_job_custom_model(job):
             os.path.join(RESULT_BASE_PATH, f"{job['video_id']}.{file_ending}")
         ):
             print("extra file found, uploading...")
-            pass
+            video_manager.upload_result_extra_file(
+                job["video_id"], file_ending, job["result_video_id"]
+            )
 
 
 while True:

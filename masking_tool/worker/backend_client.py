@@ -89,6 +89,23 @@ class BackendClient:
             headers={"Content-Type": "audio/mp3"},
         )
 
+    def upload_result_extra_file(
+        self, video_id: str, file_ending: str, result_video_id: str, data: bytes
+    ):
+        print("a4")
+        requests.post(
+            self._make_url(
+                "videos/"
+                + video_id
+                + "/results/"
+                + result_video_id
+                + "/extra_files/"
+                + file_ending
+            ),
+            data=data,
+            headers={"Content-Type": "application/octet-stream"},
+        )
+
     def update_progress(self, job_id: str, progress: int):
         requests.post(
             self._make_url("jobs/" + job_id + "/progress"),

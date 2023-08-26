@@ -56,7 +56,7 @@ services:
   python-worker-blender:
     build:
       context: ./worker/models/docker_models/blender
-    command: "python worker.py"
+    command: "python /app/worker.py"
     env_file:
       - ./app.env
     volumes:

@@ -276,7 +276,7 @@ export const faceswapFormSchema: RJSFSchema = {
 export const blenderMocapFormSchema: RJSFSchema = {
   properties: {
     character: { title: 'The character that should be used for rigging', type: 'string', default: 'rigged_char', enum: ['rigged_char_36', 'rigged_char'] },
-    export: { title: 'Should the blender file be exported', type: 'boolean', default: false },
-    smoothing: { title: 'Smoothing factor to make the result look more natural', type: 'integer', default: 0 },
+    export: { title: 'Should the blender file be exported', type: 'number', default: 1 },
+    smoothing: { title: 'Smoothing factor to make the result look more natural', type: 'number', default: 0 },
   },
 }
