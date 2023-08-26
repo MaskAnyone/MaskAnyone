@@ -22,19 +22,19 @@ services:
     depends_on:
       - postgres
 
-  python-worker:
+  python-worker-basic_masking:
     build:
-      context: ./docker/python/worker
-    command: "python worker.py "
+      context: ./docker/python/workers/basic_masking
+    command: "python basic_masking_worker.py "
     env_file:
       - ./app.env
     volumes:
-      - ./worker:/app
+      - ./workers:/app
     environment:
       WORKER_TYPE: "basic_masking"
     mem_limit: 4096m
     cpus: 4
-    scale: 1
+    scale: 2
     #deploy:
     #  resources:
     #    reservations:
@@ -56,12 +56,12 @@ services:
 
   python-worker-blender:
     build:
-      context: ./worker/models/docker_models/blender
-    command: "python /app/worker.py"
+      context: ./docker/python/workers/blender
+    command: "python /app/docker_worker.py"
     env_file:
       - ./app.env
     volumes:
-      - ./worker:/app
+      - ./workers:/app
     environment:
       WORKER_TYPE: "blender"
 

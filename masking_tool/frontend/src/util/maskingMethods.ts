@@ -77,19 +77,19 @@ export const maskingMethods: MaskingMethods = {
             "face": "faceMesh"
         }
     },
-    blenderMocap: {
+    blender: {
         name: "Blender Avatar",
         description: "Displays a rigged avatar based on mediapipe and rendered in blender",
         parameterSchema: blenderMocapFormSchema,
         defaultValues: {
             maskingModel: "blender",
             character: "rigged_char",
-            render: 0,
+            render: 1,
             export: 1,
             smoothing: 0
         },
         backendFormat: {
-            "body": "avatar"
+            "body": "blender"
         }
     }
 }
