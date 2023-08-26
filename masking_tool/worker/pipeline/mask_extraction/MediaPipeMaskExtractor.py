@@ -152,7 +152,7 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
     def mask_body(self, frame: np.ndarray, timestamp_ms: int) -> np.ndarray:
         pose_landmark_data = self.compute_pose_landmarks(frame, timestamp_ms)
         pose_landmarks_list = pose_landmark_data.pose_landmarks
-        hand_landmark_list = self.compute_hand_landmarks(frame, timestamp_ms)
+        hand_landmark_list = [] # (deactivated for now) self.compute_hand_landmarks(frame, timestamp_ms)
 
         # Hide hand points from pose, since if already have the detailed ones
         if hand_landmark_list:
@@ -163,9 +163,7 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
             self.hide_pose_face_landmarks(pose_landmarks_list)
 
         if self.get_part_to_mask("body")["save_timeseries"]:
-            #self.store_ts(
-            #    "body", pose_landmarks_list + hand_landmark_list, timestamp_ms
-            #)
+            # pose_landmarks_list + hand_landmark_list
             self.store_ts(
                 "body", pose_landmark_data, timestamp_ms
             )

@@ -55,6 +55,7 @@ def handle_job(job):
 def handle_job_basic_masking(job):
     video_id = job["video_id"]
     result_video_id = job["result_video_id"]
+
     masking_pipeline = Pipeline(job["data"], backend_client, video_manager)
     masking_pipeline.run(video_id, job["id"])
 

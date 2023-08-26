@@ -1,5 +1,21 @@
 import { HidingMethods, MaskingMethods } from "../state/types/RunParamRendering";
-import { faceswapFormSchema, blackoutFormSchemaBG, blenderMocapFormSchema, blackoutFormSchemaSubject, blackoutFormSchemaSubjectUI, blurFormSchemaBG, blurFormSchemaSubject, blurFormSchemaSubjectUI, bodyMeshFormSchema, faceMeshFormSchema, rvcSchema, skeletonFormSchema } from "./formSchemas";
+import {
+    faceswapFormSchema,
+    blackoutFormSchemaBG,
+    blackoutFormSchemaSubject,
+    blackoutFormSchemaSubjectUI,
+    blenderMocapFormSchema,
+    blurFormSchemaBG,
+    blurFormSchemaSubject,
+    blurFormSchemaSubjectUI,
+    bodyMeshFormSchema,
+    faceMeshFormSchema,
+    inpaintFormSchemaSubject,
+    inpaintFormSchemaSubjectUI,
+    rvcSchema,
+    skeletonFormSchema,
+    contourFormSchemaSubject, contourFormSchemaSubjectUI
+} from "./formSchemas";
 
 export const maskingMethods: MaskingMethods = {
     none: {
@@ -160,7 +176,34 @@ export const hidingMethods: HidingMethods = {
                     color: 0,
                     extraPixels: 0
                 }
-
+            }
+        },
+        contour: {
+            name: "Contours (Edge Detection)",
+            description: "Hide the subject by only preserving their contours",
+            parameterSchema: contourFormSchemaSubject,
+            uiSchema: contourFormSchemaSubjectUI,
+            defaultValues: {
+                subjectDetection: "silhouette",
+                detectionModel: "mediapipe",
+                detectionParams: {
+                    numPoses: 1,
+                    confidence: 0.5
+                },
+                hidingParams: {
+                    level: 3,
+                }
+            }
+        },
+        inpaint: {
+            name: "Inpainting (Background Estimation; Experimental, 432x240 only)",
+            description: "Attempt to estimate the background behind the subject and fill the subject area with it",
+            parameterSchema: inpaintFormSchemaSubject,
+            uiSchema: inpaintFormSchemaSubjectUI,
+            defaultValues: {
+                detectionParams: {
+                    numPoses: 1,
+                },
             }
         },
     },
