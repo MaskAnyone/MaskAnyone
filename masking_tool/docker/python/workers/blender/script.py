@@ -1,75 +1,131 @@
+import tempfile
 import bpy
 import os
 import time
 import sys
 import argparse
+import cv2
+import math
 
 
-def render_blender_file(
-    video_path,
-    file_name,
-    smoothing_coefficient,
-    export,
-    render,
-    output_video_path,
-    output_file_path,
-    backend_url,
-):
-    file_path = os.path.join("/blender/char_files", file_name + ".blend")
-    print(file_path)
-    print(video_path)
-    print(output_video_path)
-    print(output_file_path)
-    print(export)
-    print(render)
-    print(os.path.exists(video_path))
-    bpy.ops.preferences.addon_enable(module="rigify")
-    bpy.ops.preferences.addon_enable(module="BlendArMocap")
-    bpy.ops.wm.open_mainfile(filepath=file_path)
+class RenderBlenderFile:
 
-    """bpy.ops.object.armature_human_metarig_add()
-    bpy.ops.pose.rigify_generate()"""
+    def __init__(
+            self,
+            video_path,
+            rig_file_name,
+            smoothing_coefficient,
+            export,
+            render,
+            output_video_file,
+            output_blender_file,
+            backend_url
+    ):
+        self.video_path = video_path
+        self.rig_path = os.path.join("/blender/char_files", rig_file_name + ".blend")
+        self.smoothing_coefficient = smoothing_coefficient
+        self.export = export
+        self.render = render
 
-    bpy.data.scenes["Scene"].cgtinker_mediapipe.mov_data_path = video_path
-    bpy.data.scenes["Scene"].cgtinker_mediapipe.key_frame_step = smoothing_coefficient
-    bpy.data.scenes["Scene"].cgtinker_mediapipe.enum_detection_type = "HOLISTIC"
-    # bpy.data.scenes["Scene"].frame_end = 10
+        self.output_video_file = output_video_file
+        self.output_video_path = output_video_file[:output_video_file.rfind('/')+1]
 
-    """if render == 1:
-    mode = 50
-else:
-    mode = 100"""
-    mode = 100
+        self.output_blender_file = output_blender_file
+        self.backend_url = backend_url
 
-    f = open("tmp.txt", "w")
-    f.write(f"{backend_url},{mode}")
-    f.close()
+        self.mode = 100 + render*(-50)
+        self.last_progress = 0
 
-    bpy.ops.wm.cgt_feature_detection_operator()
+        cap = cv2.VideoCapture(video_path)
+        self.fps = cap.get(cv2.CAP_PROP_FPS)
+        self.total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
 
-    if os.path.isfile("tmp.txt"):
-        os.remove("tmp.txt")
-    else:
-        print("Error: tmp.txt file not found")
+    def load_prereqs(self):
+        bpy.ops.preferences.addon_enable(module="rigify")
+        bpy.ops.preferences.addon_enable(module='BlendArMocap')
+        bpy.ops.wm.open_mainfile(filepath=self.rig_path)
 
-    print("a")
-    bpy.data.scenes[
-        "Scene"
-    ].cgtinker_transfer.selected_driver_collection = bpy.data.collections["cgt_DRIVERS"]
-    print("b")
-    bpy.data.scenes["Scene"].cgtinker_transfer.selected_rig = bpy.data.objects["rig"]
-    print("c")
+        self.set_scene()
 
-    bpy.ops.button.cgt_object_apply_properties()
-    print("d")
-    if export:
-        print("e1")
-        bpy.ops.wm.save_as_mainfile(filepath=output_file_path)
-        print("e2")
-    if render:
-        bpy.data.scenes["Scene"].render.image_settings.file_format = "FFMPEG"
-        bpy.data.scenes["Scene"].render.filepath = output_video_path
-        bpy.ops.render.render(animation=True, use_viewport=True)
+    def set_scene(self):
+        bpy.data.scenes["Scene"].cgtinker_mediapipe.mov_data_path = self.video_path
+        bpy.data.scenes["Scene"].cgtinker_mediapipe.key_frame_step = self.smoothing_coefficient
+        bpy.data.scenes["Scene"].cgtinker_mediapipe.enum_detection_type = "HOLISTIC"
+
+    def mediapipe_detect(self):
+        with open('tmp.txt', 'w') as f:
+            f.write(f'{self.backend_url},{self.mode}')
+
+        bpy.ops.wm.cgt_feature_detection_operator()
+
+        if os.path.isfile('tmp.txt'):
+            os.remove('tmp.txt')
+        else:
+            print("Error: tmp.txt file not found")
+
+    def coordinate_transfer(self):
+        bpy.data.scenes["Scene"].cgtinker_transfer.selected_driver_collection = bpy.data.collections["cgt_DRIVERS"]
+        bpy.data.scenes["Scene"].cgtinker_transfer.selected_rig = bpy.data.objects["rig"]
+
+        bpy.ops.button.cgt_object_apply_properties()
+
+    def export_blend_file(self):
+        bpy.ops.wm.save_as_mainfile(filepath=self.output_blender_file)
+
+    def render_frame(self, frame_id, scene):
+        scene.frame_set(frame_id)
+
+        if frame_id < 10:
+            frame_name = '0' + str(frame_id)
+        else:
+            frame_name = str(frame_id)
+
+        scene.render.filepath = self.output_video_path + frame_name
+        bpy.ops.render.render(write_still=True, use_viewport=True)
+
+        self.update_render_progress(frame_id)
+
+    def update_render_progress(self, frame_id):
+        cur_progress = int((frame_id / self.total_frames) * 50) + 50
+        if (cur_progress-self.last_progress) >= 5:
+            print("XXXXXXXXXXXXX", cur_progress)
+            requests.post(backend_url, json={"progress": cur_progress})
+            self.last_progress = cur_progress
+
+    def merge_images_to_video(self):
+        images = [img for img in os.listdir(self.output_video_path) if img.endswith(".png")]
+        frame = cv2.imread(os.path.join(self.output_video_path, images[0]))
+        height, width, layers = frame.shape
+
+        video = cv2.VideoWriter(self.output_video_file, cv2.VideoWriter_fourcc(*'mp4v'), self.fps, (width, height))
+
+        for image in images:
+            path = os.path.join(self.output_video_path, image)
+            video.write(cv2.imread(path))
+            if os.path.isfile(path):
+                os.remove(path)
+            else:
+                print(f"Error: {image} file not found")
+
+        print("XXXXXXXXXXXXX", 100)
+        requests.post(backend_url, json={"progress": 100})
+
+        cv2.destroyAllWindows()
+        video.release()
+
+    def run(self):
+        self.load_prereqs()
+        self.mediapipe_detect()
+        self.coordinate_transfer()
+        if self.export:
+            self.export_blend_file()
+        if self.render:
+            for frame in range(0, int(self.total_frames)):
+                scene = bpy.context.scene
+                scene.render.image_settings.file_format = 'PNG'
+                self.render_frame(frame, scene)
+
+            self.merge_images_to_video()
 
 
 def main():
@@ -114,7 +170,7 @@ def main():
 
     args = argParser.parse_args()
 
-    render_blender_file(
+    RenderBlenderFile(
         args.invid,
         args.charfilename,
         args.smoothing,
@@ -123,7 +179,7 @@ def main():
         args.outvid,
         args.outfile,
         args.backendurl,
-    )
+    ).run()
 
 
 main()
