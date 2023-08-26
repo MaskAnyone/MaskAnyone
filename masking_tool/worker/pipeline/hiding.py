@@ -7,19 +7,34 @@ from pipeline.PipelineTypes import DetectionResult, HidingStategies, HidingStrat
 class Hider:
     _contour_laplacian_level_settings = {
         1: {
-            "blur_kernel_size": 17
+            "blur_kernel_size": 17,
+            "laplacian_kernel_size": 5,
+            "laplacian_scale": 1.2,
+            "laplacian_delta": 10
         },
         2: {
-            "blur_kernel_size": 11
+            "blur_kernel_size": 11,
+            "laplacian_kernel_size": 5,
+            "laplacian_scale": 1,
+            "laplacian_delta": 0
         },
         3: {
-            "blur_kernel_size": 7
+            "blur_kernel_size": 7,
+            "laplacian_kernel_size": 5,
+            "laplacian_scale": 1,
+            "laplacian_delta": -10
         },
         4: {
-            "blur_kernel_size": 5
+            "blur_kernel_size": 5,
+            "laplacian_kernel_size": 5,
+            "laplacian_scale": 1,
+            "laplacian_delta": -20
         },
         5: {
-            "blur_kernel_size": 3
+            "blur_kernel_size": 3,
+            "laplacian_kernel_size": 3,
+            "laplacian_scale": 1.9,
+            "laplacian_delta": 20
         },
     }
 
@@ -71,9 +86,10 @@ class Hider:
         blurred_image = cv2.GaussianBlur(
             base_image, (level_settings["blur_kernel_size"], level_settings["blur_kernel_size"]), 0
         )
-        gray = cv2.cvtColor(blurred_image, cv2.COLOR_RGB2GRAY)
-        edges = cv2.Laplacian(gray, -1, ksize=5, scale=1, delta=0, borderType=cv2.BORDER_DEFAULT)
-        out = cv2.cvtColor(edges, cv2.COLOR_GRAY2RGB)
 
-        base_image[mask != 0] = out[mask != 0]
+        gray_image = cv2.cvtColor(blurred_image, cv2.COLOR_RGB2GRAY)
+        edge_image = cv2.Laplacian(gray_image, -1, ksize=level_settings["laplacian_kernel_size"], scale=level_settings["laplacian_scale"], delta=level_settings["laplacian_delta"], borderType=cv2.BORDER_DEFAULT)
+        final_image = cv2.cvtColor(edge_image, cv2.COLOR_GRAY2RGB)
+
+        base_image[mask != 0] = final_image[mask != 0]
         return base_image
