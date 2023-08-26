@@ -11,6 +11,7 @@ from config import (
     RESULT_BASE_PATH,
     TS_BASE_PATH,
     VIDEOS_BASE_PATH,
+    AVAILABLE_DOCKER_MODELS,
 )
 
 from common.backend_client import BackendClient
@@ -37,7 +38,6 @@ from pipeline_worker.pipeline.PipelineTypes import (
 )
 from pipeline_worker.utils.video_utils import merge_results, setup_video_processing
 from common.utils.app_utils import save_preview_image
-from models.docker_maskers import docker_maskers as known_docker_mask_extractors
 
 
 class Pipeline:
@@ -186,7 +186,7 @@ class Pipeline:
             )
 
         for masker in required_maskers:
-            if masker in known_docker_mask_extractors:
+            if masker in AVAILABLE_DOCKER_MODELS:
                 self.docker_mask_extractors[masker] = required_maskers[masker]
 
         # blender file extraction wanted but not video masking with blender selected

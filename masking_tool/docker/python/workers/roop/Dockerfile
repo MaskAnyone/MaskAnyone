@@ -21,25 +21,14 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip uninstall onnxruntime onnxruntime-gpu \
-    && pip install onnxruntime-gpu==1.15.1
-
+    && pip install onnxruntime-gpu==1.15.1 \
+    requests \
+    opencv-python
 
 RUN cd / \
     && git clone https://github.com/rohansaw/roop-for-de-identifiction \
     && cd /roop-for-de-identifiction \
     && pip install -r requirements.txt
 
-RUN pip install \
-    fastapi \
-    mediapipe \
-    uvicorn[standard] \
-    ultralytics \
-    psycopg2 \
-    requests \
-    torch \
-    torchvision \
-    torchaudio \
-    huggingface_hub \
-    gdown \
-    ffmpeg-python \
-    moviepy
+RUN mkdir /roop-faces
+COPY faces/ /roop-faces/

@@ -75,13 +75,14 @@ def handle_job_custom_model(job, backend_client, video_manager):
                 job["video_id"], job["result_video_id"]
             )
 
-        file_ending = data["extra_file_ending"]
         if data["can_produce_extra_file"] and os.path.exists(
-            os.path.join(RESULT_BASE_PATH, f"{job['video_id']}.{file_ending}")
+            os.path.join(
+                RESULT_BASE_PATH, f"{job['video_id']}.{data['extra_file_ending']}"
+            )
         ):
             print("extra file found, uploading...")
             video_manager.upload_result_extra_file(
-                job["video_id"], file_ending, job["result_video_id"]
+                job["video_id"], data["extra_file_ending"], job["result_video_id"]
             )
 
 
