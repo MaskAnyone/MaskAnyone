@@ -6,7 +6,7 @@ export interface ApiFetchVideosResponse {
         status: 'valid';
         video_info: {
             fps: number;
-            codec: 'avc1'|'mp4v'|string;
+            codec: 'avc1' | 'mp4v' | string;
             duration: number;
             frame_count: number;
             frame_width: number;
@@ -26,6 +26,23 @@ export interface ApiFetchResultVideosResponse {
     }[];
 }
 
+export interface ApiFetchAllResultsResponse {
+    results: {
+        video_result_id: string;
+        original_video_id: string;
+        job_id: string;
+        created_at: string;
+        job_info: any;
+        video_result_exists: boolean;
+        kinematic_results_exists: boolean;
+        audio_results_exists: boolean;
+        blendshape_results_exists: boolean;
+        extra_file_results_exists: boolean;
+        video_info: any;
+        name: string
+    }[]
+}
+
 export interface ApiFetchDownloadableResultFilesResponse {
     files: {
         id: string;
@@ -39,11 +56,11 @@ export interface ApiFetchJobsResponse {
         id: string;
         video_id: string;
         type: string;
-        status: 'open'|'running'|'finished'|'failed';
+        status: 'open' | 'running' | 'finished' | 'failed';
         data: object;
         created_at: string;
-        started_at: string|null;
-        finished_at: string|null;
+        started_at: string | null;
+        finished_at: string | null;
         progress: number;
     }[];
 }

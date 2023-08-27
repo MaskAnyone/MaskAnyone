@@ -92,6 +92,22 @@ CREATE TABLE public.result_audio_files (
 ALTER TABLE public.result_audio_files OWNER TO dev;
 
 --
+-- Name: result_extra_files; Type: TABLE; Schema: public; Owner: dev
+--
+
+CREATE TABLE public.result_extra_files (
+    id uuid NOT NULL,
+    result_video_id uuid NOT NULL,
+    video_id uuid NOT NULL,
+    job_id uuid NOT NULL,
+    ending character varying NOT NULL,
+    data bytea NOT NULL
+);
+
+
+ALTER TABLE public.result_extra_files OWNER TO dev;
+
+--
 -- Name: result_blendshapes; Type: TABLE; Schema: public; Owner: dev
 --
 
@@ -187,6 +203,14 @@ ALTER TABLE ONLY public.presets
 
 ALTER TABLE ONLY public.result_audio_files
     ADD CONSTRAINT result_audio_files_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: result_extra_files result_extra_files_pkey; Type: CONSTRAINT; Schema: public; Owner: dev
+--
+
+ALTER TABLE ONLY public.result_extra_files
+    ADD CONSTRAINT result_extra_files_pkey PRIMARY KEY (id);
 
 
 --

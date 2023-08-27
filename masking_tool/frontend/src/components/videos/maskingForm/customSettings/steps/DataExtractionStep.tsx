@@ -5,15 +5,40 @@ import { StepProps } from "./HidingStep";
 const DataExctactionStep = (props: StepProps) => {
     const threeDParams = props.runParams.threeDModelCreation
 
+    const blenderUsedForMasking = props.runParams.videoMasking.maskingStrategy.key == "blender"
+    const blenderSelected = threeDParams.blender || (blenderUsedForMasking && props.runParams.videoMasking.maskingStrategy?.params["export"] == 1)
+
     const handleBlenderChanged = () => {
-        props.onParamsChange({
-            ...props.runParams,
-            threeDModelCreation: {
-                ...threeDParams,
-                blender: !threeDParams.blender,
-                blenderParams: {}
-            }
-        })
+        if (blenderUsedForMasking) {
+            props.onParamsChange({
+                ...props.runParams,
+                videoMasking: {
+                    ...props.runParams.videoMasking,
+                    maskingStrategy: {
+                        ...props.runParams.videoMasking.maskingStrategy,
+                        params: {
+                            ...props.runParams.videoMasking.maskingStrategy.params,
+                            export: blenderSelected ? 0 : 1
+                        }
+                    }
+                }
+            })
+        } else {
+            props.onParamsChange({
+                ...props.runParams,
+                threeDModelCreation: {
+                    ...threeDParams,
+                    blender: !threeDParams.blender,
+                    blenderParams: {
+                        maskingModel: "blender",
+                        character: "rigged_char",
+                        render: 0,
+                        export: blenderSelected ? 0 : 1,
+                        smoothing: 0
+                    }
+                }
+            })
+        }
     }
 
     const handleSkeletonChanged = () => {
@@ -53,7 +78,7 @@ const DataExctactionStep = (props: StepProps) => {
                     title={"Blender 3D Character"}
                     description={"Will create a 3D model in Blender based on a MediaPipe Skeleton."}
                     imagePath={""}
-                    checked={threeDParams.blender}
+                    checked={blenderSelected}
                     onSelect={() => handleBlenderChanged()}
                 />
                 <CheckableCard

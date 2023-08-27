@@ -13,7 +13,7 @@ export interface MaskVideoPayload {
     runData: RunParams
 }
 
-export interface FetchResultVideoListPayload {
+export interface FetchResultsListPayload {
     videoId: string;
 }
 
@@ -33,7 +33,7 @@ export interface FetchMpKinematicsPayload {
 const VideoCommand = {
     fetchVideoList: createVideoCommand<FetchVideoListPayload>('FETCH_VIDEO_LIST'),
     maskVideo: createVideoCommand<MaskVideoPayload>('MASK_VIDEO'),
-    fetchResultVideoList: createVideoCommand<FetchResultVideoListPayload>('FETCH_RESULT_VIDEO_LIST'),
+    fetchResultsList: createVideoCommand<FetchResultsListPayload>('FETCH_RESULT_VIDEO_LIST'),
     fetchDownloadableResultFiles: createVideoCommand<FetchDownloadableResultFilesPayload>('FETCH_DOWNLOADABLE_RESULT_FILES'),
     fetchBlendshapes: createVideoCommand<FetchBlendshapesPayload>('FETCH_BLENDSHAPES'),
     fetchMpKinematics: createVideoCommand<FetchMpKinematicsPayload>('FETCH_MP_KINEMATICS'),

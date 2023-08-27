@@ -3,6 +3,9 @@ import Config from "../../../config";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { ResultVideo } from "../../../state/types/ResultVideo";
 import React from "react";
+import skeleton from "../../../assets/previews/skeleton.png";
+import blendshapes from "../../../assets/previews/blendshapes.png";
+import file from "../../../assets/previews/file.png";
 
 interface VideoResultCardProps {
     resultVideo: ResultVideo;
@@ -15,8 +18,27 @@ const VideoResultCard = (props: VideoResultCardProps) => {
     const openVideoResultMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
         event.stopPropagation();
-        props.onOpenMenu(event.currentTarget, props.resultVideo.id);
+        props.onOpenMenu(event.currentTarget, props.resultVideo.videoResultId);
     };
+
+    const lookupPreviewForResult = () => {
+        if (props.resultVideo.videoResultExists) {
+            return `${Config.api.baseUrl}/videos/${props.resultVideo.originalVideoId}/results/${props.resultVideo.videoResultId}/preview`
+        }
+        if (props.resultVideo.blendshapeResultsExists) {
+            return blendshapes
+        }
+        if (props.resultVideo.kinematicResultsExists) {
+            return skeleton
+        }
+        return file
+    }
+
+    const resultVideo = props.resultVideo;
+
+    const imageLink = lookupPreviewForResult()
+
+    const name = resultVideo.videoResultExists ? resultVideo.name : "File Result"
 
     return (
         <Card
@@ -27,14 +49,14 @@ const VideoResultCard = (props: VideoResultCardProps) => {
         >
             <CardMedia
                 sx={{ height: 150 }}
-                image={`${Config.api.baseUrl}/videos/${props.resultVideo.videoId}/results/${props.resultVideo.id}/preview`}
+                image={imageLink}
             />
             <CardContent sx={{ position: 'relative' }}>
                 <Typography gutterBottom variant="h6" component="div">
-                    {props.resultVideo.name}
+                    {name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                    {props.resultVideo.createdAt.toLocaleDateString()}
+                    {props.resultVideo.createdAt.toLocaleString()}
                 </Typography>
                 <IconButton sx={{ position: 'absolute', top: 4, right: 0 }} onClick={openVideoResultMenu}>
                     <MoreVertIcon />

@@ -4,6 +4,7 @@ import {
     blackoutFormSchemaBG,
     blackoutFormSchemaSubject,
     blackoutFormSchemaSubjectUI,
+    blenderMocapFormSchema,
     blurFormSchemaBG,
     blurFormSchemaSubject,
     blurFormSchemaSubjectUI,
@@ -74,6 +75,21 @@ export const maskingMethods: MaskingMethods = {
         backendFormat: {
             "body": "skeleton",
             "face": "faceMesh"
+        }
+    },
+    blender: {
+        name: "Blender Avatar",
+        description: "Displays a rigged avatar based on mediapipe and rendered in blender",
+        parameterSchema: blenderMocapFormSchema,
+        defaultValues: {
+            maskingModel: "blender",
+            character: "rigged_char",
+            render: 1,
+            export: 1,
+            smoothing: 0
+        },
+        backendFormat: {
+            "body": "blender"
         }
     }
 }
@@ -180,7 +196,7 @@ export const hidingMethods: HidingMethods = {
             }
         },
         inpaint: {
-            name : "Inpainting (Background Estimation; Experimental, 432x240 only)",
+            name: "Inpainting (Background Estimation; Experimental, 432x240 only)",
             description: "Attempt to estimate the background behind the subject and fill the subject area with it",
             parameterSchema: inpaintFormSchemaSubject,
             uiSchema: inpaintFormSchemaSubjectUI,

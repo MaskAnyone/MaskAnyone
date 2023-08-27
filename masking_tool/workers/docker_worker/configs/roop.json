@@ -1,0 +1,14 @@
+{
+    "image_name": "roop",
+    "run_command": "python3",
+    "entry_point": "/roop-for-de-identifiction/run.py",
+    "can_send_progress_update": true,
+    "can_produce_extra_file": false,
+    "accepted_subjects": [
+        "face"
+    ],
+    "argument_schema": {
+        "type": "object",
+        "properties": {}
+    }
+}

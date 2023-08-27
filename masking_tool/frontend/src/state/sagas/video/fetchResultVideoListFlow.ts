@@ -1,26 +1,32 @@
-import {call, fork, put, take} from 'redux-saga/effects';
-import {Action} from 'redux-actions';
-import {FetchResultVideoListPayload} from "../../actions/videoCommand";
+import { call, fork, put, take } from 'redux-saga/effects';
+import { Action } from 'redux-actions';
+import { FetchResultsListPayload } from "../../actions/videoCommand";
 import Command from "../../actions/command";
 import Api from "../../../api";
 import Event from "../../actions/event";
-import {ApiFetchResultVideosResponse} from "../../../api/types";
-import {ResultVideo} from "../../types/ResultVideo";
+import { ApiFetchAllResultsResponse } from "../../../api/types";
+import { ResultVideo } from "../../types/ResultVideo";
 
-const onFetchResultVideoList = function*(payload: FetchResultVideoListPayload) {
+const onFetchResultsList = function* (payload: FetchResultsListPayload) {
     try {
-        const response: ApiFetchResultVideosResponse = yield call(Api.fetchVideoResults, payload.videoId);
+        const response: ApiFetchAllResultsResponse = yield call(Api.fetchAllResultsForVideo, payload.videoId);
 
-        const resultVideoList: ResultVideo[] = response.result_videos.map(result_video => ({
-            id: result_video.id,
-            videoId: result_video.video_id,
+        const resultsList: ResultVideo[] = response.results.map(result_video => ({
+            videoResultId: result_video.video_result_id,
+            originalVideoId: result_video.original_video_id,
             jobId: result_video.job_id,
-            name: result_video.name,
-            videoInfo: {},
             createdAt: new Date(result_video.created_at),
+            jobInfo: result_video.job_info,
+            videoResultExists: result_video.video_result_exists,
+            kinematicResultsExists: result_video.kinematic_results_exists,
+            audioResultsExists: result_video.audio_results_exists,
+            blendshapeResultsExists: result_video.blendshape_results_exists,
+            extraFileResultsExists: result_video.extra_file_results_exists,
+            videoInfo: result_video.video_info,
+            name: result_video.name
         }));
 
-        yield put(Event.Video.resultVideoListFetched({ videoId: payload.videoId, resultVideoList }));
+        yield put(Event.Video.resultsListFetched({ videoId: payload.videoId, resultsList }));
     } catch (e) {
         console.error(e);
         yield put(Command.Notification.enqueueNotification({
@@ -30,9 +36,9 @@ const onFetchResultVideoList = function*(payload: FetchResultVideoListPayload) {
     }
 };
 
-export function* fetchResultVideoListFlow() {
+export function* fetchResultListFlow() {
     while (true) {
-        const action: Action<FetchResultVideoListPayload> = yield take(Command.Video.fetchResultVideoList.toString());
-        yield fork(onFetchResultVideoList, action.payload);
+        const action: Action<FetchResultsListPayload> = yield take(Command.Video.fetchResultsList.toString());
+        yield fork(onFetchResultsList, action.payload);
     }
 }
