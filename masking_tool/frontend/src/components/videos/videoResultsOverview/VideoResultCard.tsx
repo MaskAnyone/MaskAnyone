@@ -24,7 +24,7 @@ const VideoResultCard = (props: VideoResultCardProps) => {
         `${Config.api.baseUrl}/videos/${props.resultVideo.originalVideoId}/results/${props.resultVideo.videoResultId}/preview`
         : "")
 
-    const name = resultVideo.videoResultExists ? "Video " + resultVideo.name : "Fancy Result"
+    const name = resultVideo.videoResultExists ? resultVideo.name : "File Result"
 
     return (
         <Card

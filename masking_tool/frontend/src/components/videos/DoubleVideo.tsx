@@ -1,11 +1,12 @@
 import { Box, FormControl, FormControlLabel, Grid, Radio, RadioGroup } from "@mui/material";
 import Config from "../../config";
-import {useEffect, useMemo, useRef, useState} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import PoseRenderer3D from "./PoseRenderer3D";
 import BlendshapesRenderer3D from "./BlendshapesRenderer3D";
-import {useDispatch, useSelector} from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import Selector from "../../state/selector";
 import Command from "../../state/actions/command";
+import { ResultVideo } from "../../state/types/ResultVideo";
 
 
 interface DoubleVideoProps {
@@ -24,6 +25,9 @@ const DoubleVideo = (props: DoubleVideoProps) => {
     const videoList = useSelector(Selector.Video.videoList);
     const blendshapesList = useSelector(Selector.Video.blendshapesList);
     const mpKinematicsList = useSelector(Selector.Video.mpKinematicsList);
+    const resultLists = useSelector(Selector.Video.resultVideoLists);
+    const resultList = resultLists[props.videoId] || [];
+    const resultVideo = resultList.find((resultVideo: ResultVideo) => resultVideo.videoResultId === props.resultVideoId);
     const video1Ref = useRef<HTMLVideoElement>(null);
     const video2Ref = useRef<HTMLVideoElement>(null);
     const originalPath = Config.api.baseUrl + '/videos/' + props.videoId;
@@ -33,6 +37,7 @@ const DoubleVideo = (props: DoubleVideoProps) => {
 
     const blendshapes = blendshapesList[props.resultVideoId || '']
     const mpKinematics = mpKinematicsList[props.resultVideoId || '']
+
 
     const videoFPS = useMemo(
         () => videoList.find(video => video.id === props.videoId)?.videoInfo.fps || 0,
@@ -136,7 +141,7 @@ const DoubleVideo = (props: DoubleVideoProps) => {
                             {props.resultVideoId && (
                                 <FormControl>
                                     <RadioGroup row value={view} onChange={(e, v) => setView(views[v as keyof typeof views])}>
-                                        <FormControlLabel value={views.video} control={<Radio />} label="Show Masked Video" />
+                                        {Boolean(resultVideo?.videoResultExists) && <FormControlLabel value={views.video} control={<Radio />} label="Show Masked Video" />}
                                         {Boolean(mpKinematics) && <FormControlLabel value={views.skeleton3D} control={<Radio />} label="Show 3D Skeleton" />}
                                         {Boolean(blendshapes) && <FormControlLabel value={views.blendshapes3D} control={<Radio />} label="Show animated 3D Face" />}
                                     </RadioGroup>

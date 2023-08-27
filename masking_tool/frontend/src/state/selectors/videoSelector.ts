@@ -1,8 +1,8 @@
-import {ReduxState} from "../reducer";
-import {Video} from "../types/Video";
-import {createSelector} from "reselect";
-import {ResultVideo} from "../types/ResultVideo";
-import {DownloadableResultFile} from "../types/DownloadableResultFile";
+import { ReduxState } from "../reducer";
+import { Video } from "../types/Video";
+import { createSelector } from "reselect";
+import { ResultVideo } from "../types/ResultVideo";
+import { DownloadableResultFile } from "../types/DownloadableResultFile";
 
 const videoList = (state: ReduxState): Video[] => state.video.videoList;
 const resultVideoLists = (state: ReduxState): Record<string, ResultVideo[]> => state.video.resultVideoLists;
