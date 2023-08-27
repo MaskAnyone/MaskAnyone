@@ -66,7 +66,7 @@ const DoubleVideo = (props: DoubleVideoProps) => {
         if (view === views.blendshapes3D && props.resultVideoId) {
             return (
                 <BlendshapesRenderer3D
-                    blendshapes={blendshapes}
+                    blendshapes={blendshapes || []}
                 />
             )
         }
