@@ -4,14 +4,22 @@ from db.job_manager import JobManager
 from db.db_connection import DBConnection
 from db.result_blendshapes_manager import ResultBlendshapesManager
 from db.result_mp_kinematics_manager import ResultMpKinematicsManager
+from db.video_manager import VideoManager
 
 job_manager = JobManager(DBConnection())
 result_blendshapes_manager = ResultBlendshapesManager(DBConnection())
 result_mp_kinematics_manager = ResultMpKinematicsManager(DBConnection())
+video_manager = VideoManager(DBConnection())
 
 router = APIRouter(
     prefix="/results",
 )
+
+
+@router.get("/{video_id}/all")
+def get_all_results(video_id: str):
+    results = video_manager.fetch_all_results(video_id)
+    return {"results": results}
 
 
 @router.get("/{result_video_id}/blendshapes")

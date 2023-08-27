@@ -15,8 +15,16 @@ const VideoResultCard = (props: VideoResultCardProps) => {
     const openVideoResultMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
         event.stopPropagation();
-        props.onOpenMenu(event.currentTarget, props.resultVideo.id);
+        props.onOpenMenu(event.currentTarget, props.resultVideo.videoResultId);
     };
+
+    const resultVideo = props.resultVideo;
+
+    const imageLink = (resultVideo.videoResultExists ?
+        `${Config.api.baseUrl}/videos/${props.resultVideo.originalVideoId}/results/${props.resultVideo.videoResultId}/preview`
+        : "")
+
+    const name = resultVideo.videoResultExists ? "Video " + resultVideo.name : "Fancy Result"
 
     return (
         <Card
@@ -27,11 +35,11 @@ const VideoResultCard = (props: VideoResultCardProps) => {
         >
             <CardMedia
                 sx={{ height: 150 }}
-                image={`${Config.api.baseUrl}/videos/${props.resultVideo.videoId}/results/${props.resultVideo.id}/preview`}
+                image={imageLink}
             />
             <CardContent sx={{ position: 'relative' }}>
                 <Typography gutterBottom variant="h6" component="div">
-                    {props.resultVideo.name}
+                    {name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                     {props.resultVideo.createdAt.toLocaleDateString()}

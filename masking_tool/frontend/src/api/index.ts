@@ -1,6 +1,7 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import Config from "../config";
 import {
+    ApiFetchAllResultsResponse,
     ApiFetchDownloadableResultFilesResponse,
     ApiFetchJobsResponse, ApiFetchPresetsResponse,
     ApiFetchResultVideosResponse,
@@ -29,6 +30,14 @@ const Api = {
     fetchVideoResults: async (videoId: string): Promise<ApiFetchResultVideosResponse> => {
         const result = await sendApiRequest({
             url: `videos/${videoId}/results`,
+            method: 'get'
+        });
+
+        return result.data;
+    },
+    fetchAllResultsForVideo: async (videoId: string): Promise<ApiFetchAllResultsResponse> => {
+        const result = await sendApiRequest({
+            url: `results/${videoId}/all`,
             method: 'get'
         });
 

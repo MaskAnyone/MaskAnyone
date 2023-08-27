@@ -1,6 +1,6 @@
-import {createAction} from 'redux-actions';
-import {Video} from "../types/Video";
-import {DownloadableResultFile} from "../types/DownloadableResultFile";
+import { createAction } from 'redux-actions';
+import { Video } from "../types/Video";
+import { DownloadableResultFile } from "../types/DownloadableResultFile";
 
 const createVideoEvent = <T>(type: string) => createAction<T>('_E/VD/' + type);
 
@@ -8,9 +8,9 @@ export interface VideoListFetchedPayload {
     videoList: Video[];
 }
 
-export interface ResultVideoListFetchedPayload {
+export interface ResultsListFetchedPayload {
     videoId: string;
-    resultVideoList: any[];
+    resultsList: any[];
 }
 
 export interface DownloadableResultFilesFetchedPayload {
@@ -30,7 +30,7 @@ export interface MpKinematicsFetchedPayload {
 
 const VideoEvent = {
     videoListFetched: createVideoEvent<VideoListFetchedPayload>('VIDEO_LIST_FETCHED'),
-    resultVideoListFetched: createVideoEvent<ResultVideoListFetchedPayload>('RESULT_VIDEO_LIST_FETCHED'),
+    resultsListFetched: createVideoEvent<ResultsListFetchedPayload>('RESULTS_LIST_FETCHED'),
     downloadableResultFilesFetched: createVideoEvent<DownloadableResultFilesFetchedPayload>('DOWNLOADABLE_RESULT_FILES_FETCHED'),
     blendshapesFetched: createVideoEvent<BlendshapesFetchedPayload>('BLENDSHAPES_FETCHED'),
     mpKinematicsFetched: createVideoEvent<MpKinematicsFetchedPayload>('MP_KINEMATICS_FETCHED'),

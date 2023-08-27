@@ -1,10 +1,10 @@
-import {Box, Typography} from "@mui/material";
-import {useDispatch, useSelector} from "react-redux";
+import { Box, Typography } from "@mui/material";
+import { useDispatch, useSelector } from "react-redux";
 import Selector from "../../state/selector";
 import { useNavigate } from "react-router";
 import Paths from "../../paths";
 import VideoResultCard from "./videoResultsOverview/VideoResultCard";
-import React, {useState} from "react";
+import React, { useState } from "react";
 import VideoResultMenu from "./videoResultsOverview/VideoResultMenu";
 import CreatePresetDialog from "../presets/CreatePresetDialog";
 import Command from "../../state/actions/command";
@@ -19,7 +19,7 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
     const dispatch = useDispatch();
     const resultVideoLists = useSelector(Selector.Video.resultVideoLists);
     const jobList = useSelector(Selector.Job.jobList);
-    const [videoResultAnchorEl, setVideoResultAnchorEl] = useState<null|HTMLElement>(null);
+    const [videoResultAnchorEl, setVideoResultAnchorEl] = useState<null | HTMLElement>(null);
     const [createPresetDialogOpen, setCreatePresetDialogOpen] = useState<boolean>(false);
     const [activeResultVideoId, setActiveResultVideoId] = useState<string>();
 
@@ -40,7 +40,7 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
     };
 
     const createPreset = (name: string, description: string) => {
-        const activeResultVideo = resultVideos.find(resultVideo => resultVideo.id === activeResultVideoId);
+        const activeResultVideo = resultVideos.find(resultVideo => resultVideo.videoResultId === activeResultVideoId);
         if (!activeResultVideo) {
             return;
         }
@@ -70,10 +70,10 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
             <Box component={'div'} sx={{ overflowX: 'auto', whiteSpace: 'nowrap', padding: 1.5, margin: '-4px -12px' }}>
                 {resultVideos.map(resultVideo => (
                     <VideoResultCard
-                        key={resultVideo.id}
+                        key={resultVideo.videoResultId}
                         resultVideo={resultVideo}
-                        selected={props.resultVideoId === resultVideo.id}
-                        onSelect={() => selectResultVideo(resultVideo.id)}
+                        selected={props.resultVideoId === resultVideo.videoResultId}
+                        onSelect={() => selectResultVideo(resultVideo.videoResultId)}
                         onOpenMenu={openVideoResultMenu}
                     />
                 ))}

@@ -1,9 +1,15 @@
 
 export interface ResultVideo {
-    id: string;
-    videoId: string;
+    videoResultId: string;
+    originalVideoId: string;
     jobId: string;
-    name: string;
-    videoInfo: {};
     createdAt: Date;
+    jobInfo: any;
+    videoResultExists: boolean;
+    kinematicResultsExists: boolean;
+    audioResultsExists: boolean;
+    blendshapeResultsExists: boolean;
+    extraFileResultsExists: boolean;
+    videoInfo: any;
+    name: string;
 }

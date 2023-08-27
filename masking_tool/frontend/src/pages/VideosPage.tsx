@@ -6,16 +6,14 @@ import VideoResultsOverview from "../components/videos/VideoResultsOverview";
 import { useDispatch } from "react-redux";
 import Command from "../state/actions/command";
 import VideoTaskBar from "../components/videos/VideoTaskBar";
-import Api from "../api";
 
 const VideosPage = () => {
     const dispatch = useDispatch();
     const { videoId, resultVideoId } = useParams<{ videoId: string, resultVideoId: string }>();
-    const [jobId, setJobId] = useState<string>()
 
     useEffect(() => {
         if (videoId) {
-            dispatch(Command.Video.fetchResultVideoList({ videoId }));
+            dispatch(Command.Video.fetchResultsList({ videoId }));
         }
     }, [videoId]);
 
