@@ -49,9 +49,23 @@ def clear_results_dir():
                 os.remove(os.path.join(RESULT_BASE_PATH, f))
 
 
+def clear_out_dirs():
+    print("Cleaning out dirs")
+    if os.path.exists(TS_BASE_PATH):
+        for f in os.listdir(TS_BASE_PATH):
+            if os.path.isfile(os.path.join(TS_BASE_PATH, f)):
+                os.remove(os.path.join(TS_BASE_PATH, f))
+
+    if os.path.exists(BLENDSHAPES_BASE_PATH):
+        for f in os.listdir(BLENDSHAPES_BASE_PATH):
+            if os.path.isfile(os.path.join(BLENDSHAPES_BASE_PATH, f)):
+                os.remove(os.path.join(BLENDSHAPES_BASE_PATH, f))
+
+
 def clear_dirs():
     clear_temp_dir()
     clear_results_dir()
+    clear_out_dirs()
 
 
 def save_preview_image(masked_video_path):

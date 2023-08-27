@@ -44,12 +44,12 @@ class VideoManager:
         result = []
 
         result_video_data_list = self.__db_connection.select_all(
-            """SELECT 
+            """SELECT DISTINCT
             j.result_video_id,
             vr.video_id,
             vr.job_id,
             vr.name,
-            vr.created_at,
+            j.created_at,
             vr.video_info,
             j.data,
             CASE WHEN vr.id IS NOT NULL THEN TRUE ELSE FALSE END as video_result_exists,
@@ -86,7 +86,8 @@ class VideoManager:
             LEFT JOIN
             result_extra_files efr ON vr.job_id = efr.job_id AND vr.video_id = efr.video_id
             INNER JOIN
-            jobs j ON vr.job_id = j.id;""",
+            jobs j ON vr.job_id = j.id
+            ORDER BY j.created_at DESC""",
             {"video_id": video_id},
         )
 

@@ -42,7 +42,7 @@ const VideoResultCard = (props: VideoResultCardProps) => {
                     {name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                    {props.resultVideo.createdAt.toLocaleDateString()}
+                    {props.resultVideo.createdAt.toLocaleString()}
                 </Typography>
                 <IconButton sx={{ position: 'absolute', top: 4, right: 0 }} onClick={openVideoResultMenu}>
                     <MoreVertIcon />
