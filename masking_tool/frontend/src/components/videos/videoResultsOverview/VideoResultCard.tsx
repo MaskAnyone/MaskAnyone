@@ -3,6 +3,9 @@ import Config from "../../../config";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { ResultVideo } from "../../../state/types/ResultVideo";
 import React from "react";
+import skeleton from "../../../assets/previews/skeleton.png";
+import blendshapes from "../../../assets/previews/blendshapes.png";
+import file from "../../../assets/previews/file.png";
 
 interface VideoResultCardProps {
     resultVideo: ResultVideo;
@@ -18,11 +21,22 @@ const VideoResultCard = (props: VideoResultCardProps) => {
         props.onOpenMenu(event.currentTarget, props.resultVideo.videoResultId);
     };
 
+    const lookupPreviewForResult = () => {
+        if (props.resultVideo.videoResultExists) {
+            return `${Config.api.baseUrl}/videos/${props.resultVideo.originalVideoId}/results/${props.resultVideo.videoResultId}/preview`
+        }
+        if (props.resultVideo.blendshapeResultsExists) {
+            return blendshapes
+        }
+        if (props.resultVideo.kinematicResultsExists) {
+            return skeleton
+        }
+        return file
+    }
+
     const resultVideo = props.resultVideo;
 
-    const imageLink = (resultVideo.videoResultExists ?
-        `${Config.api.baseUrl}/videos/${props.resultVideo.originalVideoId}/results/${props.resultVideo.videoResultId}/preview`
-        : "")
+    const imageLink = lookupPreviewForResult()
 
     const name = resultVideo.videoResultExists ? resultVideo.name : "File Result"
 

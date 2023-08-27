@@ -73,7 +73,7 @@ const DoubleVideo = (props: DoubleVideoProps) => {
         if (view === views.skeleton3D) {
             return (
                 <PoseRenderer3D
-                    mpKinematics={mpKinematics}
+                    mpKinematics={mpKinematics || []}
                     frame={frame}
                 />
             )
@@ -142,8 +142,8 @@ const DoubleVideo = (props: DoubleVideoProps) => {
                                 <FormControl>
                                     <RadioGroup row value={view} onChange={(e, v) => setView(views[v as keyof typeof views])}>
                                         {Boolean(resultVideo?.videoResultExists) && <FormControlLabel value={views.video} control={<Radio />} label="Show Masked Video" />}
-                                        {Boolean(mpKinematics) && <FormControlLabel value={views.skeleton3D} control={<Radio />} label="Show 3D Skeleton" />}
-                                        {Boolean(blendshapes) && <FormControlLabel value={views.blendshapes3D} control={<Radio />} label="Show animated 3D Face" />}
+                                        {Boolean(resultVideo?.kinematicResultsExists) && <FormControlLabel value={views.skeleton3D} control={<Radio />} label="Show 3D Skeleton" />}
+                                        {Boolean(resultVideo?.blendshapeResultsExists) && <FormControlLabel value={views.blendshapes3D} control={<Radio />} label="Show animated 3D Face" />}
                                     </RadioGroup>
                                 </FormControl>
                             )}
