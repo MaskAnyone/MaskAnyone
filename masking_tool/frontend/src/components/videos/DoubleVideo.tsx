@@ -121,6 +121,18 @@ const DoubleVideo = (props: DoubleVideoProps) => {
         video1Ref.current.addEventListener('seeking', updateCurrentVideoTime);
 
         video1Ref.current.addEventListener('seeked', updateCurrentVideoTime);
+
+        /*const interval = setInterval(
+            () => {
+                if (video1Ref.current && video2Ref.current) {
+                    video2Ref.current.currentTime = video1Ref.current.currentTime;
+
+                }
+            },
+            1000,
+        );*/
+
+        return () => clearInterval(interval);
     }, [originalPath, resultPath]);
 
     return (
