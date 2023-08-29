@@ -1,5 +1,8 @@
 def produces_out_vid(run_params: dict):
     masking_params = run_params["videoMasking"]
+    voice_masking_strategy = run_params["voiceMasking"]["maskingStrategy"]["key"]
+    if voice_masking_strategy != "none" and voice_masking_strategy != "preserve":
+        return True
     for video_part in masking_params:
         if masking_params[video_part]["hidingStrategy"]["key"] != "none":
             return True

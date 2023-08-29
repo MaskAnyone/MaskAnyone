@@ -427,5 +427,5 @@ class Pipeline:
 
         print(f"Finished processing video {video_id}")
 
-        if not self.model_3d_only:
+        if not self.model_3d_only or self.audio_masker:
             save_preview_image(video_out_path)
