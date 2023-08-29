@@ -1,4 +1,4 @@
-import {Box, Collapse, Fade, Grid, MenuItem, Select, Typography} from "@mui/material"
+import { Box, Collapse, Fade, Grid, MenuItem, Select, Typography } from "@mui/material"
 import { RunParams } from "../../../../../state/types/Run"
 import RadioCard from "../RadioCard"
 import MethodSettings from "../../MethodSettings"
@@ -135,10 +135,10 @@ const HidingStep = (props: StepProps) => {
         <>
             <Box component={'div'} sx={{ marginBottom: 3.5 }}>
                 <Typography variant="h6">
-                    What do you want to mask?
+                    What do you want to hide?
                 </Typography >
                 <Typography variant={'body2'}>
-                    Please select the are you want to mask. This can either be the persons head, the entire person, or nothing if you just want to mask the background.
+                    Please select the area you want to hide. Hiding will overlay the selected area, so that it is not visible anymore.
                 </Typography>
             </Box>
             <Box component="div" sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '24px' }}>

@@ -91,12 +91,19 @@ class MediaPipeDetector(BaseDetector):
     ) -> np.ndarray:
         # Returns the segmentation mask for the background [black / white]
         # The background is defined as everything that is not body
-        person_silhouette_result = self.get_part_to_detect("body")
+        person_silhouette_result = next(
+            (
+                result
+                for result in self.current_results
+                if result["part_name"] == "body"
+            ),
+            None,
+        )
         if person_silhouette_result:
             mask = person_silhouette_result["mask"]
         else:
             mask = self.detect_body_silhouette(frame, timestamp_ms)
-            mask_inverted = 1 - mask
+        mask_inverted = 1 - mask
         return mask_inverted  # the opposite of the body mask is the background
 
     def detect_boundingbox(self, frame, part_name: str):

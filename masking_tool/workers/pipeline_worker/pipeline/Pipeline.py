@@ -325,7 +325,6 @@ class Pipeline:
         self.init_blendshapes_file_handle(video_id)
         self.num_frames = int(video_cap.get(cv2.CAP_PROP_FRAME_COUNT))
         index = 0
-
         while True:
             ret, frame = video_cap.read()
             if not ret:
