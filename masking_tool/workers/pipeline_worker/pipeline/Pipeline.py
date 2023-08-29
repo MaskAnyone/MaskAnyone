@@ -407,7 +407,7 @@ class Pipeline:
             else:
                 raise Exception("Docker job timed out")
 
-        if self.audio_masker:
+        if not self.model_3d_only and self.audio_masker:
             old_video_out_path = os.path.join(RESULT_BASE_PATH, video_id + "_old.mp4")
             os.rename(video_out_path, old_video_out_path)
             if self.masks_audio_only():  # no masking of video was performed
@@ -426,5 +426,5 @@ class Pipeline:
 
         print(f"Finished processing video {video_id}")
 
-        if not self.model_3d_only or self.audio_masker:
+        if os.path.exists(video_out_path):
             save_preview_image(video_out_path)
