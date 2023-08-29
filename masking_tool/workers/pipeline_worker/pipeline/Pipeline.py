@@ -274,7 +274,12 @@ class Pipeline:
             self.progress_message_sent_time = time.time()
 
     def masks_audio_only(self):
-        return self.audio_masker and len(self.detectors) == 0 and not self.is_inpainting
+        return (
+            self.audio_masker
+            and len(self.detectors) == 0
+            and not self.is_inpainting
+            and len(self.mask_extractors) == 0
+        )
 
     def handle_docker_model_finished(
         self, job_id: str, original_video_path: str, basic_masking_res_path: str

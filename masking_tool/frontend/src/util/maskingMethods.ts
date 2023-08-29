@@ -33,7 +33,8 @@ export const maskingMethods: MaskingMethods = {
             timeseries: false
         },
         backendFormat: {
-            "body": "skeleton"
+            "body": "skeleton",
+            "face": "skeleton"
         }
     },
     faceSwap: {
