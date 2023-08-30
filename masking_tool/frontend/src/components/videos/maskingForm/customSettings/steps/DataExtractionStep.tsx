@@ -91,7 +91,7 @@ const DataExctactionStep = (props: StepProps) => {
                 <CheckableCard
                     title={"Facial 3D Model"}
                     description={"Will create a Blendshapes based 3D facial model"}
-                    imagePath={""}
+                    imagePath={'/images/model_extraction/facial_3d_model.jpg'}
                     checked={threeDParams.blendshapes}
                     onSelect={() => handleBlendshapesChanged()}
                 />
