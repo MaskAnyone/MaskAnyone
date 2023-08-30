@@ -343,7 +343,7 @@ export const rvcSchema: RJSFSchema = {
 export const faceswapFormSchema: RJSFSchema = {
   type: 'object',
   properties: {
-    sourceImage: { title: 'The face that should be used for replacement', type: 'string', default: 'neutral', enum: ['neutral'] },
+    sourceImage: { title: 'The face that should be used for replacement', type: 'string', default: 'neutral', enum: ['scholz', 'AndyMurray', 'BlakeShelton', 'DaveFranco', 'NeilPatrickHarris', 'Shakira'] },
     maskingModel: { title: 'The pretrained deep learning model that should be used to swap faces', type: 'string', default: 'roop', enum: ['roop'] },
 
   },

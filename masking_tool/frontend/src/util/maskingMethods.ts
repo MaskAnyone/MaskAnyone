@@ -37,18 +37,6 @@ export const maskingMethods: MaskingMethods = {
             "face": "skeleton"
         }
     },
-    faceSwap: {
-        name: "Face Swap",
-        description: "Swaps the face of the subject with the face of another person",
-        parameterSchema: faceswapFormSchema,
-        defaultValues: {
-            sourceImage: "neutral",
-            maskingModel: "roop"
-        },
-        backendFormat: {
-            "face": "swap"
-        }
-    },
     faceMesh: {
         name: "Face Mesh",
         description: "Displays a detailed facemesh containing 478 Landmarks",
@@ -76,6 +64,18 @@ export const maskingMethods: MaskingMethods = {
         backendFormat: {
             "body": "skeleton",
             "face": "faceMesh"
+        }
+    },
+    faceSwap: {
+        name: "Face Swap",
+        description: "Swaps the face of the subject with the face of another person",
+        parameterSchema: faceswapFormSchema,
+        defaultValues: {
+            sourceImage: "scholz",
+            maskingModel: "roop"
+        },
+        backendFormat: {
+            "face": "swap"
         }
     },
     blender: {
