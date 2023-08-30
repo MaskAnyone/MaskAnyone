@@ -13,7 +13,7 @@ class Worker:
         self.worker_id = worker_id
         self.job_handler = job_handler
         self.backend_client = BackendClient(worker_id)
-        self.backend_client.register_worker(worker_id)
+        self.backend_client.register_worker(worker_type)
 
         self.video_manager = VideoManager(
             self.backend_client, LocalDataManager(DATA_BASE_DIR)

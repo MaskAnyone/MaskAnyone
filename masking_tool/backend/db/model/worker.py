@@ -6,3 +6,4 @@ class Worker:
     id: str
     job_id: str
     last_activity: str
+    type: str

@@ -16,6 +16,7 @@ const onFetchWorkerList = function*(payload: FetchWorkerListPayload) {
             id: worker.id,
             jobId: worker.job_id,
             lastActivity: new Date(worker.last_activity),
+            type: worker.type,
         }));
 
         yield put(Event.Worker.workerListFetched({ workerList }));

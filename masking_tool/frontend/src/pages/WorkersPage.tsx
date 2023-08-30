@@ -49,6 +49,9 @@ const WorkersPage = () => {
                                 </Typography>
                             </div>
                             <Typography variant="body2" color="textSecondary">
+                                Type: {worker.type}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">
                                 Last Activity: {formatRelativeTime(worker.lastActivity)}
                             </Typography>
                         </Paper>

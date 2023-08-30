@@ -70,6 +70,7 @@ export interface ApiFetchWorkersResponse {
         id: string;
         job_id?: string;
         last_activity: string;
+        type: string;
     }[];
 }
 

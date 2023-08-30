@@ -92,6 +92,21 @@ CREATE TABLE public.result_audio_files (
 ALTER TABLE public.result_audio_files OWNER TO dev;
 
 --
+-- Name: result_blendshapes; Type: TABLE; Schema: public; Owner: dev
+--
+
+CREATE TABLE public.result_blendshapes (
+    id uuid NOT NULL,
+    result_video_id uuid NOT NULL,
+    video_id uuid NOT NULL,
+    job_id uuid NOT NULL,
+    data jsonb NOT NULL
+);
+
+
+ALTER TABLE public.result_blendshapes OWNER TO dev;
+
+--
 -- Name: result_extra_files; Type: TABLE; Schema: public; Owner: dev
 --
 
@@ -106,21 +121,6 @@ CREATE TABLE public.result_extra_files (
 
 
 ALTER TABLE public.result_extra_files OWNER TO dev;
-
---
--- Name: result_blendshapes; Type: TABLE; Schema: public; Owner: dev
---
-
-CREATE TABLE public.result_blendshapes (
-    id uuid NOT NULL,
-    result_video_id uuid NOT NULL,
-    video_id uuid NOT NULL,
-    job_id uuid NOT NULL,
-    data jsonb NOT NULL
-);
-
-
-ALTER TABLE public.result_blendshapes OWNER TO dev;
 
 --
 -- Name: result_mp_kinematics; Type: TABLE; Schema: public; Owner: dev
@@ -175,7 +175,8 @@ ALTER TABLE public.videos OWNER TO dev;
 CREATE TABLE public.workers (
     id uuid NOT NULL,
     job_id uuid,
-    last_activity timestamp without time zone
+    last_activity timestamp without time zone,
+    type character varying NOT NULL
 );
 
 
@@ -206,19 +207,19 @@ ALTER TABLE ONLY public.result_audio_files
 
 
 --
--- Name: result_extra_files result_extra_files_pkey; Type: CONSTRAINT; Schema: public; Owner: dev
---
-
-ALTER TABLE ONLY public.result_extra_files
-    ADD CONSTRAINT result_extra_files_pkey PRIMARY KEY (id);
-
-
---
 -- Name: result_blendshapes result_blendshapes_pkey; Type: CONSTRAINT; Schema: public; Owner: dev
 --
 
 ALTER TABLE ONLY public.result_blendshapes
     ADD CONSTRAINT result_blendshapes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: result_extra_files result_extra_files_pkey; Type: CONSTRAINT; Schema: public; Owner: dev
+--
+
+ALTER TABLE ONLY public.result_extra_files
+    ADD CONSTRAINT result_extra_files_pkey PRIMARY KEY (id);
 
 
 --

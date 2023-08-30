@@ -7,6 +7,7 @@ import Command from "../state/actions/command";
 import DeletePresetConfirmationDialog from "../components/presets/DeletePresetConfirmationDialog";
 import PresetPreviewMenu from "../components/presets/PresetPreviewMenu";
 import PresetDetailsDialog from "../components/presets/PresetDetailsDialog";
+import Assets from "../assets/assets";
 
 const PresetsPage = () => {
     const dispatch = useDispatch();
@@ -53,15 +54,24 @@ const PresetsPage = () => {
                 My Custom Presets
             </Typography>
 
-            <Box component={'div'} sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', marginTop: 2, gap: '24px' }}>
-                {presetList.map(preset => (
-                    <PresetPreview
-                        key={preset.id}
-                        preset={preset}
-                        onOpenMenu={anchorEl => openPresetPreviewMenu(anchorEl, preset.id)}
-                    />
-                ))}
-            </Box>
+            {presetList.length < 1 ? (
+                <Box component={'div'} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <img src={Assets.illustrations.empty} alt={'Empty'} width={300} style={{ marginTop: 24 }} />
+                    <Typography variant={'body1'}>
+                        You do not have any presets yet. Please navigate to a result you like and create a preset from it!
+                    </Typography>
+                </Box>
+            ) : (
+                <Box component={'div'} sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', marginTop: 2, gap: '24px' }}>
+                    {presetList.map(preset => (
+                        <PresetPreview
+                            key={preset.id}
+                            preset={preset}
+                            onOpenMenu={anchorEl => openPresetPreviewMenu(anchorEl, preset.id)}
+                        />
+                    ))}
+                </Box>
+            )}
 
             <PresetPreviewMenu
                 anchorEl={presetPreviewAnchorEl}
