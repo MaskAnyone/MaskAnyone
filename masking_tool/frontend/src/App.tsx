@@ -11,6 +11,7 @@ import Paths from "./paths";
 import WorkersPage from "./pages/WorkersPage";
 import VideosMaskingPage from "./pages/VideosMaskingPage"
 import LandingPage from "./pages/LandingPage";
+import AboutPage from "./pages/AboutPage";
 
 const App = () => {
     const dispatch = useDispatch();
@@ -34,6 +35,7 @@ const App = () => {
                 <Route path={Paths.runs} element={<RunsPage />} />
                 <Route path={Paths.presets} element={<PresetsPage />} />
                 <Route path={Paths.workers} element={<WorkersPage />} />
+                <Route path={Paths.about} element={<AboutPage />} />
                 <Route index={true} element={<Navigate to={Paths.videos} replace={true} />} />
             </Route>
         </Routes>

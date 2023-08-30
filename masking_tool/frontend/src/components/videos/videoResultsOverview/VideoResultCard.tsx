@@ -3,8 +3,6 @@ import Config from "../../../config";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { ResultVideo } from "../../../state/types/ResultVideo";
 import React from "react";
-import skeleton from "../../../assets/previews/skeleton.png";
-import blendshapes from "../../../assets/previews/blendshapes.png";
 import file from "../../../assets/previews/file.png";
 
 interface VideoResultCardProps {
@@ -23,21 +21,21 @@ const VideoResultCard = (props: VideoResultCardProps) => {
 
     const lookupPreviewForResult = () => {
         if (props.resultVideo.videoResultExists) {
-            return `${Config.api.baseUrl}/videos/${props.resultVideo.originalVideoId}/results/${props.resultVideo.videoResultId}/preview`
+            return `${Config.api.baseUrl}/videos/${props.resultVideo.originalVideoId}/results/${props.resultVideo.videoResultId}/preview`;
         }
+
         if (props.resultVideo.blendshapeResultsExists) {
-            return blendshapes
+            return '/images/model_extraction/facial_3d_model.jpg';
         }
+
         if (props.resultVideo.kinematicResultsExists) {
-            return skeleton
+            return '/images/model_extraction/skeleton.png';
         }
-        return file
+
+        return file;
     }
 
     const resultVideo = props.resultVideo;
-
-    const imageLink = lookupPreviewForResult()
-
     const name = resultVideo.videoResultExists ? resultVideo.name : "File Result"
 
     return (
@@ -49,7 +47,7 @@ const VideoResultCard = (props: VideoResultCardProps) => {
         >
             <CardMedia
                 sx={{ height: 150 }}
-                image={imageLink}
+                image={lookupPreviewForResult()}
             />
             <CardContent sx={{ position: 'relative' }}>
                 <Typography gutterBottom variant="h6" component="div">

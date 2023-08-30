@@ -1,20 +1,20 @@
 import logoWhite from './logos/logo_white.svg';
 import shield, { ReactComponent as ShieldComponent } from './logos/shield.svg';
-import blendshapes from './previews/blendshapes.png';
-import skeleton from './previews/skeleton.png';
 import file from './previews/file.png';
+import uploadIllustration from './illustrations/upload.svg';
 
 const Assets = {
+    illustrations: {
+        upload: uploadIllustration,
+    },
     logos: {
         logoWhite,
         shield,
         ShieldComponent,
     },
     previews: {
-        blendshapes,
-        skeleton,
-        file
-    }
+        file,
+    },
 };
 
 export default Assets;
