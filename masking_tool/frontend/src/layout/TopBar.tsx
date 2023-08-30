@@ -60,6 +60,7 @@ const TopBar = (props: TopBarProps) => {
                 />
                 <Button
                     sx={styles.navigationButton}
+                    style={{ marginRight: '6px' }}
                     component={Link}
                     to={Paths.workers}
                     children={'Workers'}
