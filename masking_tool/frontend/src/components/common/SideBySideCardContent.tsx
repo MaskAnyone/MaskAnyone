@@ -39,10 +39,10 @@ const SideBySideCardContent = (props: SideBySideCardContentProps) => {
         <CardContent sx={{ width: 160 }}>
             <Typography variant={'body1'} component="div" fontWeight={'bold'} sx={styles.title}>
                 {props.selectable && (
-                    <Radio checked={props.selected} onChange={props.onSelect} sx={styles.radioButton} />
+                    <Radio checked={props.selected} onChange={props.onSelect} sx={styles.radioButton} color={'secondary'} />
                 )}
                 {props.checkable && (
-                    <Checkbox checked={props.selected} onChange={props.onSelect}  sx={styles.checkbox} />
+                    <Checkbox checked={props.selected} onChange={props.onSelect}  sx={styles.checkbox} color={'secondary'} />
                 )}
                 {props.title}
             </Typography>

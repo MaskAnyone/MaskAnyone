@@ -1,6 +1,5 @@
-import { Box, Collapse, Fade, Grid, MenuItem, Select, Typography } from "@mui/material"
+import { Box, Fade, Grid, MenuItem, Select, Typography } from "@mui/material"
 import { RunParams } from "../../../../../state/types/Run"
-import RadioCard from "../RadioCard"
 import MethodSettings from "../../MethodSettings"
 import { hidingMethods } from "../../../../../util/maskingMethods";
 import { useEffect, useState } from "react";

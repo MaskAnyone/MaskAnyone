@@ -1,11 +1,12 @@
 import {Box, Button, DialogActions, DialogContent, IconButton, Step, StepButton, Stepper} from "@mui/material"
-import { useState } from "react";
+import React, { useState } from "react";
 import { RunParams } from "../../../../state/types/Run";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import HidingStep, { StepProps } from "./steps/HidingStep";
 import VideoMaskingStep from "./steps/VideoMaskingStep";
 import VoiceMaskingStep from "./steps/VoiceMaskingStep";
 import DataExctactionStep from "./steps/DataExtractionStep";
+import ShieldLogoIcon from "../../../common/ShieldLogoIcon";
 
 const steps = [
     {
@@ -30,6 +31,10 @@ const styles = {
     dialogActions: {
         paddingBottom: 2,
         paddingRight: 3,
+    },
+    stepButton: {
+        "& .MuiSvgIcon-root.Mui-active": { color: "secondary.main" },
+        "& .MuiStepLabel-label.Mui-active": { color: "secondary.main" },
     },
 };
 
@@ -73,7 +78,6 @@ const CustomSettingsContainer = (props: RunSettingsContainerProps) => {
                     <Button
                         startIcon={<ArrowBackIcon />}
                         onClick={() => setTimeout(props.onBackClicked, 150)}
-                        color={'inherit'}
                         children={'Presets'}
                     />
 
@@ -81,7 +85,7 @@ const CustomSettingsContainer = (props: RunSettingsContainerProps) => {
                         {steps.map((step, index) => {
                             return (
                                 <Step key={step.name} completed={isStepCompleted(index)}>
-                                    <StepButton color="inherit" onClick={() => handleStepChange(index)}>
+                                    <StepButton onClick={() => handleStepChange(index)} sx={styles.stepButton}>
                                         {step.name}
                                     </StepButton>
                                 </Step>
@@ -98,7 +102,7 @@ const CustomSettingsContainer = (props: RunSettingsContainerProps) => {
         <DialogActions sx={styles.dialogActions}>
             {activeStep > 0 && <Button onClick={() => handleBack()}>Go back</Button>}
             {activeStep < steps.length - 1 && <Button variant="contained" sx={{ marginLeft: "25px" }} onClick={() => handleNext()}>Next</Button>}
-            {activeStep == steps.length - 1 && <Button variant="contained" color="primary" onClick={() => props.onRunClicked()} sx={{ marginLeft: "25px" }}>Mask Video!</Button>}
+            {activeStep == steps.length - 1 && <Button variant="contained" color="secondary" startIcon={<ShieldLogoIcon />} onClick={() => props.onRunClicked()} sx={{ marginLeft: "25px" }}>Mask Video</Button>}
         </DialogActions>
     </>)
 }

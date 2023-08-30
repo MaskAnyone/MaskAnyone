@@ -7,14 +7,14 @@ interface CheckableCardProps {
     title: string;
     description: string;
     checked: boolean;
-    imagePath: String;
+    imagePath: string;
     onSelect: () => void;
 }
 
 const CheckableCard = (props: CheckableCardProps) => {
     return (
         <ButtonBase onClick={props.onSelect} sx={{ textAlign: 'inherit' }}>
-            <SideBySideCard>
+            <SideBySideCard image={props.imagePath}>
                 <SideBySideCardContent
                     title={props.title}
                     description={props.description}

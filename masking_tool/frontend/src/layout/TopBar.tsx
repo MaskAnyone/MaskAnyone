@@ -1,7 +1,6 @@
-import {AppBar, Badge, Box, Button, IconButton, Toolbar, Typography} from "@mui/material";
+import {AppBar, Badge, Box, Button, IconButton, Toolbar} from "@mui/material";
 import MenuIcon from '@mui/icons-material/Menu';
 import { Link } from "react-router-dom";
-import MaskIcon from '@mui/icons-material/Masks';
 import {useSelector} from "react-redux";
 import Selector from "../state/selector";
 import Paths from "../paths";
@@ -61,9 +60,16 @@ const TopBar = (props: TopBarProps) => {
                 />
                 <Button
                     sx={styles.navigationButton}
+                    style={{ marginRight: '6px' }}
                     component={Link}
                     to={Paths.workers}
                     children={'Workers'}
+                />
+                <Button
+                    sx={styles.navigationButton}
+                    component={Link}
+                    to={Paths.about}
+                    children={'About'}
                 />
                 {(!props.isLargeScreen) && (
                     <IconButton sx={{color: 'white'}} onClick={props.onOpenSideBar}>

@@ -8,7 +8,6 @@ import {
     blurFormSchemaBG,
     blurFormSchemaSubject,
     blurFormSchemaSubjectUI,
-    bodyMeshFormSchema,
     faceMeshFormSchema,
     inpaintFormSchemaSubject,
     inpaintFormSchemaSubjectUI,
@@ -20,11 +19,13 @@ import {
 export const maskingMethods: MaskingMethods = {
     none: {
         name: "None",
-        description: "Does not mask the subject in the video"
+        description: "Does not mask the subject in the video",
+        imagePath: '/images/masking_strategy/none.jpg',
     },
     skeleton: {
         name: "Skeleton",
         description: "Displays a basic skeleton containing landmarks for the head, torso, arms and legs",
+        imagePath: '/images/masking_strategy/skeleton.jpg',
         parameterSchema: skeletonFormSchema,
         defaultValues: {
             maskingModel: "mediapipe",
@@ -40,6 +41,7 @@ export const maskingMethods: MaskingMethods = {
     faceMesh: {
         name: "Face Mesh",
         description: "Displays a detailed facemesh containing 478 Landmarks",
+        imagePath: '/images/masking_strategy/face_mesh.jpg',
         parameterSchema: faceMeshFormSchema,
         defaultValues: {
             maskingModel: "mediapipe",
@@ -54,6 +56,7 @@ export const maskingMethods: MaskingMethods = {
     faceMeshSkeleton: {
         name: "Skeleton & Face Mesh",
         description: "Displays a skeleton with a detailed facemesh containing 478 Landmarks",
+        imagePath: '/images/masking_strategy/face_mesh_skeleton.jpg',
         parameterSchema: faceMeshFormSchema,
         defaultValues: {
             maskingModel: "mediapipe",
@@ -69,6 +72,7 @@ export const maskingMethods: MaskingMethods = {
     faceSwap: {
         name: "Face Swap",
         description: "Swaps the face of the subject with the face of another person",
+        imagePath: '/images/masking_strategy/face_swap.jpg',
         parameterSchema: faceswapFormSchema,
         defaultValues: {
             sourceImage: "scholz",
@@ -81,6 +85,7 @@ export const maskingMethods: MaskingMethods = {
     blender: {
         name: "Blender Avatar",
         description: "Displays a rigged avatar based on mediapipe and rendered in blender",
+        imagePath: '/images/masking_strategy/blender.jpg',
         parameterSchema: blenderMocapFormSchema,
         defaultValues: {
             maskingModel: "blender",
@@ -99,11 +104,13 @@ export const hidingMethods: HidingMethods = {
     face: {
         none: {
             name: "None",
-            description: "Does not hide the subject in the video"
+            description: "Does not hide the subject in the video",
+            imagePath: '',
         },
         blur: {
             name: "Blur",
             description: "Gaussian Blurring",
+            imagePath: '',
             parameterSchema: blurFormSchemaSubject,
             uiSchema: blurFormSchemaSubjectUI,
             defaultValues: {
@@ -122,6 +129,7 @@ export const hidingMethods: HidingMethods = {
         blackout: {
             name: "Blackout",
             description: "Hiding the subject with the selected color",
+            imagePath: '',
             parameterSchema: blackoutFormSchemaSubject,
             uiSchema: blackoutFormSchemaSubjectUI,
             defaultValues: {
@@ -141,11 +149,13 @@ export const hidingMethods: HidingMethods = {
     body: {
         none: {
             name: "None",
-            description: "Does not hide the subject in the video"
+            description: "Does not hide the subject in the video",
+            imagePath: '',
         },
         blur: {
             name: "Blur",
             description: "Gaussian Blurring",
+            imagePath: '',
             parameterSchema: blurFormSchemaSubject,
             uiSchema: blurFormSchemaSubjectUI,
             defaultValues: {
@@ -164,6 +174,7 @@ export const hidingMethods: HidingMethods = {
         blackout: {
             name: "Blackout",
             description: "Hiding the subject with the selected color",
+            imagePath: '',
             parameterSchema: blackoutFormSchemaSubject,
             uiSchema: blackoutFormSchemaSubjectUI,
             defaultValues: {
@@ -182,6 +193,7 @@ export const hidingMethods: HidingMethods = {
         contour: {
             name: "Contours (Edge Detection)",
             description: "Hide the subject by only preserving their contours",
+            imagePath: '',
             parameterSchema: contourFormSchemaSubject,
             uiSchema: contourFormSchemaSubjectUI,
             defaultValues: {
@@ -199,6 +211,7 @@ export const hidingMethods: HidingMethods = {
         inpaint: {
             name: "Inpainting (Background Estimation; Experimental, 432x240 only)",
             description: "Attempt to estimate the background behind the subject and fill the subject area with it",
+            imagePath: '',
             parameterSchema: inpaintFormSchemaSubject,
             uiSchema: inpaintFormSchemaSubjectUI,
             defaultValues: {
@@ -211,11 +224,13 @@ export const hidingMethods: HidingMethods = {
     "background": {
         none: {
             name: "None",
-            description: "Does not hide the background of the video"
+            description: "Does not hide the background of the video",
+            imagePath: '',
         },
         blur: {
             name: "Blur",
             description: "Gaussian Blurring",
+            imagePath: '',
             parameterSchema: blurFormSchemaBG,
             defaultValues: {
                 subjectDetection: "silhouette",
@@ -232,6 +247,7 @@ export const hidingMethods: HidingMethods = {
         blackout: {
             name: "Blackout",
             description: "Hiding the subject with the selected color",
+            imagePath: '',
             parameterSchema: blackoutFormSchemaBG,
             defaultValues: {
                 subjectDetection: "silhouette",
@@ -252,16 +268,19 @@ export const voiceMaskingMethods: any = {
     preserve: {
         name: "Preserve",
         description: "Leave the video's audio unaltered",
+        imagePath: '/images/voice_masking_strategy/preserve.svg',
         defaultValues: {}
     },
     remove: {
         name: "Remove",
         description: "Remove the video's audio entirely",
+        imagePath: '/images/voice_masking_strategy/remove.svg',
         defaultValues: {}
     },
     switch: {
         name: "Switch",
         description: "Mask the original speaker by replacing their voice with the voice of another person",
+        imagePath: '/images/voice_masking_strategy/switch.svg',
         parameterSchema: rvcSchema,
         defaultValues: {
             mode: 'manual',

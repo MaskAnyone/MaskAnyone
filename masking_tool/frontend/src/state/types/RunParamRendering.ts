@@ -3,6 +3,7 @@ import { RJSFSchema, UiSchema } from "@rjsf/utils"
 export type Method = {
     name: string,
     description: string,
+    imagePath: string,
     parameterSchema?: RJSFSchema
     uiSchema?: UiSchema
     defaultValues?: { [paramterName: string]: any }

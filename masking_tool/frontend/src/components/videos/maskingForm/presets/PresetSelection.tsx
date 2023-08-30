@@ -57,24 +57,27 @@ const PresetSelection = (props: PresetSelectionProps) => {
                 ))}
             </Box>
 
-            <Box component={'div'} sx={{ marginTop: 3.5, marginBottom: 0 }}>
-                <Typography variant="h6">
-                    My Custom Presets
-                </Typography >
-            </Box>
-            <Box component={'div'} sx={styles.presetList}>
-                {customPresets.map((preset, index) => (
-                    <SelectableCard
-                        key={preset.id}
-                        title={preset.name}
-                        description={preset.description}
-                        selected={false}
-                        imagePath={''}
-                        onSelect={() => {}}
-                        style={index === customPresets.length - 1 ? undefined : { marginRight: '23.5px' }}
-                    />
-                ))}
-            </Box>
+            {Boolean(customPresets.length) && (<>
+                <Box component={'div'} sx={{ marginTop: 3.5, marginBottom: 0 }}>
+                    <Typography variant="h6">
+                        My Custom Presets
+                    </Typography >
+                </Box>
+                <Box component={'div'} sx={styles.presetList}>
+                    {customPresets.map((preset, index) => (
+                        <SelectableCard
+                            key={preset.id}
+                            title={preset.name}
+                            description={preset.description}
+                            selected={false}
+                            imagePath={''}
+                            onSelect={() => {}}
+                            style={index === customPresets.length - 1 ? undefined : { marginRight: '23.5px' }}
+                        />
+                    ))}
+                </Box>
+            </>)}
+
         </Box>
     )
 }

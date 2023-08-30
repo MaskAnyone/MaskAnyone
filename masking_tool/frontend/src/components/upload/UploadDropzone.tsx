@@ -1,5 +1,5 @@
 import Dropzone from 'react-dropzone';
-import {IconButton, List, ListItem, ListItemText, Paper, Typography} from '@mui/material';
+import {Box, IconButton, List, ListItem, ListItemText, Paper, Typography} from '@mui/material';
 import UploadProgress from './UploadProgress';
 import CancelIcon from '@mui/icons-material/Cancel';
 import React from 'react';
@@ -7,6 +7,7 @@ import {useSelector} from 'react-redux';
 import Selector from "../../state/selector";
 import {formatFileSize} from "../../util/formatFileSize";
 import Config from "../../config";
+import Assets from "../../assets/assets";
 
 const styles = {
     dropzoneRoot: {
@@ -17,10 +18,17 @@ const styles = {
         height: '100%',
         overflow: 'auto',
     },
+    dropzoneInfoContainer: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: '24px',
+    },
     dropzoneInfo: {
         width: '50%',
         margin: '0 auto',
-        paddingTop: '140px',
+        paddingTop: '24px',
         textAlign: 'center',
     },
     stagedFilesListItemText: {
@@ -50,9 +58,12 @@ const UploadDropzone = (props: UploadDropzoneProps) => {
                     <div {...getRootProps()} style={styles.dropzoneWrapper}>
                         <input {...getInputProps()} />
                         {props.stagedFiles.length < 1 && (
-                            <Typography sx={styles.dropzoneInfo}>
-                                Drag files here, or click to select files
-                            </Typography>
+                            <Box component={'div'} sx={styles.dropzoneInfoContainer}>
+                                <img src={Assets.illustrations.upload} alt={'Upload'} width={220} />
+                                <Typography sx={styles.dropzoneInfo}>
+                                    Drag files here, or click to select files
+                                </Typography>
+                            </Box>
                         )}
                         {props.stagedFiles.length > 0 && (
                             <List dense={true}>

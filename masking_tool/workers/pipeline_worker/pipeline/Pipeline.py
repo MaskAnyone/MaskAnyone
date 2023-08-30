@@ -68,7 +68,7 @@ class Pipeline:
             required_detectors,
             required_maskers,
             hiding_strategies,
-        ) = self.identify_requried_models(run_params)
+        ) = self.identify_required_models(run_params)
         params_3d: Params3D = run_params["threeDModelCreation"]
         voice_masking_strategy = run_params["voiceMasking"]["maskingStrategy"]
 
@@ -93,7 +93,9 @@ class Pipeline:
             voice_masking_strategy["key"], voice_masking_strategy["params"]
         )
 
-    def identify_requried_models(self, run_params: dict):
+        self.check_is_model_3d_only(required_maskers)
+
+    def identify_required_models(self, run_params: dict):
         # extract arguments from request and create initialization arguments for maskers, detectors and hider
         hiding_strategies: HidingStategies = {}
         required_detectors = {}
@@ -169,9 +171,6 @@ class Pipeline:
             self.detectors.append(YoloDetector(parts_to_detect))
 
     def init_maskers(self, required_maskers: dict, params_3d: Params3D):
-        if not required_maskers and not self.detectors and not self.is_inpainting:
-            self.model_3d_only = True
-
         if (
             "mediapipe" in required_maskers
             or params_3d["blendshapes"]
@@ -199,6 +198,10 @@ class Pipeline:
                     "save_timeseries": False,
                 }
             ]
+
+    def check_is_model_3d_only(self, required_maskers: dict):
+        if not required_maskers and not self.detectors and not self.is_inpainting and not self.audio_masker:
+            self.model_3d_only = True
 
     def init_audio_masker(self, audio_masker_name: str, params: dict):
         audio_maskers = {
