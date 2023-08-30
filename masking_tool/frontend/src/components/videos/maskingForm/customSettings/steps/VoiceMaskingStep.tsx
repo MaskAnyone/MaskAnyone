@@ -46,11 +46,13 @@ const VoiceMaskingStep = (props: StepProps) => {
             <Box component="div" sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '24px' }} mt={1}>
                 {
                     Object.keys(voiceMaskingMethods).map((methodName) => {
+                        const voiceMaskingMethod = voiceMaskingMethods[methodName];
+
                         return (
                             <SelectableCard
-                                title={voiceMaskingMethods[methodName].name}
-                                description={voiceMaskingMethods[methodName].description}
-                                imagePath={""}
+                                title={voiceMaskingMethod.name}
+                                description={voiceMaskingMethod.description}
+                                imagePath={voiceMaskingMethod.imagePath}
                                 onSelect={() => setMaskingStrategy(methodName)}
                                 selected={maskingStrategy.key == methodName}
                             />

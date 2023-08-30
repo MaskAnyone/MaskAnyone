@@ -268,16 +268,19 @@ export const voiceMaskingMethods: any = {
     preserve: {
         name: "Preserve",
         description: "Leave the video's audio unaltered",
+        imagePath: '/images/voice_masking_strategy/preserve.svg',
         defaultValues: {}
     },
     remove: {
         name: "Remove",
         description: "Remove the video's audio entirely",
+        imagePath: '/images/voice_masking_strategy/remove.svg',
         defaultValues: {}
     },
     switch: {
         name: "Switch",
         description: "Mask the original speaker by replacing their voice with the voice of another person",
+        imagePath: '/images/voice_masking_strategy/switch.svg',
         parameterSchema: rvcSchema,
         defaultValues: {
             mode: 'manual',

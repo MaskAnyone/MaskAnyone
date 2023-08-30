@@ -77,14 +77,14 @@ const DataExctactionStep = (props: StepProps) => {
                 <CheckableCard
                     title={"Blender 3D Character"}
                     description={"Will create a 3D model in Blender based on a MediaPipe Skeleton."}
-                    imagePath={""}
+                    imagePath={'/images/model_extraction/blender_3d_character.jpg'}
                     checked={blenderSelected}
                     onSelect={() => handleBlenderChanged()}
                 />
                 <CheckableCard
                     title={"3D Skeleton"}
                     description={"Will create a 3D Skeleton that can be rendered directly in the Browser"}
-                    imagePath={""}
+                    imagePath={'/images/model_extraction/skeleton.png'}
                     checked={threeDParams.skeleton}
                     onSelect={() => handleSkeletonChanged()}
                 />
