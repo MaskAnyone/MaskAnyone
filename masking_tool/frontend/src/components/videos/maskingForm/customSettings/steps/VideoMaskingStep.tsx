@@ -46,11 +46,13 @@ const VideoMaskingStep = (props: StepProps) => {
             <Box component="div" sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '24px' }} mt={1}>
                 {
                     Object.keys(maskingMethods).map((methodName) => {
+                        const maskingMethod = maskingMethods[methodName];
+
                         return (
                             <SelectableCard
-                                title={maskingMethods[methodName].name}
-                                description={maskingMethods[methodName].description}
-                                imagePath={""}
+                                title={maskingMethod.name}
+                                description={maskingMethod.description}
+                                imagePath={maskingMethod.imagePath}
                                 onSelect={() => setMaskingStrategy(methodName)}
                                 selected={maskingStrategy.key == methodName}
                             />
