@@ -48,3 +48,7 @@ class CreatePresetParams(BaseModel):
 class MpKinematicsType(str, Enum):
     body = "body"
     face = "face"
+
+
+class RegisterWorkerParams(BaseModel):
+    type: str

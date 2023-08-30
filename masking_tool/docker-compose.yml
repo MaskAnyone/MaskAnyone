@@ -35,6 +35,8 @@ services:
     mem_limit: 4096m
     cpus: 4
     scale: 2
+    depends_on:
+      - python
     #deploy:
     #  resources:
     #    reservations:
@@ -53,6 +55,8 @@ services:
       - ./workers:/app
     environment:
       WORKER_TYPE: "roop"
+    depends_on:
+      - python
 
   python-worker-blender:
     build:
@@ -64,6 +68,8 @@ services:
       - ./workers:/app
     environment:
       WORKER_TYPE: "blender"
+    depends_on:
+      - python
 
   postgres:
     build:

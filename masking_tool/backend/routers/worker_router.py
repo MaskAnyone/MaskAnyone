@@ -4,7 +4,7 @@ import cv2
 
 from fastapi import APIRouter, Request
 
-from models import RunParams, MpKinematicsType, UpdateJobProgressParams
+from models import RunParams, MpKinematicsType, UpdateJobProgressParams, RegisterWorkerParams
 from db.job_manager import JobManager
 from db.worker_manager import WorkerManager
 from db.video_manager import VideoManager
@@ -34,8 +34,8 @@ router = APIRouter(
 
 
 @router.post("/register")
-def register_worker(worker_id: str):
-    worker_manager.register_worker(worker_id)
+def register_worker(worker_id: str, params: RegisterWorkerParams):
+    worker_manager.register_worker(worker_id, params.type)
 
 
 @router.get("/jobs/next/{job_type}")
