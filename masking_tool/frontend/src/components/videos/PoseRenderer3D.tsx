@@ -119,7 +119,12 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
     private animate() {
         this.animationId = requestAnimationFrame(this.animate);
 
-        const currentPose = this.props.mpKinematics![Math.min(this.props.frame, this.props.mpKinematics!.length - 1)]['world_landmarks'];
+        const currentFrameData = this.props.mpKinematics![Math.min(this.props.frame, this.props.mpKinematics!.length - 1)];
+        if (!currentFrameData) {
+            return;
+        }
+
+        const currentPose = currentFrameData['world_landmarks'];
 
         // Check if there is a pose available to be rendered
         if (Object.keys(currentPose).length < 1) {
