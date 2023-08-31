@@ -44,6 +44,8 @@ const DoubleVideo = (props: DoubleVideoProps) => {
     const [played, setPlayed] = useState<number>(0);
     const [playedSeconds, setPlayedSeconds] = useState<number>(0);
     const [duration, setDuration] = useState<number>(0);
+    const [volume1, setVolume1] = useState<number>(1);
+    const [volume2, setVolume2] = useState<number>(1);
 
 
     const blendshapes = blendshapesList[props.resultVideoId || '']
@@ -72,6 +74,7 @@ const DoubleVideo = (props: DoubleVideoProps) => {
                     ref={video2Ref}
                     url={resultPath}
                     playing={playing}
+                    volume={volume2}
                     width='100%'
                     height='100%'
                 />
@@ -127,6 +130,7 @@ const DoubleVideo = (props: DoubleVideoProps) => {
                     onDuration={setDuration}
                     onPause={() => setPlaying(false)}
                     progressInterval={33}
+                    volume={volume1}
                     width='100%'
                     height='100%'
                 />
@@ -150,6 +154,11 @@ const DoubleVideo = (props: DoubleVideoProps) => {
                 onPositionChange={setPlayed}
                 playedSeconds={playedSeconds}
                 duration={duration}
+                video2Available={Boolean(view === views.video && props.resultVideoId)}
+                volume1={volume1}
+                volume2={volume2}
+                onVolume1Change={setVolume1}
+                onVolume2Change={setVolume2}
             />
         </Box>
     );

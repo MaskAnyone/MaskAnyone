@@ -17,6 +17,11 @@ interface ControlBarProps {
     onPositionChange: (newPosition: number) => void;
     playedSeconds: number;
     duration: number;
+    video2Available: boolean;
+    volume1: number;
+    volume2: number;
+    onVolume1Change: (volume1: number) => void;
+    onVolume2Change: (volume1: number) => void;
 }
 
 const ControlBar = (props: ControlBarProps) => {
@@ -68,12 +73,26 @@ const ControlBar = (props: ControlBarProps) => {
                     <Box component={'div'} sx={{ padding: '8px 24px' }}>
                         <Box component={'div'} sx={{ width: 150 }}>
                             Original
-                            <Slider />
+                            <Slider
+                                min={0}
+                                max={0.999}
+                                step={0.001}
+                                value={props.volume1}
+                                onChange={(_e, newValue) => props.onVolume1Change(newValue as number)}
+                            />
                         </Box>
-                        <Box component={'div'}>
-                            Masked
-                            <Slider />
-                        </Box>
+                        {props.video2Available && (
+                            <Box component={'div'}>
+                                Masked
+                                <Slider
+                                    min={0}
+                                    max={0.999}
+                                    step={0.001}
+                                    value={props.volume2}
+                                    onChange={(_e, newValue) => props.onVolume2Change(newValue as number)}
+                                />
+                            </Box>
+                        )}
                     </Box>
                 </Menu>
             </Box>
