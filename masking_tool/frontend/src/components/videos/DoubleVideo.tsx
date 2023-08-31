@@ -10,17 +10,12 @@ import { ResultVideo } from "../../state/types/ResultVideo";
 import ControlBar from "./player/ControlBar";
 import ReactPlayer from 'react-player';
 import {OnProgressProps} from "react-player/base";
+import ResultSelector, {ResultViews} from "./ResultSelector";
 
 
 interface DoubleVideoProps {
     videoId: string;
     resultVideoId?: string;
-}
-
-enum views {
-    video = "video",
-    blendshapes3D = "blendshapes3D",
-    skeleton3D = "skeleton3D"
 }
 
 const DoubleVideo = (props: DoubleVideoProps) => {
@@ -35,7 +30,7 @@ const DoubleVideo = (props: DoubleVideoProps) => {
     const video2Ref = useRef<ReactPlayer>(null);
     const originalPath = Config.api.baseUrl + '/videos/' + props.videoId;
     const resultPath = originalPath + '/results/' + props.resultVideoId;
-    const [view, setView] = useState<views>(views.video)
+    const [view, setView] = useState<ResultViews>(ResultViews.video)
     const [frame, setFrame] = useState<number>(0);
 
 
@@ -57,7 +52,7 @@ const DoubleVideo = (props: DoubleVideoProps) => {
     );
 
     useEffect(() => {
-        setView(views.video);
+        setView(ResultViews.video);
 
         if (!props.resultVideoId) {
             return;
@@ -68,7 +63,7 @@ const DoubleVideo = (props: DoubleVideoProps) => {
     }, [props.resultVideoId]);
 
     const displaySelectedView = () => {
-        if (view === views.video && props.resultVideoId) {
+        if (view === ResultViews.video && props.resultVideoId) {
             return (
                 <ReactPlayer
                     ref={video2Ref}
@@ -80,14 +75,14 @@ const DoubleVideo = (props: DoubleVideoProps) => {
                 />
             );
         }
-        if (view === views.blendshapes3D && props.resultVideoId) {
+        if (view === ResultViews.blendshapes3D && props.resultVideoId) {
             return (
                 <BlendshapesRenderer3D
                     blendshapes={blendshapes || []}
                 />
             )
         }
-        if (view === views.skeleton3D) {
+        if (view === ResultViews.skeleton3D) {
             return (
                 <PoseRenderer3D
                     mpKinematics={mpKinematics || []}
@@ -133,18 +128,19 @@ const DoubleVideo = (props: DoubleVideoProps) => {
                     volume={volume1}
                     width='100%'
                     height='100%'
+                    style={{ maxWidth: '50%' }}
                 />
                 {displaySelectedView()}
             </Box>
-            {props.resultVideoId && (
-                <FormControl>
-                    <RadioGroup row value={view} onChange={(e, v) => setView(views[v as keyof typeof views])}>
-                        {Boolean(resultVideo?.videoResultExists) && <FormControlLabel value={views.video} control={<Radio />} label="Show Masked Video" />}
-                        {Boolean(resultVideo?.kinematicResultsExists) && <FormControlLabel value={views.skeleton3D} control={<Radio />} label="Show 3D Skeleton" />}
-                        {Boolean(resultVideo?.blendshapeResultsExists) && <FormControlLabel value={views.blendshapes3D} control={<Radio />} label="Show animated 3D Face" />}
-                    </RadioGroup>
-                </FormControl>
-            )}
+            <Box component={'div'} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                {props.resultVideoId && (
+                    <ResultSelector
+                        value={view}
+                        onValueChange={setView}
+                        resultVideo={resultVideo}
+                    />
+                )}
+            </Box>
             <ControlBar
                 playing={playing}
                 onTogglePlaying={setPlaying}
@@ -154,7 +150,7 @@ const DoubleVideo = (props: DoubleVideoProps) => {
                 onPositionChange={setPlayed}
                 playedSeconds={playedSeconds}
                 duration={duration}
-                video2Available={Boolean(view === views.video && props.resultVideoId)}
+                video2Available={Boolean(view === ResultViews.video && props.resultVideoId)}
                 volume1={volume1}
                 volume2={volume2}
                 onVolume1Change={setVolume1}
