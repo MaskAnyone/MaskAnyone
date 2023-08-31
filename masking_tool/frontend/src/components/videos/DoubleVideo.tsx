@@ -130,21 +130,24 @@ const DoubleVideo = (props: DoubleVideoProps) => {
 
     return (
         <Box component="div">
-            <Box component={'div'} sx={{ display: 'flex', flexDirection: 'row' }}>
-                <ReactPlayer
-                    ref={video1Ref}
-                    url={originalPath}
-                    playing={playing}
-                    onProgress={handleVideoProgress}
-                    onDuration={setDuration}
-                    onPause={() => setPlaying(false)}
-                    progressInterval={33}
-                    volume={volume1}
-                    width='100%'
-                    height='100%'
-                    style={{ maxWidth: '50%' }}
-                />
-                {displaySelectedView()}
+            <Box component={'div'} sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Box component={'div'} sx={{ width: 'calc(50% - 8px)', maxHeight: '420px' }}>
+                    <ReactPlayer
+                        ref={video1Ref}
+                        url={originalPath}
+                        playing={playing}
+                        onProgress={handleVideoProgress}
+                        onDuration={setDuration}
+                        onPause={() => setPlaying(false)}
+                        progressInterval={33}
+                        volume={volume1}
+                        width='100%'
+                        height='100%'
+                    />
+                </Box>
+                <Box component={'div'} sx={{ width: 'calc(50% - 8px)', maxHeight: '420px' }}>
+                    {displaySelectedView()}
+                </Box>
             </Box>
             <Box component={'div'} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                 {props.resultVideoId && (

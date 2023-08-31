@@ -8,7 +8,7 @@ import ShieldLogoIcon from "../common/ShieldLogoIcon";
 
 const styles = {
     container: {
-        marginBottom: 4,
+        marginBottom: 2,
         display: 'flex',
         flexDirection: 'row',
         justifyContent: 'space-between',
