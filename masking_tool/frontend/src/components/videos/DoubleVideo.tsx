@@ -114,6 +114,20 @@ const DoubleVideo = (props: DoubleVideoProps) => {
         setFrame(Math.round(progressProps.playedSeconds * videoFPS));
     };
 
+    const handleTogglePlaying = (newPlaying: boolean) => {
+        setPlaying(newPlaying);
+
+        if (newPlaying) {
+            if (video1Ref.current) {
+                video1Ref.current.seekTo(played);
+            }
+
+            if (video2Ref.current) {
+                video2Ref.current.seekTo(played);
+            }
+        }
+    };
+
     return (
         <Box component="div">
             <Box component={'div'} sx={{ display: 'flex', flexDirection: 'row' }}>
@@ -143,7 +157,7 @@ const DoubleVideo = (props: DoubleVideoProps) => {
             </Box>
             <ControlBar
                 playing={playing}
-                onTogglePlaying={setPlaying}
+                onTogglePlaying={handleTogglePlaying}
                 seeking={seeking}
                 onToggleSeeking={setSeeking}
                 position={played}
