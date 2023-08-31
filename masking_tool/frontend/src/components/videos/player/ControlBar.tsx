@@ -1,4 +1,4 @@
-import {Box, IconButton, Slider, Typography} from "@mui/material";
+import {Box, IconButton, Menu, MenuItem, Slider, Typography} from "@mui/material";
 import FastRewindIcon from '@mui/icons-material/FastRewind';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -6,6 +6,7 @@ import PauseIcon from '@mui/icons-material/Pause';
 import SpeedIcon from '@mui/icons-material/Speed';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import TimerDisplay from "../../common/TimerDisplay";
+import React, {useState} from "react";
 
 interface ControlBarProps {
     playing: boolean;
@@ -19,6 +20,15 @@ interface ControlBarProps {
 }
 
 const ControlBar = (props: ControlBarProps) => {
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const open = Boolean(anchorEl);
+    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
+
     return (
         <Box component={'div'} sx={{ display: 'flex', flexDirection: 'column', width: '100%', paddingLeft: '24px' }}>
             <Box component={'div'}>
@@ -51,8 +61,21 @@ const ControlBar = (props: ControlBarProps) => {
                 </Box>
                 <Box component={'div'}>
                     <IconButton><SpeedIcon /></IconButton>
-                    <IconButton><VolumeUpIcon /></IconButton>
+                    <IconButton onClick={handleClick}><VolumeUpIcon /></IconButton>
                 </Box>
+
+                <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
+                    <Box component={'div'} sx={{ padding: '8px 24px' }}>
+                        <Box component={'div'} sx={{ width: 150 }}>
+                            Original
+                            <Slider />
+                        </Box>
+                        <Box component={'div'}>
+                            Masked
+                            <Slider />
+                        </Box>
+                    </Box>
+                </Menu>
             </Box>
         </Box>
     );
