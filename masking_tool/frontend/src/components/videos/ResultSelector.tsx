@@ -15,7 +15,7 @@ interface ResultSelectorProps {
 
 const ResultSelector = (props: ResultSelectorProps) => {
     return (
-        <FormControl>
+        <FormControl sx={{ marginBottom: -1 }}>
             <RadioGroup row value={props.value} onChange={(e, v) => props.onValueChange(ResultViews[v as keyof typeof ResultViews])}>
                 {Boolean(props.resultVideo?.videoResultExists) && <FormControlLabel value={ResultViews.video} control={<Radio />} label="Show Masked Video" />}
                 {Boolean(props.resultVideo?.kinematicResultsExists) && <FormControlLabel value={ResultViews.skeleton3D} control={<Radio />} label="Show 3D Skeleton" />}

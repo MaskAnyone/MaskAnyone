@@ -45,6 +45,7 @@ const ControlBar = (props: ControlBarProps) => {
                     onMouseDown={() => props.onToggleSeeking(true)}
                     onChange={(_e, newValue) => props.onPositionChange(newValue as number)}
                     onMouseUp={() => props.onToggleSeeking(false)}
+                    sx={{ marginBottom: -1.5 }}
                 />
             </Box>
             <Box component={'div'} sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
