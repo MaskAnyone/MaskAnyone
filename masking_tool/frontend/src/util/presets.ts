@@ -4,6 +4,7 @@ import { hidingMethods, maskingMethods } from "./maskingMethods";
 export const presetsDB: Preset[] = [
     {
         name: "Blur Face",
+        previewImagePath: "/images/presets/blurFace.png",
         detailText: "This preset will blur the face of detected persons in the video. Only the face will be blurred, the rest of the video will stay untouched.",
         runParams: {
             videoMasking: {
@@ -39,6 +40,7 @@ export const presetsDB: Preset[] = [
     },
     {
         name: "Mask Kinematics (Medium Privacy)",
+        previewImagePath: "/images/presets/kinematicsMedium.png",
         runParams: {
             videoMasking: {
                 hidingTarget: "body",
@@ -73,6 +75,7 @@ export const presetsDB: Preset[] = [
     },
     {
         name: "Mask Kinematics (High Privacy)",
+        previewImagePath: "/images/presets/kinematicsMax.png",
         runParams: {
             videoMasking: {
                 hidingTarget: "body",
@@ -107,6 +110,7 @@ export const presetsDB: Preset[] = [
     },
     {
         name: "Extract Blender Character",
+        previewImagePath: "/images/presets/blender_3d_character.jpg",
         runParams: {
             videoMasking: {
                 hidingTarget: "none",
@@ -147,6 +151,7 @@ export const presetsDB: Preset[] = [
     },
     {
         name: "Extract 3D Skeleton",
+        previewImagePath: "/images/presets/skeleton.png",
         runParams: {
             videoMasking: {
                 hidingTarget: "none",
@@ -181,6 +186,7 @@ export const presetsDB: Preset[] = [
     },
     {
         name: "Replace Face",
+        previewImagePath: "/images/presets/face_swap.jpg",
         runParams: {
             videoMasking: {
                 hidingTarget: "none",
@@ -215,6 +221,7 @@ export const presetsDB: Preset[] = [
     },
     {
         name: "Contours Masking",
+        previewImagePath: "/images/presets/contours.png",
         runParams: {
             videoMasking: {
                 hidingTarget: "body",
@@ -249,6 +256,7 @@ export const presetsDB: Preset[] = [
     },
     {
         name: "Blur Background",
+        previewImagePath: "/images/presets/blurBG.png",
         runParams: {
             videoMasking: {
                 hidingTarget: "none",
@@ -283,6 +291,7 @@ export const presetsDB: Preset[] = [
     },
     {
         name: "Switch Voice",
+        previewImagePath: "/images/presets/none.jpg",
         runParams: {
             videoMasking: {
                 hidingTarget: "none",
