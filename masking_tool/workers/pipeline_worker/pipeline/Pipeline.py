@@ -200,7 +200,12 @@ class Pipeline:
             ]
 
     def check_is_model_3d_only(self, required_maskers: dict):
-        if not required_maskers and not self.detectors and not self.is_inpainting and not self.audio_masker:
+        if (
+            not required_maskers
+            and not self.detectors
+            and not self.is_inpainting
+            and not self.audio_masker
+        ):
             self.model_3d_only = True
 
     def init_audio_masker(self, audio_masker_name: str, params: dict):

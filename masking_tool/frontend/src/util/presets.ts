@@ -10,7 +10,7 @@ export const presetsDB: Preset[] = [
                 hidingTarget: "face",
                 hidingStrategyTarget: {
                     key: "blur",
-                    params: hidingMethods["body"]["blur"].defaultValues!
+                    params: hidingMethods["face"]["blur"].defaultValues!
                 },
                 maskingStrategy: {
                     key: "none",
@@ -38,7 +38,41 @@ export const presetsDB: Preset[] = [
         }
     },
     {
-        name: "Mask Kinematics",
+        name: "Mask Kinematics (Medium Privacy)",
+        runParams: {
+            videoMasking: {
+                hidingTarget: "body",
+                hidingStrategyTarget: {
+                    key: "blur",
+                    params: hidingMethods["body"]["blur"].defaultValues!
+                },
+                maskingStrategy: {
+                    key: "faceMeshSkeleton",
+                    params: maskingMethods!["faceMeshSkeleton"].defaultValues!
+                },
+                hidingStrategyBG: {
+                    key: "none",
+                    params: {}
+                }
+            },
+            threeDModelCreation: {
+                skeleton: false,
+                skeletonParams: {},
+                blender: false,
+                blenderParams: {},
+                blendshapes: false,
+                blendshapesParams: {}
+            },
+            voiceMasking: {
+                maskingStrategy: {
+                    key: 'preserve',
+                    params: {},
+                }
+            }
+        }
+    },
+    {
+        name: "Mask Kinematics (High Privacy)",
         runParams: {
             videoMasking: {
                 hidingTarget: "body",
@@ -47,12 +81,12 @@ export const presetsDB: Preset[] = [
                     params: hidingMethods["body"]["blackout"].defaultValues!
                 },
                 maskingStrategy: {
-                    key: "skeleton",
-                    params: maskingMethods!["skeleton"].defaultValues!
+                    key: "faceMeshSkeleton",
+                    params: maskingMethods!["faceMeshSkeleton"].defaultValues!
                 },
                 hidingStrategyBG: {
-                    key: "none",
-                    params: {}
+                    key: "blur",
+                    params: hidingMethods["background"]!["blur"].defaultValues!
                 }
             },
             threeDModelCreation: {
@@ -65,6 +99,46 @@ export const presetsDB: Preset[] = [
             },
             voiceMasking: {
                 maskingStrategy: {
+                    key: 'remove',
+                    params: {},
+                }
+            }
+        }
+    },
+    {
+        name: "Extract Blender Character",
+        runParams: {
+            videoMasking: {
+                hidingTarget: "none",
+                hidingStrategyTarget: {
+                    key: "none",
+                    params: {}
+                },
+                hidingStrategyBG: {
+                    key: "none",
+                    params: {}
+                },
+                maskingStrategy: {
+                    key: "none",
+                    params: {}
+                }
+            },
+            threeDModelCreation: {
+                skeleton: false,
+                skeletonParams: {},
+                blender: true,
+                blenderParams: {
+                    maskingModel: "blender",
+                    character: "rigged_char",
+                    render: 0,
+                    export: 1,
+                    smoothing: 0
+                },
+                blendshapes: false,
+                blendshapesParams: {}
+            },
+            voiceMasking: {
+                maskingStrategy: {
                     key: 'preserve',
                     params: {},
                 }
@@ -72,7 +146,7 @@ export const presetsDB: Preset[] = [
         }
     },
     {
-        name: "Video to 3D Character",
+        name: "Extract 3D Skeleton",
         runParams: {
             videoMasking: {
                 hidingTarget: "none",
@@ -106,13 +180,47 @@ export const presetsDB: Preset[] = [
         }
     },
     {
-        name: "Replace Face (Coming Soon!)",
+        name: "Replace Face",
         runParams: {
             videoMasking: {
                 hidingTarget: "none",
                 hidingStrategyTarget: {
                     key: "none",
                     params: {}
+                },
+                hidingStrategyBG: {
+                    key: "none",
+                    params: {}
+                },
+                maskingStrategy: {
+                    key: "faceSwap",
+                    params: maskingMethods!["faceSwap"].defaultValues!
+                }
+            },
+            threeDModelCreation: {
+                skeleton: false,
+                skeletonParams: {},
+                blender: false,
+                blenderParams: {},
+                blendshapes: false,
+                blendshapesParams: {}
+            },
+            voiceMasking: {
+                maskingStrategy: {
+                    key: 'preserve',
+                    params: {},
+                }
+            }
+        }
+    },
+    {
+        name: "Contours Masking",
+        runParams: {
+            videoMasking: {
+                hidingTarget: "body",
+                hidingStrategyTarget: {
+                    key: "contour",
+                    params: hidingMethods["body"]["contour"].defaultValues!
                 },
                 hidingStrategyBG: {
                     key: "none",

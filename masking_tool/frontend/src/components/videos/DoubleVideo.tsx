@@ -130,9 +130,9 @@ const DoubleVideo = (props: DoubleVideoProps) => {
                 }
             },
             1000,
-        );*/
+        );
 
-        return () => clearInterval(interval);
+        return () => clearInterval(interval); */
     }, [originalPath, resultPath]);
 
     return (
