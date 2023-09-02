@@ -1,15 +1,15 @@
-import {call, fork, put, take, delay, select} from 'redux-saga/effects';
-import {Action} from 'redux-actions';
+import { call, fork, put, take, delay, select } from 'redux-saga/effects';
+import { Action } from 'redux-actions';
 import Command from "../../actions/command";
 import Api from "../../../api";
 import Event from "../../actions/event";
-import {ApiFetchJobsResponse} from "../../../api/types";
-import {FetchJobListPayload} from "../../actions/jobCommand";
-import {Job} from "../../types/Job";
+import { ApiFetchJobsResponse } from "../../../api/types";
+import { FetchJobListPayload } from "../../actions/jobCommand";
+import { Job } from "../../types/Job";
 
 let pollingRunning = false;
 
-const onStartPollingJobListUpdates = function*() {
+const onStartPollingJobListUpdates = function* () {
     if (pollingRunning) {
         return;
     }
@@ -26,7 +26,7 @@ const onStartPollingJobListUpdates = function*() {
     }
 }
 
-const onFetchJobList = function*(payload: FetchJobListPayload) {
+const onFetchJobList = function* (payload: FetchJobListPayload) {
     try {
         const response: ApiFetchJobsResponse = yield call(Api.fetchJobs);
 

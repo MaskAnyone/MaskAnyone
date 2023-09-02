@@ -1,9 +1,9 @@
 import React, { useEffect } from "react";
 import { useParams } from "react-router";
-import {Box, Typography} from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import DoubleVideo from "../components/videos/DoubleVideo";
 import VideoResultsOverview from "../components/videos/VideoResultsOverview";
-import {useDispatch, useSelector} from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import Command from "../state/actions/command";
 import VideoTaskBar from "../components/videos/VideoTaskBar";
 import Assets from "../assets/assets";
@@ -19,6 +19,12 @@ const VideosPage = () => {
             dispatch(Command.Video.fetchResultsList({ videoId }));
         }
     }, [videoId]);
+
+    setInterval(() => {
+        if (videoId) {
+            dispatch(Command.Video.fetchResultsList({ videoId }));
+        }
+    }, 1000);
 
     useEffect(() => {
         if (videoId && resultVideoId) {
