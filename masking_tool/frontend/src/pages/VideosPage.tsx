@@ -20,11 +20,14 @@ const VideosPage = () => {
         }
     }, [videoId]);
 
-    setInterval(() => {
-        if (videoId) {
-            dispatch(Command.Video.fetchResultsList({ videoId }));
-        }
-    }, 1000);
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (videoId) {
+                dispatch(Command.Video.fetchResultsList({ videoId }));
+            }
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         if (videoId && resultVideoId) {

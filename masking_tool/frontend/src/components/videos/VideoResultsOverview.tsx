@@ -8,6 +8,7 @@ import React, { useState } from "react";
 import VideoResultMenu from "./videoResultsOverview/VideoResultMenu";
 import CreatePresetDialog from "../presets/CreatePresetDialog";
 import Command from "../../state/actions/command";
+import ResultRunParamsDialog from "./videoResultsOverview/ResultRunParamsDialog";
 
 interface VideoResultsProps {
     videoId: string;
@@ -22,6 +23,7 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
     const [videoResultAnchorEl, setVideoResultAnchorEl] = useState<null | HTMLElement>(null);
     const [createPresetDialogOpen, setCreatePresetDialogOpen] = useState<boolean>(false);
     const [activeResultVideoId, setActiveResultVideoId] = useState<string>();
+    const [createResultRunParamsDialogOpen, setCreateResultRunParamsDialogOpen] = useState<boolean>(false);
 
     const resultVideos = resultVideoLists[props.videoId] || [];
 
@@ -83,11 +85,17 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
                 anchorEl={videoResultAnchorEl}
                 onClose={() => setVideoResultAnchorEl(null)}
                 onCreatePreset={openCreatePresetDialog}
+                onShowRunParams={() => setCreateResultRunParamsDialogOpen(true)}
             />
             <CreatePresetDialog
                 open={createPresetDialogOpen}
                 onClose={() => setCreatePresetDialogOpen(false)}
                 onCreatePreset={createPreset}
+            />
+            <ResultRunParamsDialog
+                result={resultVideos.find(resultVideo => resultVideo.videoResultId === activeResultVideoId)}
+                open={createResultRunParamsDialogOpen}
+                onClose={() => setCreateResultRunParamsDialogOpen(false)}
             />
         </Box>
     )
