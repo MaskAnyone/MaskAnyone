@@ -18,10 +18,7 @@ class BackendClient:
         self._worker_id = worker_id
 
     def register_worker(self, worker_type: str):
-        requests.post(
-            self._make_url("register"),
-            json={'type': worker_type}
-        )
+        requests.post(self._make_url("register"), json={"type": worker_type})
 
     def fetch_next_job(self, job_type: str):
         response = requests.get(self._make_url(f"jobs/next/{job_type}"))
@@ -45,7 +42,7 @@ class BackendClient:
         )
 
     def upload_result_video_preview_image(
-            self, video_id: str, result_video_id: str, content
+        self, video_id: str, result_video_id: str, content
     ):
         requests.post(
             self._make_url(
@@ -56,7 +53,7 @@ class BackendClient:
         )
 
     def upload_result_mp_kinematics(
-            self, video_id: str, result_video_id: str, data: dict, type: MpKinematicsType
+        self, video_id: str, result_video_id: str, data: dict, type: MpKinematicsType
     ):
         requests.post(
             self._make_url(
@@ -71,7 +68,7 @@ class BackendClient:
         )
 
     def upload_result_blendshapes(
-            self, video_id: str, result_video_id: str, data: dict
+        self, video_id: str, result_video_id: str, data: dict
     ):
         requests.post(
             self._make_url(
@@ -81,7 +78,7 @@ class BackendClient:
         )
 
     def upload_result_audio_file(
-            self, video_id: str, result_video_id: str, data: bytes
+        self, video_id: str, result_video_id: str, data: bytes
     ):
         requests.post(
             self._make_url(
@@ -92,7 +89,7 @@ class BackendClient:
         )
 
     def upload_result_extra_file(
-            self, video_id: str, file_ending: str, result_video_id: str, data: bytes
+        self, video_id: str, file_ending: str, result_video_id: str, data: bytes
     ):
         print("a4")
         requests.post(
