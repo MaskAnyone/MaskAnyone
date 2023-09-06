@@ -12,22 +12,14 @@ import Selector from "../state/selector";
 const VideosPage = () => {
     const dispatch = useDispatch();
     const videoList = useSelector(Selector.Video.videoList);
+    const openAndRunningJobCount = useSelector(Selector.Job.openAndRunningJobCount);
     const { videoId, resultVideoId } = useParams<{ videoId: string, resultVideoId: string }>();
 
     useEffect(() => {
         if (videoId) {
             dispatch(Command.Video.fetchResultsList({ videoId }));
         }
-    }, [videoId]);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            if (videoId) {
-                dispatch(Command.Video.fetchResultsList({ videoId }));
-            }
-        }, 1000);
-        return () => clearInterval(interval);
-    }, []);
+    }, [videoId, openAndRunningJobCount]);
 
     useEffect(() => {
         if (videoId && resultVideoId) {
