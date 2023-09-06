@@ -4,6 +4,7 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import React from "react";
 import SideBySideCard from "../common/SideBySideCard";
 import SideBySideCardContent from "../common/SideBySideCardContent";
+import Config from "../../config";
 
 interface PresetPreviewProps {
     preset: Preset;
@@ -18,7 +19,7 @@ const PresetPreview = (props: PresetPreviewProps) => {
     };
 
     return (
-        <SideBySideCard>
+        <SideBySideCard image={`${Config.api.baseUrl}/presets/${props.preset.id}/preview`}>
             <SideBySideCardContent
                 title={props.preset.name}
                 description={props.preset.description}
