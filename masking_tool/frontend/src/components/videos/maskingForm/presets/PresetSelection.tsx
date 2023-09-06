@@ -8,6 +8,7 @@ import { presetsDB } from "../../../../util/presets"
 import SelectableCard from "../../../common/SelectableCard";
 import {useSelector} from "react-redux";
 import Selector from "../../../../state/selector";
+import Config from "../../../../config";
 
 const styles = {
     presetList: {
@@ -70,7 +71,7 @@ const PresetSelection = (props: PresetSelectionProps) => {
                             title={preset.name}
                             description={preset.description}
                             selected={false}
-                            imagePath={''}
+                            imagePath={`${Config.api.baseUrl}/presets/${preset.id}/preview`}
                             onSelect={() => {}}
                             style={index === customPresets.length - 1 ? undefined : { marginRight: '23.5px' }}
                         />

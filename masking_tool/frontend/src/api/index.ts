@@ -143,7 +143,14 @@ const Api = {
 
         return result.data;
     },
-    createNewPreset: async (id: string, name: string, description: string, data: any): Promise<void> => {
+    createNewPreset: async (
+        id: string,
+        name: string,
+        description: string,
+        data: any,
+        videoId: string,
+        resultVideoId: string
+    ): Promise<void> => {
         await sendApiRequest({
             url: 'presets/create',
             method: 'post',
@@ -152,6 +159,8 @@ const Api = {
                 name,
                 description,
                 data,
+                video_id: videoId,
+                result_video_id: resultVideoId,
             },
         });
     },

@@ -8,6 +8,8 @@ export interface FetchPresetListPayload {
 
 export interface CreateNewPresetPayload {
     newPreset: Omit<Preset, 'id'>;
+    videoId: string;
+    resultVideoId: string;
 }
 
 export interface DeletePresetPayload {

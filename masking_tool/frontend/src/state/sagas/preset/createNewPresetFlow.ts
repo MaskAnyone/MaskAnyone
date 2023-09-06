@@ -16,6 +16,8 @@ const onCreateNewPreset = function*(payload: CreateNewPresetPayload) {
             payload.newPreset.name,
             payload.newPreset.description,
             payload.newPreset.data,
+            payload.videoId,
+            payload.resultVideoId,
         );
 
         yield put(Event.Preset.newPresetCreated({

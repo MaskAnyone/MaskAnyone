@@ -58,6 +58,8 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
                 description,
                 data: job.data,
             },
+            videoId: job.videoId,
+            resultVideoId: activeResultVideo.videoResultId,
         }));
 
         setCreatePresetDialogOpen(false);

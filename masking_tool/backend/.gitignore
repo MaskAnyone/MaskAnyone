@@ -2,7 +2,10 @@
 data/*
 !data/results
 !data/videos
+!data/presets
 data/results/*
 data/videos/*
+data/presets/*
 !data/results/.gitkeep
 !data/videos/.gitkeep
+!data/presets/.gitkeep

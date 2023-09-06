@@ -43,6 +43,8 @@ class CreatePresetParams(BaseModel):
     name: str
     description: str
     data: dict
+    video_id: str
+    result_video_id: str
 
 
 class MpKinematicsType(str, Enum):
