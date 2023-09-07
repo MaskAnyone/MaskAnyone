@@ -57,3 +57,49 @@ export function asBackendRunData(runData: RunParams) {
         voiceMasking: runData.voiceMasking,
     }
 }
+
+export function asFrontendRunParams(backendRunData: any): RunParams {
+    const videoMaskingParams = backendRunData.videoMasking;
+    const hidingTargets = Object.keys(videoMaskingParams);
+
+    const runData: RunParams = {
+        videoMasking: {
+            hidingTarget: hidingTargets.length > 0 ? hidingTargets[0] as any : "none",
+            hidingStrategyTarget: {
+                key: "none",
+                params: {}
+            },
+            hidingStrategyBG: {
+                key: "none",
+                params: {}
+            },
+            maskingStrategy: {
+                key: "none",
+                params: {}
+            }
+        },
+        threeDModelCreation: backendRunData.threeDModelCreation,
+        voiceMasking: backendRunData.voiceMasking
+    };
+
+    for (const hidingTarget of hidingTargets) {
+        const hidingStrategy = videoMaskingParams[hidingTarget].hidingStrategy;
+        const maskingStrategy = videoMaskingParams[hidingTarget].maskingStrategy;
+
+        if (hidingTarget === "background") {
+            runData.videoMasking.hidingStrategyBG.key = hidingStrategy.key;
+            runData.videoMasking.hidingStrategyBG.params = hidingStrategy.params;
+        } else if(hidingStrategy.key !== "none") {
+            runData.videoMasking.hidingTarget = hidingTarget as any;
+            runData.videoMasking.hidingStrategyTarget.key = hidingStrategy.key;
+            runData.videoMasking.hidingStrategyTarget.params = hidingStrategy.params;
+        }
+
+        if (maskingStrategy.key !== "none") {
+            runData.videoMasking.maskingStrategy.key = maskingStrategy.key;
+            runData.videoMasking.maskingStrategy.params = maskingStrategy.params;
+        }
+    }
+
+    return runData;
+}

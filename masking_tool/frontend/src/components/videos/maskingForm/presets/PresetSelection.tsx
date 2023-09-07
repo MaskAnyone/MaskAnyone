@@ -1,14 +1,14 @@
-import { Button, Grid, Paper, Typography } from "@mui/material";
+import { Typography } from "@mui/material";
 import { Box } from "@mui/system";
-import PresetItem from "./PresetItem";
-import TuneIcon from '@mui/icons-material/Tune';
 import { useState } from "react";
-import { Preset, RunParams } from "../../../../state/types/Run";
+import { RunParams, Preset } from "../../../../state/types/Run";
 import { presetsDB } from "../../../../util/presets"
 import SelectableCard from "../../../common/SelectableCard";
 import {useSelector} from "react-redux";
 import Selector from "../../../../state/selector";
 import Config from "../../../../config";
+import {Preset as CustomPreset} from "../../../../state/types/Preset";
+import {asFrontendRunParams} from "../../../../api/helpers";
 
 const styles = {
     presetList: {
@@ -20,19 +20,21 @@ const styles = {
 };
 
 interface PresetSelectionProps {
-    onPresetSelected: (preset: Preset) => void
-    selectedPreset?: Preset
+    onPresetSelected: (presetId: string, runParams: RunParams) => void;
+    selectedPresetId?: string;
 }
 
 const PresetSelection = (props: PresetSelectionProps) => {
     const customPresets = useSelector(Selector.Preset.presetList);
-
     const [presets, setPresets] = useState(presetsDB)
-    const { selectedPreset } = props
 
     const onPresetClicked = (preset: Preset) => {
-        props.onPresetSelected(preset)
-    }
+        props.onPresetSelected(preset.id, preset.runParams);
+    };
+
+    const onCustomPresetClicked = (preset: CustomPreset) => {
+        props.onPresetSelected(preset.id, asFrontendRunParams(preset.data));
+    };
 
     return (
         <Box component={'div'}>
@@ -49,7 +51,7 @@ const PresetSelection = (props: PresetSelectionProps) => {
                     <SelectableCard
                         key={preset.name}
                         title={preset.name}
-                        selected={selectedPreset?.name == preset.name}
+                        selected={props.selectedPresetId === preset.id}
                         imagePath={preset.previewImagePath || ''}
                         description={preset.detailText || ''}
                         onSelect={() => onPresetClicked(preset)}
@@ -69,10 +71,10 @@ const PresetSelection = (props: PresetSelectionProps) => {
                         <SelectableCard
                             key={preset.id}
                             title={preset.name}
+                            selected={props.selectedPresetId === preset.id}
                             description={preset.description}
-                            selected={false}
                             imagePath={`${Config.api.baseUrl}/presets/${preset.id}/preview`}
-                            onSelect={() => {}}
+                            onSelect={() => onCustomPresetClicked(preset)}
                             style={index === customPresets.length - 1 ? undefined : { marginRight: '23.5px' }}
                         />
                     ))}

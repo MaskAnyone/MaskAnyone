@@ -47,12 +47,12 @@ const MaskingForm = (props: MaskingFormProps) => {
     const dispatch = useDispatch();
     const [presetView, setPresetView] = useState(true)
     const [runParams, setRunParams] = useState<RunParams>(initialRunParams)
-    const [selectedPreset, setSelectedPreset] = useState<Preset>()
+    const [selectedPresetId, setSelectedPresetId] = useState<string>()
 
-    const handlePresetSelected = (preset: Preset) => {
-        setRunParams(preset.runParams)
-        setSelectedPreset(preset)
-    }
+    const handlePresetSelected = (presetId: string, runParams: RunParams) => {
+        setRunParams(runParams);
+        setSelectedPresetId(presetId);
+    };
 
     const handlePresetParamRefinementClicked = () => {
         setPresetView(false)
@@ -78,7 +78,7 @@ const MaskingForm = (props: MaskingFormProps) => {
             onPresetSelected={handlePresetSelected}
             onPresetParamRefinementClicked={handlePresetParamRefinementClicked}
             maskVideo={maskVideo}
-            selectedPreset={selectedPreset}
+            selectedPresetId={selectedPresetId}
         />
     ) : (
         <CustomSettingsContainer

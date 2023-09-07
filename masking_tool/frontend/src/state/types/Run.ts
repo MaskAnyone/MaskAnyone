@@ -1,4 +1,5 @@
 export type Preset = {
+    id: string;
     detailImagePaths?: string[]
     detailText?: string,
     name: string,
