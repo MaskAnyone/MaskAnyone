@@ -76,11 +76,17 @@ const DoubleVideo = (props: DoubleVideoProps) => {
             );
         }
         if (view === ResultViews.blendshapes3D && props.resultVideoId) {
-            return (
-                <BlendshapesRenderer3D
-                    blendshapes={blendshapes || []}
-                />
-            )
+            if (blendshapes.length > 0) {
+                return (
+                    <BlendshapesRenderer3D
+                        blendshapes={blendshapes || []}
+                        fps={videoFPS}
+                    />
+                )
+            } else {
+                return <>No valid result produced</>
+            }
+
         }
         if (view === ResultViews.skeleton3D) {
             return (

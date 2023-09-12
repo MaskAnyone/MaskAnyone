@@ -29,6 +29,7 @@ import initialPoseResults from "../../mockData/poseResults.json"
 
 interface CharacterProps {
   blendshapes: any;
+  fps: number
 }
 
 interface Blendshapes {
@@ -198,7 +199,7 @@ export function Character(props: CharacterProps) {
       updateBlendshapes(headMesh, nodes, faceResults[count].blendshapes, faceResults[count].transformationMatrices);
       // updatePose(poseResults.pose[count], poseResults.poseWorld[count], bones)
       count = count + 1
-    }, 50);
+    }, props.fps);
   }, [nodes, faceResults]);
 
   return (
