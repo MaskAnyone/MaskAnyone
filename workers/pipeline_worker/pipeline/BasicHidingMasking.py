@@ -149,9 +149,9 @@ class BasicHidingMasking:
 
     def run(self, video_in_path, video_out_path, job_id, video_id):
         video_cap, out = setup_video_processing(video_in_path, video_out_path)
-        print(video_in_path, video_out_path)
+
         inpainted_video_in_cap = (
-            self.setup_inpainting(self.inpainting_num_poses)
+            self.setup_inpainting(self.inpainting_num_poses, video_id, video_in_path)
             if self.is_inpainting
             else None
         )
