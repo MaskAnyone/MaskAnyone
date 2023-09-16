@@ -112,10 +112,6 @@ docker-compose up -d
 
 The application will then be reachable under [https://localhost](https://localhost)
 
-Further services can be found under:
-- Backend: [https://localhost/api/docs](https://localhost/api/docs)
-- PGAdmin: [https://localhost:5433/](https://localhost:5433/) (Password: `dev`)
-
 <a name="devs"></a>
 ## For developers
 
@@ -125,6 +121,13 @@ In this section we have collected some further information for developers. Pleas
 - Frontend: [https://localhost](https://localhost)
 - Backend: [https://localhost/api/docs](https://localhost/api/docs)
 - PGAdmin: [https://localhost:5433/](https://localhost:5433/) (Password: `dev`)
+
+### Debugging
+Run the application with ```bash
+docker-compose up
+```
+
+to get the live output of the applicaiton and see where it might crash.
 
 ### Algorithms
 
