@@ -87,10 +87,10 @@ _This Project is the result of the 2023 Mastersproject at the "Intelligent Syste
 
 Follow these steps to install MaskAnoyone:
 
-Make sure you have installed [Docker](https://docs.docker.com/get-docker/) on your system and set the appropriate permissions. Then run the following command:
+Make sure you have installed [Docker](https://docs.docker.com/get-docker/) on your system and set the appropriate permissions.
 
 Clone this repository and then run the following commands in this directory.
-If this is the first time you are running the project, this process can take a while depending on your internetconnection. If your connection times out, just run the command again.
+If this is the first time you are running the project, this process can take a while depending on your internet connection. If your connection times out, just run the command again.
 
 ```bash
 docker-compose build
@@ -123,11 +123,12 @@ In this section we have collected some further information for developers. Pleas
 - PGAdmin: [https://localhost:5433/](https://localhost:5433/) (Password: `dev`)
 
 ### Debugging
-Run the application with ```bash
+Run the application with 
+```bash
 docker-compose up
 ```
-
 to get the live output of the applicaiton and see where it might crash.
+Alternatively you can use `docker-compose logs -f` if you already started the application using the detached (`-d`) flag.
 
 ### Algorithms
 
@@ -156,3 +157,29 @@ Wait a few seconds
 docker-compose up -d
 ```
 
+## Status of the project
+Mask Anyone was developed as a prototype showcasing different possibilities in the field of person de-identification in videos. 
+While it can already produce very convincing results for a considerable subset of videos, there are still a number of issues that need to be addressed: 
+- Frame Cuts (which can lead to weird effects)
+- Leaky Frames (where e.g. the person could not be identified and is thus visible)
+- More sophisticated multi-person support
+
+Additionally, due to the vastly different requirements of different processing methods and models, the worker pipeline 
+    has also become more and more complex during the development process. As such, refactorings will be needed for additional features to retain performance, correctness and reliability.
+
+### Making it production ready
+In its current state, Mask Anyone is not ready to be deployed into production for real-world usecases. 
+It has, however, been built with this eventual goal in mind. As such, the following additions will be necessary to make Mask Anyone production-ready:
+- Multi-tenant support: currently, the concept of a "user" does not exist. Consequently, everything lives within the same workspace meaning that all users accessing an instance of Mask Anyone will see all the data and videos of the other users. For hosting Mask Anyone locally this is fine. However, for running Mask Anyone on a server, the concept of "users" must be introduced and any relevant data items must indiciate which user they belong to. With this addition, Mask Anyone can be used by many users simultaneously without data privacy issues.
+- Introduce Authentication / Access and Identity Management
+  - User-Facing: as mentioned above, there are currently no "users" and as such there is also no login-functionality. This must be added as well. Our recommendation would be to include a [Keycloak](https://www.keycloak.org/) instance in the infrastructure and use it for any authentication-related requirements. The general idea would be:
+    - Set up Keycloak
+    - Configure frontend to perform user login using the Keycloak service (see Keycloak documentation)
+    - When triggering API requests in the frontend, send along a JWT token which identifies the user and was retrieved through the login
+    - Configure the backend to validate the JWT tokens the frontend sends through the API and ensure that the user is allowed to access the requested resources (e.g. owns them)
+  - Backend / Worker communication
+    - As both the backend and worker services live in a controlled environment, less complicated authentication procedures are necessary. Our recommendation for this would be to simply generate a secret which the worker must send along with each request to the backend. Therefore, only those who have access to this secret will be able to finalize a worker setup to communicate with the backend
+- Setup production infrastructure
+  - The infrastructure currently provided is set up in a way that runs all our services in dev / debug modes. This can be inefficient and unsecure and is therefore not recommended for production
+  - A separate Docker-based infrastructure should be set up and configured specifically for production deployment of Mask Anyone
+  - Specifically for the frontend, please note that it must be built into a set of static files which can then be hosted by a webserver like Nginx. The infrastructure required for that is consequently much different to the dev infrastructure where the frontend is served through a node development server. 
