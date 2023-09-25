@@ -161,8 +161,9 @@ docker-compose up -d
 Mask Anyone was developed as a prototype showcasing different possibilities in the field of person de-identification in videos. 
 While it can already produce very convincing results for a considerable subset of videos, there are still a number of issues that need to be addressed: 
 - Frame Cuts (which can lead to weird effects)
-- Leaky Frames (where e.g. the person could not be identified and is thus visible)
-- More sophisticated multi-person support
+- Leaky Frames (where e.g. the person could not be detected and is thus will not be masked and is  visible)
+- Audio masking leads to inaudible results if multiple speakers are overlapping
+- Face and Hands can not be properly detected by mediapipe if the person is farther away. (This can be fixed as soon as the new holistic model is released)
 
 Additionally, due to the vastly different requirements of different processing methods and models, the worker pipeline 
     has also become more and more complex during the development process. As such, refactorings will be needed for additional features to retain performance, correctness and reliability.
@@ -182,4 +183,7 @@ It has, however, been built with this eventual goal in mind. As such, the follow
 - Setup production infrastructure
   - The infrastructure currently provided is set up in a way that runs all our services in dev / debug modes. This can be inefficient and unsecure and is therefore not recommended for production
   - A separate Docker-based infrastructure should be set up and configured specifically for production deployment of Mask Anyone
-  - Specifically for the frontend, please note that it must be built into a set of static files which can then be hosted by a webserver like Nginx. The infrastructure required for that is consequently much different to the dev infrastructure where the frontend is served through a node development server. 
+  - Specifically for the frontend, please note that it must be built into a set of static files which can then be hosted by a webserver like Nginx. The infrastructure required for that is consequently much different to the dev infrastructure where the frontend is served through a node development server.
+  - Reducing the System Size: Currently there are lots of duplicate dependancies for the docker containers. Due to version conflicts in dependancies of some algorithms it is not possible to place them in a single container without adapting the algorithms code.
+  - Introduce better staged builds to speed up installation process
+  - Identify largest dependancy and possibly introduce shared dependacies where possible
