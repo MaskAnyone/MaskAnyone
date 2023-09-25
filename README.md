@@ -184,6 +184,6 @@ It has, however, been built with this eventual goal in mind. As such, the follow
   - The infrastructure currently provided is set up in a way that runs all our services in dev / debug modes. This can be inefficient and unsecure and is therefore not recommended for production
   - A separate Docker-based infrastructure should be set up and configured specifically for production deployment of Mask Anyone
   - Specifically for the frontend, please note that it must be built into a set of static files which can then be hosted by a webserver like Nginx. The infrastructure required for that is consequently much different to the dev infrastructure where the frontend is served through a node development server.
-  - Reducing the System Size: Currently there are lots of duplicate dependancies for the docker containers. Due to version conflicts in dependancies of some algorithms it is not possible to place them in a single container without adapting the algorithms code.
+- Reducing the System Size: Currently there are lots of duplicate dependancies for the docker containers. Due to version conflicts in dependancies of some algorithms it is not possible to place them in a single container without adapting the algorithms code.
   - Introduce better staged builds to speed up installation process
   - Identify largest dependancy and possibly introduce shared dependacies where possible
