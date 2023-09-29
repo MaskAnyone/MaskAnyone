@@ -32,9 +32,9 @@ services:
       - ./workers:/app
     environment:
       WORKER_TYPE: "basic_masking"
-    mem_limit: 4096m
-    cpus: 4
-    scale: 2
+    # mem_limit: 4096m
+    # cpus: 4
+    # scale: 2
     depends_on:
       - python
     #deploy:

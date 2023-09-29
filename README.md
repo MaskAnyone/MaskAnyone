@@ -133,8 +133,74 @@ Alternatively you can use `docker-compose logs -f` if you already started the ap
 ### Algorithms
 
 **Adding a new algorithm**
+0. Write your algorithm code and create an entrypoint file that accepts command line arguments as follows:
+  - `--in-path` The input path of the video that should be masked.
+  - `--out-path` The output path were the masked video should be written to.
+  - `--backend-update-url` An url to send progress status updates to. This is used to update the progress bar in the frontend.
+  - `--out-path-extra` If the algoritm produces an additional output file, this argument can be used to specify the path to that file.
+
+  You can also further define any argument you want in the same format. The above mentioned are just system used arguments that should be present in every algorithm.
+
+1. Package the algorithm in a docker container including all dependencies. Make sure the dockerfile copies your algorithm during build.
+2. Create a new folder for the algorithm-worker under /docker/python/workers 
+3. Place the dockerfile and required other files in that folder
+4. Create a config file for your worker in `/workers/docker_worker/configs` with the name of that worker. It should have the following form:
+
+```
+{
+    "image_name": "name", <- As in 2. 
+    "run_command": "python3", <- The command that runs the algorithm in the docker container
+    "entry_point": "/myalgo/run.py", <- the entrypoint of the algorithm in the docker container
+    "can_send_progress_update": true, <- if the algorithm is able to send progress updates to the frontend
+    "can_produce_extra_file": false, <- if the algorithm is able to produce additional output files
+    "accepted_subjects": [ <- the target of the algorithm. Can be "body" or "face"
+        "face"
+    ],
+    "argument_schema": { <- currently not used but can be used for backend validation
+        "type": "object",
+        "properties": {}
+    }
+}
+```
+
+5. Add the worker to the `docker-compose.yml`.` 
+  ```my-worker-name:
+    build:
+      context: ./docker/python/workers/my-worker-name
+    command: "python docker_worker.py " <- dont change
+    env_file:
+      - ./app.env <- dont change
+    volumes:
+      - ./workers:/app <- dont change
+    environment:
+      WORKER_TYPE: "name" <- as in step 2.
+    depends_on:
+      - python
+    ```
+6. Register the algorithm in workers: In `/workers/config.py` add the name of your algorithm folder as in 2. to the AVAILABLE_DOCKER_MODELS list.
+7. Register the algorithm in the frontend: In `frontend/src/util/maskingMethids.ts`, add the algorithm to the maskingMethods dictionary, as the other algorithms. 
+
+```
+skeleton: {
+        name: "MyAlgorithmName",
+        description: "Description of the algorithm",
+        imagePath: 'path/to/previer/of/algorithm/result.png',
+        parameterSchema: MyFormSchema, <- defines the accepted parameters as RJSF schema
+        defaultValues: { <- Set default values for the parameters
+            maskingModel: "mediapipe", <- maskingModel ALWAYS HAS TO BE a paramter with the name of the algorithm as in 6.
+            numPoses: 1,
+            confidence: 0.5,
+            timeseries: false
+        },
+        backendFormat: {
+            "body": "skeleton", <- key can be "body" or "face" and the value can be anything that is a single word descritoption of your method.
+        }
+    },
+```
+
 
 **Adapting accepted/default parameters of an algorithm**
+Open `frontend/src/util/maskingMethids.ts` and find your algorithm, then adapt default paramters or the paramterSchema.
 
 ### Database
 
