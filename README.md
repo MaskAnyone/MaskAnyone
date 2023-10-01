@@ -5,7 +5,7 @@
 <a name="overview"></a>
 ## Overview
 
-MaskAnyone is a **de-identifiaction toolbox for videos** that allows you to remove personal identifiable information from videos, while at the same time preserving utility. It provides a variety of algotihms that allows you to **anonymize videos** with just a few clicks. Anonymization algorithms can be selected and combined depending on what aspects of utility should be preserved and which computational ressources are available.
+MaskAnyone is a **de-identifiaction toolbox for videos** that allows you to remove personal identifiable information from videos, while at the same time preserving utility. It provides a variety of algorithms that allows you to **anonymize videos** with just a few clicks. Anonymization algorithms can be selected and combined depending on what aspects of utility should be preserved and which computational resources are available.
 
 MaskAnyone is a docker-packaged modern web app that is built with React, MaterialUI, FastAPI and PostgreSQL. It is designed to be easily extensible with new algorithms and to be scalable with multiple docker workers. It is also designed to be easily usable by non-technical users.
 
