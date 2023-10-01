@@ -134,18 +134,17 @@ Alternatively you can use `docker-compose logs -f` if you already started the ap
 ### Algorithms
 
 **Adding a new algorithm**
-0. Write your algorithm code and create an entrypoint file that accepts command line arguments as follows:
+1. Write your algorithm code and create an entrypoint file that accepts command line arguments as follows:
   - `--in-path` The input path of the video that should be masked.
   - `--out-path` The output path were the masked video should be written to.
   - `--backend-update-url` An url to send progress status updates to. This is used to update the progress bar in the frontend.
   - `--out-path-extra` If the algoritm produces an additional output file, this argument can be used to specify the path to that file.
-
   You can also further define any argument you want in the same format. The above mentioned are just system used arguments that should be present in every algorithm.
 
-1. Package the algorithm in a docker container including all dependencies. Make sure the dockerfile copies your algorithm during build.
-2. Create a new folder for the algorithm-worker under /docker/python/workers 
-3. Place the dockerfile and required other files in that folder
-4. Create a config file for your worker in `/workers/docker_worker/configs` with the name of that worker. It should have the following form:
+2. Package the algorithm in a docker container including all dependencies. Make sure the dockerfile copies your algorithm during build.
+3. Create a new folder for the algorithm-worker under /docker/python/workers 
+4. Place the dockerfile and required other files in that folder
+5. Create a config file for your worker in `/workers/docker_worker/configs` with the name of that worker. It should have the following form:
 
 ```
 {
