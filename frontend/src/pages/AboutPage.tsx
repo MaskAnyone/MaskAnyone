@@ -31,8 +31,9 @@ const AboutPage = () => {
                 <li>The <a href="https://github.com/shubham-goel/4D-Humans">HumansIn4D Project</a> (Not yet included in the tool)</li>
                 <li><a href="https://github.com/Walter0807/MotionBERT">MotionBert</a> (Not yet included in the tool)</li>
             </ul>
+            and many more ...
 
-            <Typography variant={'body1'}>
+            <Typography variant={'body1'} sx={{ marginTop: 2 }}>
                 <a href="https://storyset.com/technology">Technology illustrations by Storyset</a>
             </Typography>
         </Box>
