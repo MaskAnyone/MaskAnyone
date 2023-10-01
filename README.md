@@ -207,7 +207,7 @@ Open `frontend/src/util/maskingMethids.ts` and find your algorithm, then adapt d
 Add the face file (as .jpg) to `/docker/python/workers/roop/faces`. Then open `frontend/src/util/formSchemas.ts` and add the name of the file without extension to the enum in the `faceswapFormSchema` variable. Finally, run `docker-compose build` again to make the changes effective.
 
 **Adding new voices for VoiceSwapping**
-A list of pre-trained voice models can be found under: TIDO. Add the code to download to `/docker/python/workers/basic_masking/scripts/download_voice_models.py` and refer to the examples of other downloads in this file. The resulting file should be saved under: `{model_base_path}/weights/modelName/model.pth` and the index file under `{model_base_path}/weights/modelName/index_file.pth`. Then add modelName to the available options in `frontend/src/util/formSchemas.ts` in the enum in the `rvcSchema` variable. Finally run `docker-compose build` to make the changes effective and to start the download of the model.
+A list of pre-trained voice models can be found under: [Link](https://docs.google.com/spreadsheets/d/1tAUaQrEHYgRsm1Lvrnj14HFHDwJWl0Bd9x0QePewNco/edit#gid=1977693859). Add the code to download to `/docker/python/workers/basic_masking/scripts/download_voice_models.py` and refer to the examples of other downloads in this file. The resulting file should be saved under: `{model_base_path}/weights/modelName/model.pth` and the index file under `{model_base_path}/weights/modelName/index_file.pth`. Then add modelName to the available options in `frontend/src/util/formSchemas.ts` in the enum in the `rvcSchema` variable. Finally run `docker-compose build` to make the changes effective and to start the download of the model.
 
 ### Database
 
