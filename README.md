@@ -88,6 +88,7 @@ _This Project is the result of the 2023 Mastersproject at the "Intelligent Syste
 Follow these steps to install MaskAnoyone:
 
 Make sure you have installed [Docker](https://docs.docker.com/get-docker/) on your system and set the appropriate permissions.
+Note: Currently if you want to use MaskAnyone with all its functions, it required around 50GB of space on your computer due to a large variety of pre-trained models. If you want a more lightweight installation without faceswapping and blender exports, comment out lines 48-72 in `docker-compose.yml` (Add a "#" at the beginning of each line)
 
 Clone this repository and then run the following commands in this directory.
 If this is the first time you are running the project, this process can take a while depending on your internet connection. If your connection times out, just run the command again.
@@ -202,6 +203,12 @@ skeleton: {
 **Adapting accepted/default parameters of an algorithm**
 Open `frontend/src/util/maskingMethids.ts` and find your algorithm, then adapt default paramters or the paramterSchema.
 
+**Adding new target faces for FaceSwapping**
+Add the face file (as .jpg) to `/docker/python/workers/roop/faces`. Then open `frontend/src/util/formSchemas.ts` and add the name of the file without extension to the enum in the `faceswapFormSchema` variable. Finally, run `docker-compose build` again to make the changes effective.
+
+**Adding new voices for VoiceSwapping**
+A list of pre-trained voice models can be found under: TIDO. Add the code to download to `/docker/python/workers/basic_masking/scripts/download_voice_models.py` and refer to the examples of other downloads in this file. The resulting file should be saved under: `{model_base_path}/weights/modelName/model.pth` and the index file under `{model_base_path}/weights/modelName/index_file.pth`. Then add modelName to the available options in `frontend/src/util/formSchemas.ts` in the enum in the `rvcSchema` variable. Finally run `docker-compose build` to make the changes effective and to start the download of the model.
+
 ### Database
 
 **Export Schema**
@@ -253,3 +260,17 @@ It has, however, been built with this eventual goal in mind. As such, the follow
 - Reducing the System Size: Currently there are lots of duplicate dependancies for the docker containers. Due to version conflicts in dependancies of some algorithms it is not possible to place them in a single container without adapting the algorithms code.
   - Introduce better staged builds to speed up installation process
   - Identify largest dependancy and possibly introduce shared dependacies where possible
+
+### Credits
+We thank the authors of different implementations we packaged in our project. Our project relies heavily on the work of
+
+- Googles' [MediaPipe](https://github.com/google/mediapipe) for FaceMesh and Skeleton detection and Blendshape computation
+- UltraLytics' [YOLOv8](https://github.com/ultralytics/ultralytics) for person detection
+- Azamat Kanametov's pre-trained model for [Face Detection](https://github.com/akanametov/yolov8-face) based on the YOLOv8 architecture
+- The [RVC](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/tree/main) Project for Voice Masking
+- [Blender](https://www.blender.org/) + [BlendARMocap](https://github.com/cgtinker/BlendArMocap)
+- The [Roop Project](https://github.com/s0md3v/roop) and InsightFace's pretrained model for FaceSwapping
+- The [HumansIn4D](https://github.com/shubham-goel/4D-Humans) Project (Not yet included in the tool)
+- [MotionBert](https://github.com/Walter0807/MotionBERT) (Not yet included in the tool)
+
+and many more.
