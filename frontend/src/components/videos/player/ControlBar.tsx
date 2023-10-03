@@ -66,7 +66,7 @@ const ControlBar = (props: ControlBarProps) => {
                     <IconButton><FastForwardIcon /></IconButton>
                 </Box>
                 <Box component={'div'}>
-                    <IconButton><SpeedIcon /></IconButton>
+                    <IconButton disabled={true}><SpeedIcon /></IconButton>
                     <IconButton onClick={handleClick}><VolumeUpIcon /></IconButton>
                 </Box>
 

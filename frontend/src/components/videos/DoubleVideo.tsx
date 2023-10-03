@@ -51,6 +51,14 @@ const DoubleVideo = (props: DoubleVideoProps) => {
         [videoList, props.videoId],
     );
 
+    const resetVideos = () => {
+        setPlaying(false);
+        video1Ref.current?.seekTo(0);
+        video2Ref.current?.seekTo(0);
+        setPlayed(0);
+        setPlayedSeconds(0);
+    };
+
     useEffect(() => {
         setView(ResultViews.video);
 
@@ -61,6 +69,16 @@ const DoubleVideo = (props: DoubleVideoProps) => {
         dispatch(Command.Video.fetchBlendshapes({ resultVideoId: props.resultVideoId }));
         dispatch(Command.Video.fetchMpKinematics({ resultVideoId: props.resultVideoId }));
     }, [props.resultVideoId]);
+
+    useEffect(() => {
+        resetVideos();
+    }, [props.videoId, props.resultVideoId]);
+
+    useEffect(() => {
+        if (video2Ref.current) {
+            video2Ref.current.seekTo(played);
+        }
+    }, [video2Ref.current]);
 
     const displaySelectedView = () => {
         if (view === ResultViews.video && props.resultVideoId) {
@@ -145,6 +163,7 @@ const DoubleVideo = (props: DoubleVideoProps) => {
                         onProgress={handleVideoProgress}
                         onDuration={setDuration}
                         onPause={() => setPlaying(false)}
+                        onEnded={resetVideos}
                         progressInterval={33}
                         volume={volume1}
                         width='100%'

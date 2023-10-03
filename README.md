@@ -5,7 +5,7 @@
 <a name="overview"></a>
 ## Overview
 
-MaskAnyone is a **de-identifiaction toolbox for videos** that allows you to remove personal identifiable information from videos, while at the same time preserving utility. It provides a variety of algotihms that allows you to **anonymize videos** with just a few clicks. Anonymization algorithms can be selected and combined depending on what aspects of utility should be preserved and which computational ressources are available.
+MaskAnyone is a **de-identifiaction toolbox for videos** that allows you to remove personal identifiable information from videos, while at the same time preserving utility. It provides a variety of algorithms that allows you to **anonymize videos** with just a few clicks. Anonymization algorithms can be selected and combined depending on what aspects of utility should be preserved and which computational resources are available.
 
 MaskAnyone is a docker-packaged modern web app that is built with React, MaterialUI, FastAPI and PostgreSQL. It is designed to be easily extensible with new algorithms and to be scalable with multiple docker workers. It is also designed to be easily usable by non-technical users.
 
@@ -88,7 +88,7 @@ _This Project is the result of the 2023 Mastersproject at the "Intelligent Syste
 Follow these steps to install MaskAnoyone:
 
 Make sure you have installed [Docker](https://docs.docker.com/get-docker/) on your system and set the appropriate permissions.
-Note: Currently if you want to use MaskAnyone with all its functions, it required around 50GB of space on your computer due to a large variety of pre-trained models. If you want a more lightweight installation without faceswapping and blender exports, comment out lines 48-72 in `docker-compose.yml` (Add a "#" at the beginning of each line)
+Note: Currently if you want to use MaskAnyone with all its functions, it required around 35GB of space on your computer due to a large variety of pre-trained models. If you want a more lightweight installation without faceswapping and blender exports, comment out lines 48-72 in `docker-compose.yml` and the resulting system size will be around 15GB. (Add a "#" at the beginning of each line)
 
 Clone this repository and then run the following commands in this directory.
 If this is the first time you are running the project, this process can take a while depending on your internet connection. If your connection times out, just run the command again.
@@ -134,18 +134,17 @@ Alternatively you can use `docker-compose logs -f` if you already started the ap
 ### Algorithms
 
 **Adding a new algorithm**
-0. Write your algorithm code and create an entrypoint file that accepts command line arguments as follows:
+1. Write your algorithm code and create an entrypoint file that accepts command line arguments as follows:
   - `--in-path` The input path of the video that should be masked.
   - `--out-path` The output path were the masked video should be written to.
   - `--backend-update-url` An url to send progress status updates to. This is used to update the progress bar in the frontend.
   - `--out-path-extra` If the algoritm produces an additional output file, this argument can be used to specify the path to that file.
-
   You can also further define any argument you want in the same format. The above mentioned are just system used arguments that should be present in every algorithm.
 
-1. Package the algorithm in a docker container including all dependencies. Make sure the dockerfile copies your algorithm during build.
-2. Create a new folder for the algorithm-worker under /docker/python/workers 
-3. Place the dockerfile and required other files in that folder
-4. Create a config file for your worker in `/workers/docker_worker/configs` with the name of that worker. It should have the following form:
+2. Package the algorithm in a docker container including all dependencies. Make sure the dockerfile copies your algorithm during build.
+3. Create a new folder for the algorithm-worker under /docker/python/workers 
+4. Place the dockerfile and required other files in that folder
+5. Create a config file for your worker in `/workers/docker_worker/configs` with the name of that worker. It should have the following form:
 
 ```
 {
