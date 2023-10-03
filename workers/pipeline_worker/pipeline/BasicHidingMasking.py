@@ -40,6 +40,7 @@ class BasicHidingMasking:
         self.inpainting_num_poses = inpainting_num_poses
 
         self.blendshapes_file_handle = None
+        self.is_first_blendshape_res = True
         self.ts_file_handlers = {}
 
         self.backend_client = backend_client
@@ -140,12 +141,13 @@ class BasicHidingMasking:
         self.blendshapes_file_handle.write("]")
         self.blendshapes_file_handle.close()
 
-    def write_blendshapes(self, blendshapes_dict, first):
+    def write_blendshapes(self, blendshapes_dict):
         if blendshapes_dict:
-            if not first:
+            if not self.is_first_blendshape_res:
                 self.blendshapes_file_handle.write(",")
             json_string = json.dumps(blendshapes_dict)
             self.blendshapes_file_handle.write(json_string)
+            self.is_first_blendshape_res = False
 
     def run(self, video_in_path, video_out_path, job_id, video_id):
         video_cap, out = setup_video_processing(video_in_path, video_out_path)
@@ -202,7 +204,7 @@ class BasicHidingMasking:
                     mask_extractor.get_newest_timeseries(), index == 0
                 )
                 self.write_blendshapes(
-                    mask_extractor.get_newest_blendshapes(), index == 0
+                    mask_extractor.get_newest_blendshapes()
                 )
 
             if self.creates_basic_video:

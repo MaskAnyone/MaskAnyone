@@ -179,7 +179,7 @@ Alternatively you can use `docker-compose logs -f` if you already started the ap
       - python
     ```
 6. Register the algorithm in workers: In `/workers/config.py` add the name of your algorithm folder as in 2. to the AVAILABLE_DOCKER_MODELS list.
-7. Register the algorithm in the frontend: In `frontend/src/util/maskingMethids.ts`, add the algorithm to the maskingMethods dictionary, as the other algorithms. 
+7. Register the algorithm in the frontend: In `frontend/src/util/maskingMethids.ts`, add the algorithm to the maskingMethods dictionary, as the other algorithms.
 
 ```
 skeleton: {
@@ -198,7 +198,6 @@ skeleton: {
         }
     },
 ```
-
 
 **Adapting accepted/default parameters of an algorithm**
 Open `frontend/src/util/maskingMethids.ts` and find your algorithm, then adapt default paramters or the paramterSchema.
