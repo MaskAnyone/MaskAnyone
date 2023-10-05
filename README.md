@@ -88,9 +88,10 @@ _This Project is the result of the 2023 Mastersproject at the "Intelligent Syste
 Follow these steps to install MaskAnoyone:
 
 Make sure you have installed [Docker](https://docs.docker.com/get-docker/) on your system and set the appropriate permissions.
-Note: Currently if you want to use MaskAnyone with all its functions, it required around 35GB of space on your computer due to a large variety of pre-trained models. If you want a more lightweight installation without faceswapping and blender exports, comment out lines 48-72 in `docker-compose.yml` and the resulting system size will be around 15GB. (Add a "#" at the beginning of each line)
+Note: Currently if you want to use MaskAnyone with all its functions, it required around 35GB of space on your computer due to a large variety of pre-trained models. If you want a more lightweight installation without faceswapping and blender exports, copy the contents from the file `docker-compose-minimal.yml` into `docker-compose.yml` and then continue to follow the installation instructions.
 
-Clone this repository and then run the following commands in this directory.
+Open a terminal on your machine .
+Clone this repository by running `git clone https://github.com/rohansaw/Privacy4MultimodalAnalysis.git` and then switch into the cloned directory and run the following commands in this directory.
 If this is the first time you are running the project, this process can take a while depending on your internet connection. If your connection times out, just run the command again.
 
 ```bash

@@ -13,7 +13,18 @@ class Worker:
         self.worker_id = worker_id
         self.job_handler = job_handler
         self.backend_client = BackendClient(worker_id)
-        self.backend_client.register_worker(worker_type)
+        
+        retry_timeout = 60  # in seconds
+        start_time = time.time()
+        while True:
+            try:
+                self.backend_client.register_worker(worker_type)
+                break
+            except Exception as e:
+                if time.time() - start_time >= retry_timeout:
+                    raise e 
+                print(f"Failed to register worker. Retrying in 1 second. Error: {str(e)}")
+                time.sleep(1)
 
         self.video_manager = VideoManager(
             self.backend_client, LocalDataManager(DATA_BASE_DIR)
