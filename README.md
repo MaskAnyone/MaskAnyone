@@ -7,9 +7,8 @@ MaskAnyone is a **de-identification toolbox for videos** that allows you to remo
 
 MaskAnyone is a docker-packaged modern web app that is built with React, MaterialUI, FastAPI and PostgreSQL. It is designed to be easily extensible with new algorithms and to be scalable with multiple docker workers. It is also designed to be easily usable by non-technical users.
 
+## Demo
 **An overview of exemplary results including videos can be found in the `/results` folder.**
-
-### Demo
 <table>
   <tr>
     <td><img src="./results/BodyHiding.png" width="100%"> Hiding the complete body for scenarios in which the body is considered to reveal PII</td>
@@ -20,7 +19,7 @@ MaskAnyone is a docker-packaged modern web app that is built with React, Materia
 
 <table>
   <tr>
-    <td><td><img src="./results/Contours.png" width="100%"> Contour/Edge detection with different levels of details</td></td>
+    <td><img src="./results/Contours.png" width="100%"> Contour/Edge detection with different levels of details</td>
   </tr>
 </table>
 
@@ -151,9 +150,9 @@ The application will then be reachable under [https://localhost](https://localho
 
 In this section we have collected some further information for developers. Please also refer to our report for further elaboration of the architecture.
 
-<div style="text-align:center;" >
-  <img src="./results/architecture.jpg" max-height="400px"> 
-</div>
+<p align="center">
+  <img src="./results/architecture.jpg" width="400px"> 
+</p>
 
 ### Services
 - Frontend: [https://localhost](https://localhost)
