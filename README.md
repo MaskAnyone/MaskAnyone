@@ -9,7 +9,39 @@ MaskAnyone is a **de-identification toolbox for videos** that allows you to remo
 
 MaskAnyone is a docker-packaged modern web app that is built with React, MaterialUI, FastAPI and PostgreSQL. It is designed to be easily extensible with new algorithms and to be scalable with multiple docker workers. It is also designed to be easily usable by non-technical users.
 
-**An overview of exemplary results can be found in the `/results` folder.**
+**An overview of exemplary results including videos can be found in the `/results` folder.**
+
+### Demo
+<table>
+  <tr>
+    <td><img src="./results/BodyHiding.png" width="100%"></td>
+    <td><img src="./results/FaceHiding.png" width="100%"></td>
+    
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td><td><img src="./results/Contours.png" width="100%"></td></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td><img src="./results/Blendshapes.png" width="100%"></td>
+    <td><img src="./results/3DSkeleton.png" width="100%"></td>
+    <td><img src="./results/b" width="100%"></td>
+  </tr>
+</table>
+
+
+<table>
+  <tr>
+    <td><img src="./results/MediaPipe.png" width="100%"></td>
+    <td><img src="./results/FaceSwap.png" width="100%"></td>
+  </tr>
+</table>
+
 
 
 _This Project is the result of the 2023 Mastersproject at the "Intelligent Systems Group" at the Hasso Plattner Institute._
