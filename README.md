@@ -1,4 +1,4 @@
-<h1 align="center" style=font-size:200px>MaskAnyone - The de-identification toolbox for video data.</h1>
+<h1 align="center">MaskAnyone - The de-identification toolbox for video data.</h1>
 
 <a name="overview"></a>
 ## Overview
