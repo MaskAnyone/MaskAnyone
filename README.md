@@ -1,5 +1,3 @@
-<p align="center"><img width="300" height="300" src="frontend/public/favicon.png" alt="Logo"></p>
-
 <h1 align="center" style=font-size:200px>MaskAnyone - The de-identification toolbox for video data.</h1>
 
 <a name="overview"></a>
@@ -14,31 +12,31 @@ MaskAnyone is a docker-packaged modern web app that is built with React, Materia
 ### Demo
 <table>
   <tr>
-    <td><img src="./results/BodyHiding.png" width="100%"></td>
-    <td><img src="./results/FaceHiding.png" width="100%"></td>
+    <td><img src="./results/BodyHiding.png" width="100%"> Hiding the complete body for scenarios in which the body is considered to reveal PII</td>
+    <td><img src="./results/FaceHiding.png" width="100%"> Hiding only the face for scenarios in which only the face is considered relevant for privacy preservation</td>
     
   </tr>
 </table>
 
 <table>
   <tr>
-    <td><td><img src="./results/Contours.png" width="100%"></td></td>
+    <td><td><img src="./results/Contours.png" width="100%"> Contour/Edge detection with different levels of details</td></td>
   </tr>
 </table>
 
 <table>
   <tr>
-    <td><img src="./results/Blendshapes.png" width="100%"></td>
-    <td><img src="./results/3DSkeleton.png" width="100%"></td>
-    <td><img src="./results/b" width="100%"></td>
+    <td><img src="./results/Blendshapes.png" width="100%"> Blendshapes based facial 3D character</td>
+    <td><img src="./results/3DSkeleton.png" width="100%">  MediaPipe based 3D Skeleton</td>
+    <td><img src="./results/blender.png" width="100%"> Skeleton mapped to rig and rendered in Blender</td>
   </tr>
 </table>
 
 
 <table>
   <tr>
-    <td><img src="./results/MediaPipe.png" width="100%"></td>
-    <td><img src="./results/FaceSwap.png" width="100%"></td>
+    <td><img src="./results/MediaPipe.png" width="100%"> MediaPipe based results with different levels of detail for kinematic analysis</td>
+    <td><img src="./results/FaceSwap.png" width="100%"> FaceSwapping for facial expression capture</td>
   </tr>
 </table>
 
@@ -152,6 +150,8 @@ The application will then be reachable under [https://localhost](https://localho
 ## For developers
 
 In this section we have collected some further information for developers. Please also refer to our report for further elaboration of the architecture.
+
+<img src="./results/architecture.jpg" width="100%"> 
 
 ### Services
 - Frontend: [https://localhost](https://localhost)
