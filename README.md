@@ -110,6 +110,14 @@ _This Project is the result of the 2023 Mastersproject at the "Intelligent Syste
   </tbody>
 </table>
 
+<a name="process"></a>
+## Process
+The central process within Mask Anyone is the masking process itself, encompassing every aspect from the initial upload of the target video to the comprehensive analysis of the results. A simplified representation of this process is depicted in the following figure.
+
+<p align="center">
+    <img src="./results/maskingProcess.png" width="400px">
+</p>
+
 <a name="started"></a>
 ## Getting Started
 
