@@ -151,7 +151,9 @@ The application will then be reachable under [https://localhost](https://localho
 
 In this section we have collected some further information for developers. Please also refer to our report for further elaboration of the architecture.
 
-<img style="text-align:center;" src="./results/architecture.jpg" height="200px"> 
+<div style="text-align:center;" >
+  <img src="./results/architecture.jpg" max-height="400px"> 
+</div>
 
 ### Services
 - Frontend: [https://localhost](https://localhost)
