@@ -1,4 +1,4 @@
-<h1 align="center" style=font-size:200px>MaskAnyone - The de-identification toolbox for video data.</h1>
+<h1 align="center">MaskAnyone - The de-identification toolbox for video data.</h1>
 
 <a name="overview"></a>
 ## Overview
@@ -7,9 +7,8 @@ MaskAnyone is a **de-identification toolbox for videos** that allows you to remo
 
 MaskAnyone is a docker-packaged modern web app that is built with React, MaterialUI, FastAPI and PostgreSQL. It is designed to be easily extensible with new algorithms and to be scalable with multiple docker workers. It is also designed to be easily usable by non-technical users.
 
+## Demo
 **An overview of exemplary results including videos can be found in the `/results` folder.**
-
-### Demo
 <table>
   <tr>
     <td><img src="./results/BodyHiding.png" width="100%"> Hiding the complete body for scenarios in which the body is considered to reveal PII</td>
@@ -111,6 +110,14 @@ _This Project is the result of the 2023 Mastersproject at the "Intelligent Syste
   </tbody>
 </table>
 
+<a name="process"></a>
+## Process
+The central process within Mask Anyone is the masking process itself, encompassing every aspect from the initial upload of the target video to the comprehensive analysis of the results. A simplified representation of this process is depicted in the following figure.
+
+<p align="center">
+    <img src="./results/maskingProcess.png" width="400px">
+</p>
+
 <a name="started"></a>
 ## Getting Started
 
@@ -151,9 +158,9 @@ The application will then be reachable under [https://localhost](https://localho
 
 In this section we have collected some further information for developers. Please also refer to our report for further elaboration of the architecture.
 
-<div style="text-align:center;" >
-  <img src="./results/architecture.jpg" max-height="300px"> 
-</div>
+<p align="center">
+  <img src="./results/architecture.jpg" width="400px"> 
+</p>
 
 ### Services
 - Frontend: [https://localhost](https://localhost)
