@@ -119,7 +119,7 @@ class MediaPipeMaskExtractor(BaseMaskExtractor):
                 running_mode=VisionRunningMode.VIDEO,
                 output_face_blendshapes=True,
                 output_facial_transformation_matrixes=True,
-                num_faces=face_params["numPoses"],
+                num_faces=face_params["numFaces"] if "numFaces" in face_params else face_params["numPoses"],
                 min_face_detection_confidence=face_params["confidence"],
             )
             self.models["faceMesh"] = FaceLandmarker.create_from_options(face_options)

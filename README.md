@@ -20,7 +20,7 @@ MaskAnyone is a docker-packaged modern web app that is built with React, Materia
 
 <table>
   <tr>
-    <td><td><img src="./results/Contours.png" width="100%"> Contour/Edge detection with different levels of details</td></td>
+    <td><img src="./results/Contours.png" width="100%"> Contour/Edge detection with different levels of details</td>
   </tr>
 </table>
 
@@ -152,7 +152,7 @@ The application will then be reachable under [https://localhost](https://localho
 In this section we have collected some further information for developers. Please also refer to our report for further elaboration of the architecture.
 
 <div style="text-align:center;" >
-  <img src="./results/architecture.jpg" max-height="400px"> 
+  <img src="./results/architecture.jpg" max-height="300px"> 
 </div>
 
 ### Services
