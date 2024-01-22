@@ -58,18 +58,18 @@ services:
     depends_on:
       - python
 
-  python-worker-blender:
-    build:
-      context: ./docker/python/workers/blender
-    command: "python /app/docker_worker.py"
-    env_file:
-      - ./app.env
-    volumes:
-      - ./workers:/app
-    environment:
-      WORKER_TYPE: "blender"
-    depends_on:
-      - python
+#  python-worker-blender:
+#    build:
+#      context: ./docker/python/workers/blender
+#    command: "python /app/docker_worker.py"
+#    env_file:
+#      - ./app.env
+#    volumes:
+#      - ./workers:/app
+#    environment:
+#      WORKER_TYPE: "blender"
+#    depends_on:
+#      - python
 
   postgres:
     build:
@@ -100,6 +100,18 @@ services:
     command: "yarn start"
     volumes:
       - ./frontend:/app
+
+  keycloak:
+    build:
+      context: ./docker/keycloak
+    environment:
+      KEYCLOAK_ADMIN: dev
+      KEYCLOAK_ADMIN_PASSWORD: dev
+    command: "start-dev"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
 
 volumes:
   data-postgres:
