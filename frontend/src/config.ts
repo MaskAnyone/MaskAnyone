@@ -12,6 +12,11 @@ interface ConfigType {
         accept: Record<string, string[]>;
         concurrency: number;
     };
+    keycloak: {
+        baseUrl: string;
+        realm: string;
+        clientId: string;
+    };
 }
 
 const Config: ConfigType = {
@@ -29,6 +34,11 @@ const Config: ConfigType = {
             'video/mp4': ['.mp4'],
         },
         concurrency: 3,
+    },
+    keycloak: {
+        baseUrl: process.env.REACT_APP_KEYCLOAK_BASE_URL!,
+        realm: process.env.REACT_APP_KEYCLOAK_REALM!,
+        clientId: process.env.REACT_APP_KEYCLOAK_CLIENT_ID!,
     },
 };
 

@@ -1,32 +1,78 @@
 import React, { useEffect } from 'react';
 import { CssBaseline } from "@mui/material";
-import { Navigate, Route, Routes } from "react-router";
+import {Navigate, Route, Routes, useNavigate} from "react-router";
 import PageLayout from "./layout/PageLayout";
 import VideosPage from "./pages/VideosPage";
 import RunsPage from './pages/RunsPage';
 import PresetsPage from './pages/PresetsPage';
 import Command from "./state/actions/command";
-import { useDispatch } from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import Paths from "./paths";
 import WorkersPage from "./pages/WorkersPage";
 import VideosMaskingPage from "./pages/VideosMaskingPage"
 import LandingPage from "./pages/LandingPage";
 import AboutPage from "./pages/AboutPage";
+import KeycloakAuth from "./keycloakAuth";
+import {store} from "./state/store";
+import Event from "./state/actions/event";
+import Selector from "./state/selector";
+
+const initializeKeycloak = () => {
+    KeycloakAuth.initialize().then(loggedIn => {
+        if (loggedIn) {
+            const tokenParsed = KeycloakAuth.instance.tokenParsed!;
+            store.dispatch(Event.Auth.userAuthenticated({
+                user: {
+                    id: tokenParsed.sub!,
+                    email: (tokenParsed as any).email || null,
+                    firstName: (tokenParsed as any).given_name || null,
+                    lastName: (tokenParsed as any).family_name || null,
+                }
+            }));
+        }
+
+        store.dispatch(Event.Auth.authProviderInitialized({}));
+    });
+};
 
 const App = () => {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const authProviderInitialized = useSelector(Selector.Auth.initialized);
+    const user = useSelector(Selector.Auth.user);
 
     useEffect(() => {
-        dispatch(Command.Video.fetchVideoList({}));
-        dispatch(Command.Job.fetchJobList({}));
-        dispatch(Command.Worker.fetchWorkerList({}));
-        dispatch(Command.Preset.fetchPresetList({}));
+        initializeKeycloak();
     }, []);
+
+    useEffect(() => {
+        if (authProviderInitialized && !user) {
+            navigate('/');
+        }
+
+        if (authProviderInitialized && user) {
+            dispatch(Command.Video.fetchVideoList({}));
+            dispatch(Command.Job.fetchJobList({}));
+            dispatch(Command.Worker.fetchWorkerList({}));
+            dispatch(Command.Preset.fetchPresetList({}));
+        }
+    }, [authProviderInitialized, user]);
+
+    if (!authProviderInitialized) {
+        return null;
+    }
+
+    if (!user) {
+        return (
+            <Routes>
+                <Route path={'*'} element={<LandingPage />} />
+            </Routes>
+        );
+    }
 
     return (<>
         <CssBaseline />
         <Routes>
-            <Route path={'/home'} element={<LandingPage />} />
             <Route path={'/'} element={<PageLayout />}>
                 <Route path={Paths.videos} element={<VideosPage />} />
                 <Route path={Paths.videoDetails} element={<VideosPage />} />
