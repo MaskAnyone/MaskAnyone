@@ -163,8 +163,9 @@ In this section we have collected some further information for developers. Pleas
 </p>
 
 ### Services
-- Frontend: [https://localhost](https://localhost)
+- Frontend: [https://localhost](https://localhost) (Test user: `test:test`)
 - Backend: [https://localhost/api/docs](https://localhost/api/docs)
+- Keycloak: [https://localhost/auth/](https://localhost/auth/) (Admin user: `dev:dev`)
 - PGAdmin: [https://localhost:5433/](https://localhost:5433/) (Password: `dev`)
 
 ### Debugging
@@ -220,7 +221,7 @@ Alternatively you can use `docker-compose logs -f` if you already started the ap
       WORKER_TYPE: "name" <- as in step 2.
     depends_on:
       - python
-    ```
+  ```
 6. Register the algorithm in workers: In `/workers/config.py` add the name of your algorithm folder as in 2. to the AVAILABLE_DOCKER_MODELS list.
 7. Register the algorithm in the frontend: In `frontend/src/util/maskingMethids.ts`, add the algorithm to the maskingMethods dictionary, as the other algorithms.
 
@@ -259,7 +260,12 @@ This is to ensure that the DB schema dump is up-to-date for whenever someone set
 ```bash
 docker-compose exec postgres pg_dump --schema-only --username dev --create prototype > ./docker/postgres/docker-entrypoint-initdb.d/prototype.sql
 ```
-You can also include the `--schema-only` parameter to omit the data in the dump.
+You can also exclude the `--schema-only` parameter to include both the schema and the data in the dump.
+
+Similarly, if you changed anything regarding the Keycloak configuration that should be included in the initial setup, please run the following command to update the Keycloak dump.
+```bash
+docker-compose exec postgres pg_dump --username dev --create keycloak > ./docker/postgres/docker-entrypoint-initdb.d/keycloak.sql
+```
 
 **Reset DB**
 To reset the DB to the latest schema simply run the following commands.
