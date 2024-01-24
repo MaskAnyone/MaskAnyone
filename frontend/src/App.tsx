@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { CssBaseline } from "@mui/material";
-import {Navigate, Route, Routes, useNavigate} from "react-router";
+import {Navigate, Route, Routes, useLocation, useNavigate} from "react-router";
 import PageLayout from "./layout/PageLayout";
 import VideosPage from "./pages/VideosPage";
 import RunsPage from './pages/RunsPage';
@@ -16,6 +16,7 @@ import KeycloakAuth from "./keycloakAuth";
 import {store} from "./state/store";
 import Event from "./state/actions/event";
 import Selector from "./state/selector";
+import LandingPageLayout from "./layout/LandingPageLayout";
 
 const initializeKeycloak = () => {
     KeycloakAuth.initialize().then(loggedIn => {
@@ -40,13 +41,14 @@ const App = () => {
     const navigate = useNavigate();
     const authProviderInitialized = useSelector(Selector.Auth.initialized);
     const user = useSelector(Selector.Auth.user);
+    const location = useLocation();
 
     useEffect(() => {
         initializeKeycloak();
     }, []);
 
     useEffect(() => {
-        if (authProviderInitialized && !user) {
+        if (authProviderInitialized && !user && !['/', '/about'].includes(location.pathname)) {
             navigate('/');
         }
 
@@ -63,11 +65,15 @@ const App = () => {
     }
 
     if (!user) {
-        return (
+        return (<>
+            <CssBaseline />
             <Routes>
-                <Route path={'*'} element={<LandingPage />} />
+                <Route path={'/'} element={<LandingPageLayout />}>
+                    <Route path={Paths.about} element={<AboutPage />} />
+                    <Route index={true} element={<LandingPage />} />
+                </Route>
             </Routes>
-        );
+        </>);
     }
 
     return (<>

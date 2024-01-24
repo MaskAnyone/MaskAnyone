@@ -28,10 +28,10 @@ class VideoManager:
 
         return len(result) > 0
 
-    def add_pending_video(self, id: str, name: str):
+    def add_pending_video(self, id: str, name: str, user_id: str):
         self.__db_connection.execute(
-            "INSERT INTO videos (id, name, status) VALUES (%(id)s, %(name)s, %(status)s)",
-            {"id": id, "name": name, "status": "pending"},
+            "INSERT INTO videos (id, name, status, user_id) VALUES (%(id)s, %(name)s, %(status)s, %(user_id)s)",
+            {"id": id, "name": name, "status": "pending", "user_id": user_id},
         )
 
     def set_video_to_valid(self, id: str, video_info: dict):

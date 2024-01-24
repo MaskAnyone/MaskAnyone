@@ -162,7 +162,8 @@ CREATE TABLE public.videos (
     id uuid NOT NULL,
     name character varying NOT NULL,
     status character varying NOT NULL,
-    video_info jsonb
+    video_info jsonb,
+    user_id uuid NOT NULL
 );
 
 

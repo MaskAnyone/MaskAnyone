@@ -9,12 +9,16 @@ import {
 } from "./types";
 import { RunParams } from '../state/types/Run';
 import { asBackendRunData } from './helpers';
+import KeycloakAuth from "../keycloakAuth";
 
 const configuredAxios = axios.create({
     baseURL: Config.api.baseUrl,
 });
 
 const sendApiRequest = async (config: AxiosRequestConfig): Promise<AxiosResponse> => {
+    await KeycloakAuth.refreshToken(10);
+    configuredAxios.defaults.headers.Authorization = 'Bearer ' + KeycloakAuth.instance.token;
+
     return configuredAxios(config);
 };
 

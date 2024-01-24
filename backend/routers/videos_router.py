@@ -79,7 +79,8 @@ def request_video_upload(params: RequestVideoUploadParams):
             status_code=400, detail="A video with this name exists already"
         )
 
-    video_manager.add_pending_video(params.video_id, params.video_name)
+    # @todo user id
+    video_manager.add_pending_video(params.video_id, params.video_name, '46416c1d-61e9-41a8-a022-89ddc8d16160')
 
     return {}
 
