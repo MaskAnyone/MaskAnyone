@@ -8,18 +8,25 @@ class JWTBearer(HTTPBearer):
     def __init__(self, auto_error: bool = True):
         super(JWTBearer, self).__init__(auto_error=auto_error)
 
-    async def __call__(self, request: Request, credentials: HTTPAuthorizationCredentials = Security(HTTPBearer())):
-        print('???!', request.query_params.get("token"))
-        if credentials:
-            if credentials.scheme != "Bearer":
-                raise HTTPException(status_code=403, detail="Invalid authentication scheme.")
-            token = credentials.credentials
+    async def __call__(self, request: Request):
+        authorization: str = request.headers.get("Authorization")
+        token = None
+
+        if authorization:
+            try:
+                scheme, credentials = authorization.split()
+                if scheme.lower() != "bearer":
+                    raise HTTPException(status_code=403, detail="Invalid authentication scheme.")
+                token = credentials
+            except ValueError:
+                raise HTTPException(status_code=403, detail="Invalid authorization header.")
         else:
             # Try getting the token from query params if not found in header
             # @todo this is a minor security risk and should be fixed in the future
             token = request.query_params.get("token")
-            if not token:
-                raise HTTPException(status_code=403, detail="Invalid authorization code.")
+
+        if not token:
+            raise HTTPException(status_code=403, detail="Not authenticated")
 
         return self.verify_jwt(token)
 

@@ -14,16 +14,16 @@ app = FastAPI()
 app.include_router(videos_router.router, dependencies=[Depends(JWTBearer())])
 
 # /jobs
-app.include_router(jobs_router.router)
+app.include_router(jobs_router.router, dependencies=[Depends(JWTBearer())])
 
 # /workers
-app.include_router(workers_router.router)
+app.include_router(workers_router.router, dependencies=[Depends(JWTBearer())])
 
 # /_worker
 app.include_router(worker_router.router)
 
 # /results
-app.include_router(results_router.router)
+app.include_router(results_router.router, dependencies=[Depends(JWTBearer())])
 
 # /presets
-app.include_router(presets_router.router)
+app.include_router(presets_router.router, dependencies=[Depends(JWTBearer())])
