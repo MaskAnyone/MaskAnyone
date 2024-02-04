@@ -1,7 +1,7 @@
 import os
 import cv2
 
-from fastapi import APIRouter, Request, Response, HTTPException
+from fastapi import APIRouter, Request, Response, HTTPException, Depends
 from fastapi.responses import FileResponse
 
 from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
@@ -21,6 +21,7 @@ from db.result_blendshapes_manager import ResultBlendshapesManager
 from db.result_audio_files_manager import ResultAudioFilesManager
 from db.result_extra_files_manager import ResultExtraFilesManager
 from db.db_connection import DBConnection
+from auth.jwt_bearer import JWTBearer
 
 
 db_connection = DBConnection()
@@ -37,8 +38,10 @@ router = APIRouter(
 
 
 @router.get("")
-def get_videos():
-    videos = video_manager.fetch_videos()
+def get_videos(token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+
+    videos = video_manager.fetch_videos(user_id)
 
     return {"videos": videos}
 
@@ -73,20 +76,22 @@ def get_preview_for_video(video_id: str):
 
 
 @router.post("/upload/request")
-def request_video_upload(params: RequestVideoUploadParams):
-    if video_manager.has_video_with_name(params.video_name):
+def request_video_upload(params: RequestVideoUploadParams, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+
+    if video_manager.has_video_with_name(params.video_name, user_id):
         raise HTTPException(
             status_code=400, detail="A video with this name exists already"
         )
 
-    # @todo user id
-    video_manager.add_pending_video(params.video_id, params.video_name, '46416c1d-61e9-41a8-a022-89ddc8d16160')
+    video_manager.add_pending_video(params.video_id, params.video_name, user_id)
 
     return {}
 
 
 @router.post("/upload/finalize")
-def finalize_video_upload(params: FinalizeVideoUploadParams):
+def finalize_video_upload(params: FinalizeVideoUploadParams, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
     video_path = os.path.join(VIDEOS_BASE_PATH, params.video_id + ".mp4")
 
     if not os.path.exists(video_path):
@@ -109,6 +114,7 @@ def finalize_video_upload(params: FinalizeVideoUploadParams):
 
     video_manager.set_video_to_valid(
         params.video_id,
+        user_id,
         video_info,
     )
 

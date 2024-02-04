@@ -9,11 +9,12 @@ class VideoManager:
     def __init__(self, db_connection: DBConnection):
         self.__db_connection = db_connection
 
-    def fetch_videos(self):
+    def fetch_videos(self, user_id: str):
         result = []
 
         video_data_list = self.__db_connection.select_all(
-            "SELECT * FROM videos WHERE status=%(status)s", {"status": "valid"}
+            "SELECT * FROM videos WHERE status=%(status)s AND user_id=%(user_id)s",
+            {"status": "valid", "user_id": user_id},
         )
 
         for video_data in video_data_list:
@@ -21,9 +22,9 @@ class VideoManager:
 
         return result
 
-    def has_video_with_name(self, video_name: str) -> bool:
+    def has_video_with_name(self, video_name: str, user_id: str) -> bool:
         result = self.__db_connection.select_all(
-            "SELECT id FROM videos WHERE name=%(name)s", {"name": video_name}
+            "SELECT id FROM videos WHERE name=%(name)s AND user_id=%(user_id)s", {"name": video_name, "user_id": user_id}
         )
 
         return len(result) > 0
@@ -34,13 +35,17 @@ class VideoManager:
             {"id": id, "name": name, "status": "pending", "user_id": user_id},
         )
 
-    def set_video_to_valid(self, id: str, video_info: dict):
+    def set_video_to_valid(self, id: str, user_id: str, video_info: dict):
+        self._assert_user_has_video(id, user_id)
+
         self.__db_connection.execute(
             "UPDATE videos SET status=%(status)s, video_info=%(video_info)s WHERE id=%(id)s",
             {"id": id, "status": "valid", "video_info": json.dumps(video_info)},
         )
 
     def fetch_all_results(self, video_id: str):
+        # @todo user id check?
+
         result = []
 
         result_video_data_list = self.__db_connection.select_all(
@@ -84,3 +89,11 @@ class VideoManager:
             result.append(Result(*result_video_data))
 
         return result
+
+    def _assert_user_has_video(self, video_id: str, user_id: str):
+        result = self.__db_connection.select_all(
+            "SELECT id FROM videos WHERE id=%(video_id)s AND user_id=%(user_id)s", {"video_id": video_id, "user_id": user_id}
+        )
+
+        if len(result) == 0:
+            raise Exception("User does not have video with id " + video_id)
