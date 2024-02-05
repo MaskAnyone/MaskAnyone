@@ -58,6 +58,7 @@ def create_job(job_type: str, run_params: RunParams):
         run_params.result_video_id,
         run_params.run_data,
         job_type,
+        'dc2de8bb-60cd-4bf7-9574-d237a30bf96d' # @todo use reference job user id here
     )
 
 

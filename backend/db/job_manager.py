@@ -8,11 +8,11 @@ class JobManager:
     def __init__(self, db_connection: DBConnection):
         self.__db_connection = db_connection
 
-    def fetch_jobs(self):
+    def fetch_jobs(self, user_id: str):
         result = []
 
         job_data_list = self.__db_connection.select_all(
-            "SELECT * FROM jobs ORDER BY created_at DESC"
+            "SELECT * FROM jobs WHERE user_id=%(user_id)s ORDER BY created_at DESC", {"user_id": user_id}
         )
 
         for job_data in job_data_list:
@@ -27,6 +27,7 @@ class JobManager:
         result_video_id: str,
         data: dict,
         job_type: str,
+        user_id: str,
     ):
         for idx, video_id in enumerate(video_ids):
             if idx == 0:
@@ -34,7 +35,7 @@ class JobManager:
             else:
                 job_id = str(uuid.uuid4())
             self.__db_connection.execute(
-                "INSERT INTO jobs (id, video_id, result_video_id, type, status, data, created_at) VALUES (%(id)s, %(video_id)s, %(result_video_id)s, %(type)s, %(status)s, %(data)s, current_timestamp)",
+                "INSERT INTO jobs (id, video_id, result_video_id, type, status, data, created_at, user_id) VALUES (%(id)s, %(video_id)s, %(result_video_id)s, %(type)s, %(status)s, %(data)s, current_timestamp, %(user_id)s)",
                 {
                     "id": job_id,
                     "video_id": video_id,
@@ -42,6 +43,7 @@ class JobManager:
                     "type": job_type,
                     "status": "open",
                     "data": json.dumps(data),
+                    "user_id": user_id,
                 },
             )
 
