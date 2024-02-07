@@ -7,6 +7,9 @@ name: "Build And Push Docker"
 jobs:
   build-and-push-docker:
     name: "Build And Push Docker"
+    permissions:
+      contents: read
+      packages: write
 
     runs-on: ubuntu-latest
 
