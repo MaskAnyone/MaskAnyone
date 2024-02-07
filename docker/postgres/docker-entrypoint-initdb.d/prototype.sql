@@ -150,8 +150,7 @@ CREATE TABLE public.result_videos (
     job_id uuid NOT NULL,
     video_info jsonb,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    name character varying DEFAULT 'Result'::character varying NOT NULL,
-    user_id uuid NOT NULL
+    name character varying DEFAULT 'Result'::character varying NOT NULL
 );
 
 

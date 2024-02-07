@@ -1,12 +1,13 @@
 import os
 import cv2
 
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, Request, Response, Depends
 from models import CreatePresetParams
 from db.preset_manager import PresetManager
 from db.db_connection import DBConnection
 from config import PRESETS_BASE_PATH, RESULT_BASE_PATH
 from utils.preview_image_utils import aspect_preserving_resize_and_crop
+from auth.jwt_bearer import JWTBearer
 
 preset_manager = PresetManager(DBConnection())
 
@@ -16,7 +17,7 @@ router = APIRouter(
 
 
 @router.get("")
-def fetch_presets(token_payload: dict = Depends(JWTBearer()))):
+def fetch_presets(token_payload: dict = Depends(JWTBearer())):
     user_id = token_payload["sub"]
     presets = preset_manager.fetch_presets(user_id)
 
@@ -24,7 +25,7 @@ def fetch_presets(token_payload: dict = Depends(JWTBearer()))):
 
 
 @router.post("/create")
-def create_preset(params: CreatePresetParams, token_payload: dict = Depends(JWTBearer()))):
+def create_preset(params: CreatePresetParams, token_payload: dict = Depends(JWTBearer())):
     user_id = token_payload["sub"]
 
     preset_manager.create_new_preset(
@@ -54,7 +55,7 @@ def create_preset(params: CreatePresetParams, token_payload: dict = Depends(JWTB
 
 
 @router.post("/{preset_id}/delete")
-def delete_preset(preset_id: str, token_payload: dict = Depends(JWTBearer()))):
+def delete_preset(preset_id: str, token_payload: dict = Depends(JWTBearer())):
     user_id = token_payload["sub"]
     preset_manager.assert_user_has_preset(preset_id, user_id)
 
@@ -66,7 +67,7 @@ def delete_preset(preset_id: str, token_payload: dict = Depends(JWTBearer()))):
 
 
 @router.get("/{preset_id}/preview")
-def get_preview_for_preset(preset_id: str, token_payload: dict = Depends(JWTBearer()))):
+def get_preview_for_preset(preset_id: str, token_payload: dict = Depends(JWTBearer())):
     user_id = token_payload["sub"]
     preset_manager.assert_user_has_preset(preset_id, user_id)
 

@@ -273,7 +273,7 @@ To reset the DB to the latest schema simply run the following commands.
 docker-compose down -v
 docker-compose up -d postgres
 ```
-Wait a few seconds
+Wait 30 seconds
 ```bash
 docker-compose up -d
 ```

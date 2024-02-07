@@ -35,9 +35,7 @@ class VideoManager:
             {"id": id, "name": name, "status": "pending", "user_id": user_id},
         )
 
-    def set_video_to_valid(self, id: str, user_id: str, video_info: dict):
-        self._assert_user_has_video(id, user_id)
-
+    def set_video_to_valid(self, id: str, video_info: dict):
         self.__db_connection.execute(
             "UPDATE videos SET status=%(status)s, video_info=%(video_info)s WHERE id=%(id)s",
             {"id": id, "status": "valid", "video_info": json.dumps(video_info)},
@@ -90,7 +88,7 @@ class VideoManager:
 
         return result
 
-    def _assert_user_has_video(self, video_id: str, user_id: str):
+    def assert_user_has_video(self, video_id: str, user_id: str):
         result = self.__db_connection.select_all(
             "SELECT id FROM videos WHERE id=%(video_id)s AND user_id=%(user_id)s", {"video_id": video_id, "user_id": user_id}
         )
