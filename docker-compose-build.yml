@@ -18,3 +18,21 @@ services:
     build:
       context: ./docker_build/postgres
       dockerfile: Dockerfile
+
+  keycloak:
+    image: ${DOCKER_REGISTRY}keycloak:${DOCKER_TAG}
+    build:
+      context: ./docker_build/keycloak
+      dockerfile: Dockerfile
+
+  backend:
+    image: ${DOCKER_REGISTRY}backend:${DOCKER_TAG}
+    build:
+      context: .
+      dockerfile: docker_build/backend/Dockerfile
+
+  worker_basic:
+    image: ${DOCKER_REGISTRY}worker_basic:${DOCKER_TAG}
+    build:
+      context: .
+      dockerfile: docker_build/worker_basic/Dockerfile
