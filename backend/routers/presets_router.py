@@ -1,12 +1,13 @@
 import os
 import cv2
 
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, Request, Response, Depends
 from models import CreatePresetParams
 from db.preset_manager import PresetManager
 from db.db_connection import DBConnection
 from config import PRESETS_BASE_PATH, RESULT_BASE_PATH
 from utils.preview_image_utils import aspect_preserving_resize_and_crop
+from auth.jwt_bearer import JWTBearer
 
 preset_manager = PresetManager(DBConnection())
 
@@ -16,19 +17,23 @@ router = APIRouter(
 
 
 @router.get("")
-def fetch_presets():
-    presets = preset_manager.fetch_presets()
+def fetch_presets(token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    presets = preset_manager.fetch_presets(user_id)
 
     return {"presets": presets}
 
 
 @router.post("/create")
-def create_preset(params: CreatePresetParams):
+def create_preset(params: CreatePresetParams, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+
     preset_manager.create_new_preset(
         params.id,
         params.name,
         params.description,
         params.data,
+        user_id
     )
 
     video_path = os.path.join(RESULT_BASE_PATH, params.video_id, params.result_video_id + ".mp4")
@@ -50,7 +55,10 @@ def create_preset(params: CreatePresetParams):
 
 
 @router.post("/{preset_id}/delete")
-def delete_preset(preset_id: str):
+def delete_preset(preset_id: str, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    preset_manager.assert_user_has_preset(preset_id, user_id)
+
     preset_manager.delete_preset(preset_id)
 
     preview_image_path = os.path.join(PRESETS_BASE_PATH, preset_id + ".jpg")
@@ -59,7 +67,10 @@ def delete_preset(preset_id: str):
 
 
 @router.get("/{preset_id}/preview")
-def get_preview_for_preset(preset_id: str):
+def get_preview_for_preset(preset_id: str, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    preset_manager.assert_user_has_preset(preset_id, user_id)
+
     image_path = os.path.join(PRESETS_BASE_PATH, preset_id + ".jpg")
 
     if not os.path.exists(image_path):

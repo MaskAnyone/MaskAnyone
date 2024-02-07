@@ -5,7 +5,7 @@ import {notificationReducer, NotificationState} from "./reducers/notificationRed
 import {jobReducer, JobState} from "./reducers/jobReducer";
 import {workerReducer, WorkerState} from "./reducers/workerReducer";
 import {presetReducer, PresetState} from "./reducers/presetReducer";
-
+import {authReducer, AuthState} from "./reducers/authReducer";
 
 export interface ReduxState {
     video: VideoState;
@@ -14,6 +14,7 @@ export interface ReduxState {
     job: JobState;
     worker: WorkerState;
     preset: PresetState;
+    auth: AuthState;
 }
 
 export const rootReducer = combineReducers({
@@ -23,4 +24,5 @@ export const rootReducer = combineReducers({
     job: jobReducer,
     worker: workerReducer,
     preset: presetReducer,
+    auth: authReducer,
 });

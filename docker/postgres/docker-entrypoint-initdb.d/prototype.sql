@@ -56,7 +56,8 @@ CREATE TABLE public.jobs (
     created_at timestamp without time zone NOT NULL,
     started_at timestamp without time zone,
     finished_at timestamp without time zone,
-    progress integer DEFAULT 0 NOT NULL
+    progress integer DEFAULT 0 NOT NULL,
+    user_id uuid NOT NULL
 );
 
 
@@ -70,7 +71,8 @@ CREATE TABLE public.presets (
     id uuid NOT NULL,
     name character varying NOT NULL,
     description text NOT NULL,
-    data jsonb NOT NULL
+    data jsonb NOT NULL,
+    user_id uuid NOT NULL
 );
 
 
@@ -162,7 +164,8 @@ CREATE TABLE public.videos (
     id uuid NOT NULL,
     name character varying NOT NULL,
     status character varying NOT NULL,
-    video_info jsonb
+    video_info jsonb,
+    user_id uuid NOT NULL
 );
 
 

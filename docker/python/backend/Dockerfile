@@ -20,4 +20,5 @@ RUN pip install \
     fastapi \
     uvicorn[standard] \
     psycopg2 \
-    requests
+    requests \
+    python-jose[cryptography]

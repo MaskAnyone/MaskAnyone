@@ -7,3 +7,4 @@ class Video:
     name: str
     status: str
     video_info: dict
+    user_id: str
