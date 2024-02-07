@@ -1,0 +1,8 @@
+version: '3'
+
+services:
+  frontend:
+    image: ${DOCKER_REGISTRY}frontend:${DOCKER_TAG}
+    build:
+      context: .
+      dockerfile: docker_build/frontend/Dockerfile
