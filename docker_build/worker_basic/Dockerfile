@@ -33,7 +33,7 @@ RUN pip install \
 
 
 # RVC
-COPY scripts /scripts/
+COPY ./docker_build/worker_basic/scripts /scripts/
 
 RUN cd / \
     && git clone https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI.git \
