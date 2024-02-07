@@ -1,8 +1,20 @@
 version: '3'
 
 services:
+  proxy:
+    image: ${DOCKER_REGISTRY}proxy:${DOCKER_TAG}
+    build:
+      context: ./docker_build/proxy
+      dockerfile: Dockerfile
+
   frontend:
     image: ${DOCKER_REGISTRY}frontend:${DOCKER_TAG}
     build:
       context: .
       dockerfile: docker_build/frontend/Dockerfile
+
+  postgres:
+    image: ${DOCKER_REGISTRY}postgres:${DOCKER_TAG}
+    build:
+      context: ./docker_build/postgres
+      dockerfile: Dockerfile
