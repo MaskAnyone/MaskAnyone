@@ -61,9 +61,8 @@ volumes:
 **Step 3: Configure the environment variables.**
 Create a new file named `.env` in the same directory as the `docker-compose.yml` file and fill it with the following content.
 Make sure to replace the password placeholders with your own strong passwords.
-These passwords should be different from each other and have a high level of entropy.
-Optimally the password should be long (20+ characters) and contain a mix of upper and lower case letters, numbers, and special characters.
-Consider using a password generator (e.g. `pwgen -cnys 32` on Linux).
+Since you're running this on your personal computer, we assume that your data is protected already anyway.
+It is still recommended to use a fairly strong password.
 ```dotenv
 MASK_ANYONE_DB_USER=maskanyone
 MASK_ANYONE_DB_PASSWORD=<your-strong-password-1>
@@ -141,3 +140,32 @@ MASK_ANYONE_KC_ADMIN_USER=admin
 MASK_ANYONE_KC_ADMIN_PASSWORD=<your-strong-password-2>
 ```
 
+**Step 4: Pull/build the infrastructure.**
+Run the following command:
+```bash
+docker-compose build
+```
+
+**Step 5: Start the application for the first time.**
+To do so first start the database container.
+```bash
+docker-compose up -d postgres
+```
+Then wait for 30 seconds to give it some time to prepare the database. 
+Afterward, start all the other containers as well.
+```bash
+docker-compose up -d
+```
+
+**Step 6: Verify that MaskAnyone is running.**
+First check that all containers are up and running:
+```bash
+docker-compose ps
+```
+If you find that a container is not running, you can try to identify the issue by looking at its logs:
+```bash
+docker-compose logs -f <container-name>
+```
+If your containers are running, then please try accessing MaskAnyone at [https://localhost](https://localhost). 
+Keep in mind that this URL points to localhost and will therefore only work if you try accessing it from within your server. 
+Assuming that you're accessing your server via ssh, you should be able to access MaskAnyone via its IP (e.g. `https://<your-server-ip`) in your browser instead. 
