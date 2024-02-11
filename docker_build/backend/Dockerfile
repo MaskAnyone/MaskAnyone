@@ -18,11 +18,11 @@ RUN apt-get update \
 
 RUN pip install \
     fastapi \
-    uvicorn[standard] \
+    gunicorn \
     psycopg2 \
     requests \
     python-jose[cryptography]
 
 COPY ./backend /app
 
-CMD ["uvicorn", "main:app", "--reload", "--proxy-headers", "--host", "0.0.0.0", "--root-path", "/api/"]
+CMD ["gunicorn", "-k", "uvicorn_prod_worker.UvicornProdWorker", "main:app", "--bind=0.0.0.0:8000"]
