@@ -18,6 +18,7 @@ RUN apt-get update \
 
 RUN pip install \
     fastapi \
+    uvicorn[standard] \
     gunicorn \
     psycopg2 \
     requests \

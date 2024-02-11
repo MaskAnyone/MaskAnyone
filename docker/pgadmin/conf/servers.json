@@ -4,7 +4,7 @@
       "Name": "prototype1",
       "Group": "Servers",
       "Port": 5432,
-      "Username": "dev",
+      "Username": "maskanyone",
       "Host": "postgres",
       "SSLMode": "prefer",
       "MaintenanceDB": "postgres"
