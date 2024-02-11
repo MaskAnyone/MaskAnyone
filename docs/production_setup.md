@@ -60,18 +60,22 @@ volumes:
 
 **Step 3: Configure the environment variables.**
 Create a new file named `.env` in the same directory as the `docker-compose.yml` file and fill it with the following content.
+Specify the version (e.g. `0.1.8`) of Mask Anyone you want to use. 
+You can find the latest version on the [GitHub releases page](https://github.com/MaskAnyone/MaskAnyone/releases).
 Make sure to replace the password placeholders with your own strong passwords.
 Since you're running this on your personal computer, we assume that your data is protected already anyway.
 It is still recommended to use a fairly strong password.
 ```dotenv
+MASK_ANYONE_VERSION="<version-number>"
+
 MASK_ANYONE_DB_USER=maskanyone
-MASK_ANYONE_DB_PASSWORD=<your-strong-password-1>
+MASK_ANYONE_DB_PASSWORD="<your-strong-password-1>"
 ```
 
 **Step 4: Pull/build the infrastructure.**
 Run the following command:
 ```bash
-docker-compose build
+docker-compose pull
 ```
 
 **Step 5: Start the application for the first time.**
@@ -156,22 +160,26 @@ volumes:
 
 **Step 3: Configure the environment variables.**
 Create a new file named `.env` in the same directory as the `docker-compose.yml` file and fill it with the following content.
+Specify the version (e.g. `0.1.8`) of Mask Anyone you want to use.
+You can find the latest version on the [GitHub releases page](https://github.com/MaskAnyone/MaskAnyone/releases).
 Make sure to replace the password placeholders with your own strong passwords. 
 These passwords should be different from each other and have a high level of entropy.
 Optimally the password should be long (20+ characters) and contain a mix of upper and lower case letters, numbers, and special characters.
-Consider using a password generator (e.g. `pwgen -cnys 32` on Linux).
+Consider using a password generator (e.g. ``pwgen -cnys -r \`\" 32`` on Linux).
 ```dotenv
+MASK_ANYONE_VERSION="<version-number>"
+
 MASK_ANYONE_DB_USER=maskanyone
-MASK_ANYONE_DB_PASSWORD=<your-strong-password-1>
+MASK_ANYONE_DB_PASSWORD="<your-strong-password-1>"
 
 MASK_ANYONE_KC_ADMIN_USER=admin
-MASK_ANYONE_KC_ADMIN_PASSWORD=<your-strong-password-2>
+MASK_ANYONE_KC_ADMIN_PASSWORD="<your-strong-password-2>"
 ```
 
 **Step 4: Pull/build the infrastructure.**
 Run the following command:
 ```bash
-docker-compose build
+docker-compose pull
 ```
 
 **Step 5: Start the application for the first time.**

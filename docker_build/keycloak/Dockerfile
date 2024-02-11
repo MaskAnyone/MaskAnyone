@@ -22,3 +22,4 @@ ENV KC_HTTP_RELATIVE_PATH=/auth/
 ENV KC_PROXY=edge
 
 ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]
+CMD ["start", "--optimized"]
