@@ -16,8 +16,8 @@ services:
   postgres:
     image: ${DOCKER_REGISTRY}postgres:${DOCKER_TAG}
     build:
-      context: .
-      dockerfile: docker_build/postgres/Dockerfile
+      context: ./docker_build/postgres
+      dockerfile: Dockerfile
 
   keycloak:
     image: ${DOCKER_REGISTRY}keycloak:${DOCKER_TAG}
