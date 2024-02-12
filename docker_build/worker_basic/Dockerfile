@@ -41,15 +41,12 @@ RUN cd / \
     && git checkout 3e455ece57a627cb29252d7c6de2b86ace9aff85 \
     && pip install -r requirements.txt
 
-RUN python3 /scripts/download_voice_models.py
-
 # STTN
 RUN cd / \
     && git clone https://github.com/researchmm/STTN.git \
     && cd STTN \
     && mkdir ./checkpoints \
     && cd ./checkpoints \
-    && gdown https://drive.google.com/uc?id=1ZAMV8547wmZylKRt5qR_tC5VlosXD4Wv \
     && sed -i 's/cuda:1/cuda:0/' /STTN/test.py \
     && sed -i 's/mp4v/vp09/' /STTN/test.py
 

@@ -31,9 +31,8 @@ services:
       context: .
       dockerfile: docker_build/backend/Dockerfile
 
-# @todo this is too heavy to build in CI; Try to make the worker more light-weight and buildable in CI
-#  worker_basic:
-#    image: ${DOCKER_REGISTRY}worker_basic:${DOCKER_TAG}
-#    build:
-#      context: .
-#      dockerfile: docker_build/worker_basic/Dockerfile
+  worker_basic:
+    image: ${DOCKER_REGISTRY}worker_basic:${DOCKER_TAG}
+    build:
+      context: .
+      dockerfile: docker_build/worker_basic/Dockerfile
