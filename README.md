@@ -166,7 +166,7 @@ In this section we have collected some further information for developers. Pleas
 - Frontend: [https://localhost](https://localhost) (Test user: `test:test`)
 - Backend: [https://localhost/api/docs](https://localhost/api/docs)
 - Keycloak: [https://localhost/auth/](https://localhost/auth/) (Admin user: `dev:dev`)
-- PGAdmin: [https://localhost:5433/](https://localhost:5433/) (Password: `maskanyone`)
+- PGAdmin: [https://localhost:5433/](https://localhost:5433/) (Password: `dev`)
 
 ### Debugging
 Run the application with 
@@ -258,13 +258,13 @@ A list of pre-trained voice models can be found under: [Link](https://docs.googl
 If you changed the schema of the DB please run the following command to refresh the schema dump.
 This is to ensure that the DB schema dump is up-to-date for whenever someone sets up the project.
 ```bash
-docker-compose exec postgres pg_dump --schema-only --username maskanyone --create prototype > ./docker/postgres/docker-entrypoint-initdb.d/prototype.sql
+docker-compose exec postgres pg_dump --schema-only --username dev --create prototype > ./docker/postgres/docker-entrypoint-initdb.d/prototype.sql
 ```
 You can also exclude the `--schema-only` parameter to include both the schema and the data in the dump.
 
 Similarly, if you changed anything regarding the Keycloak configuration that should be included in the initial setup, please run the following command to update the Keycloak dump.
 ```bash
-docker-compose exec postgres pg_dump --username maskanyone --create keycloak > ./docker/postgres/docker-entrypoint-initdb.d/keycloak.sql
+docker-compose exec postgres pg_dump --username dev --create keycloak > ./docker/postgres/docker-entrypoint-initdb.d/keycloak.sql
 ```
 
 **Reset DB**

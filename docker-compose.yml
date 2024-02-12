@@ -88,7 +88,7 @@ services:
     environment:
       PGADMIN_ENABLE_TLS: "True"
       PGADMIN_DEFAULT_EMAIL: "dev@dev.dev"
-      PGADMIN_DEFAULT_PASSWORD: "maskanyone"
+      PGADMIN_DEFAULT_PASSWORD: "dev"
       PGADMIN_CONFIG_SERVER_MODE: "False"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
     depends_on:
