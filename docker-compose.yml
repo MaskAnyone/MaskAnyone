@@ -19,6 +19,7 @@ services:
       - ./app.env
     volumes:
       - ./backend:/app
+      - ./data/backend:/var/lib/maskanyone/data
     depends_on:
       - postgres
 
@@ -78,7 +79,7 @@ services:
       - ./app.env
     volumes:
       - ./docker/postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
-      - data-postgres:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
 
   pgadmin:
     build:
@@ -112,7 +113,3 @@ services:
       - "8080:8080"
     depends_on:
       - postgres
-
-volumes:
-  data-postgres:
-    driver: local

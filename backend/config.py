@@ -1,8 +1,8 @@
 import os
 
-RESULT_BASE_PATH = "data/results"
-VIDEOS_BASE_PATH = "data/videos"
-PRESETS_BASE_PATH = "data/presets"
+RESULT_BASE_PATH = "/var/lib/maskanyone/data/results"
+VIDEOS_BASE_PATH = "/var/lib/maskanyone/data/videos"
+PRESETS_BASE_PATH = "/var/lib/maskanyone/data/presets"
 
 AUTH_TOKEN_ISSUER = "https://localhost/auth/realms/maskanyone"
 AUTH_TOKEN_AUDIENCE = "account"
