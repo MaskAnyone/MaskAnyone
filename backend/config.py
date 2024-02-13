@@ -1,3 +1,5 @@
+import os
+
 RESULT_BASE_PATH = "data/results"
 VIDEOS_BASE_PATH = "data/videos"
 PRESETS_BASE_PATH = "data/presets"
@@ -5,6 +7,4 @@ PRESETS_BASE_PATH = "data/presets"
 AUTH_TOKEN_ISSUER = "https://localhost/auth/realms/maskanyone"
 AUTH_TOKEN_AUDIENCE = "account"
 AUTH_ALGORITHM = "RS256"
-AUTH_PUBLIC_KEY = """-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6AMl42mLITdC2UZQP72XI0YGPEMuD6hKlsNIthtnsDKqltDrHd4bsYn/QBdmbFsEyK9761pdOAnW+3Bc8GhlKO10l59HwjgSWeedZwhUa4uVQvVnwIvNU8IcNWMSJ/8cLfpUzJULR0OSx5msBN+2qBXUUiq6bdUve54ChDwMaxsU2yUOwTcm8A9J5eGxsxowi9CGUMsxeggFIm4XBAc3kIwvUziggIuO9pe/S+Z/Jt90pqGhjMQ8nsLOyfX2d14GNTbBeptrvYoubHSBXh5IzHubxvx3Z+55daJUyCrcuz8xp85A9JAxC04X9/4/OyAjxSmVcn/PsCG4Cm7kAIxFJwIDAQAB
------END PUBLIC KEY-----"""
+AUTH_PUBLIC_KEY = "-----BEGIN PUBLIC KEY-----\n" + os.environ['BACKEND_AUTH_PUBLIC_KEY'] + "\n-----END PUBLIC KEY-----"
