@@ -30,9 +30,3 @@ services:
     build:
       context: .
       dockerfile: docker_build/backend/Dockerfile
-
-  worker_basic:
-    image: ${DOCKER_REGISTRY}worker_basic:${DOCKER_TAG}
-    build:
-      context: .
-      dockerfile: docker_build/worker_basic/Dockerfile
