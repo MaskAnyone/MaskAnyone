@@ -1,9 +1,10 @@
 from typing import List
 import uuid
 import requests
+import os
 from enum import Enum
 
-BASE_PATH = "http://python:8000/_worker/"
+BASE_PATH = os.environ["WORKER_BACKEND_BASE_PATH"]
 
 
 class MpKinematicsType(str, Enum):

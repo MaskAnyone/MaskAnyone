@@ -1,7 +1,7 @@
 import os
 import cv2
 
-from fastapi import APIRouter, Request, Response, HTTPException
+from fastapi import APIRouter, Request, Response, HTTPException, Depends
 from fastapi.responses import FileResponse
 
 from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
@@ -21,6 +21,7 @@ from db.result_blendshapes_manager import ResultBlendshapesManager
 from db.result_audio_files_manager import ResultAudioFilesManager
 from db.result_extra_files_manager import ResultExtraFilesManager
 from db.db_connection import DBConnection
+from auth.jwt_bearer import JWTBearer
 
 
 db_connection = DBConnection()
@@ -37,14 +38,19 @@ router = APIRouter(
 
 
 @router.get("")
-def get_videos():
-    videos = video_manager.fetch_videos()
+def get_videos(token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+
+    videos = video_manager.fetch_videos(user_id)
 
     return {"videos": videos}
 
 
 @router.get("/{video_id}")
-def get_video_stream(video_id, request: Request):
+def get_video_stream(video_id, request: Request, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+
     video_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
 
     return range_requests_response(
@@ -53,13 +59,19 @@ def get_video_stream(video_id, request: Request):
 
 
 @router.get("/{video_id}/download")
-def download_video(video_id):
+def download_video(video_id, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+
     video_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
     return FileResponse(path=video_path, filename=video_path, media_type="video/mp4")
 
 
 @router.get("/{video_id}/preview")
-def get_preview_for_video(video_id: str):
+def get_preview_for_video(video_id: str, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+
     image_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".jpg")
 
     if not os.path.exists(image_path):
@@ -73,19 +85,24 @@ def get_preview_for_video(video_id: str):
 
 
 @router.post("/upload/request")
-def request_video_upload(params: RequestVideoUploadParams):
-    if video_manager.has_video_with_name(params.video_name):
+def request_video_upload(params: RequestVideoUploadParams, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+
+    if video_manager.has_video_with_name(params.video_name, user_id):
         raise HTTPException(
             status_code=400, detail="A video with this name exists already"
         )
 
-    video_manager.add_pending_video(params.video_id, params.video_name)
+    video_manager.add_pending_video(params.video_id, params.video_name, user_id)
 
     return {}
 
 
 @router.post("/upload/finalize")
-def finalize_video_upload(params: FinalizeVideoUploadParams):
+def finalize_video_upload(params: FinalizeVideoUploadParams, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(params.video_id, user_id)
+
     video_path = os.path.join(VIDEOS_BASE_PATH, params.video_id + ".mp4")
 
     if not os.path.exists(video_path):
@@ -115,7 +132,10 @@ def finalize_video_upload(params: FinalizeVideoUploadParams):
 
 
 @router.post("/upload/{video_id}")
-async def upload_video(video_id, request: Request):
+async def upload_video(video_id, request: Request, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+
     video_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
 
     video_content = await request.body()
@@ -125,20 +145,24 @@ async def upload_video(video_id, request: Request):
 
 
 @router.get("/{video_id}/results")
-def get_results_for_video(video_id: str):
+def get_results_for_video(video_id: str, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+
     result_videos = result_video_manager.fetch_result_videos(video_id)
 
     return {"result_videos": result_videos}
 
 
 @router.get("/{video_id}/results/{result_video_id}")
-def get_result_video_stream(video_id: str, result_video_id: str, request: Request):
+def get_result_video_stream(video_id: str, result_video_id: str, request: Request, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+
     video_path = os.path.join(RESULT_BASE_PATH, video_id, result_video_id + ".mp4")
 
     if not os.path.exists(video_path):
         raise HTTPException(status_code=404, detail="Requested result video not found.")
-
-    print(video_path)
 
     return range_requests_response(
         request, file_path=video_path, content_type="video/mp4"
@@ -146,7 +170,10 @@ def get_result_video_stream(video_id: str, result_video_id: str, request: Reques
 
 
 @router.get("/{video_id}/results/{result_video_id}/download")
-def download_result_video(video_id: str, result_video_id: str):
+def download_result_video(video_id: str, result_video_id: str, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+
     video_path = os.path.join(RESULT_BASE_PATH, video_id, result_video_id + ".mp4")
 
     if not os.path.exists(video_path):
@@ -156,7 +183,10 @@ def download_result_video(video_id: str, result_video_id: str):
 
 
 @router.get("/{video_id}/results/{result_video_id}/preview")
-def get_result_preview_for_video(video_id: str, result_video_id: str):
+def get_result_preview_for_video(video_id: str, result_video_id: str, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+
     image_path = os.path.join(RESULT_BASE_PATH, video_id, result_video_id + ".png")
 
     if not os.path.exists(image_path):
@@ -170,7 +200,10 @@ def get_result_preview_for_video(video_id: str, result_video_id: str):
 
 
 @router.get("/{video_id}/results/{result_video_id}/result-files")
-def get_downloadable_result_files(video_id: str, result_video_id: str):
+def get_downloadable_result_files(video_id: str, result_video_id: str, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+
     files = []
 
     blendshapes_entries = result_blendshapes_manager.find_entries(result_video_id)
@@ -243,12 +276,12 @@ def get_downloadable_result_files(video_id: str, result_video_id: str):
     return {"files": files}
 
 
-@router.get(
-    "/{video_id}/results/{result_video_id}/mp-kinematics/{mp_kinematics_id}/download"
-)
-def download_mp_kinematics(
-    video_id: str, result_video_id: str, mp_kinematics_id: str, response: Response
-):
+@router.get("/{video_id}/results/{result_video_id}/mp-kinematics/{mp_kinematics_id}/download")
+def download_mp_kinematics(video_id: str, result_video_id: str, mp_kinematics_id: str, response: Response, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+    # @todo check result videoid matches given video id
+
     file_name = result_video_id + "_mp-kinematics.json"
 
     result_mp_kinematics = (
@@ -259,12 +292,12 @@ def download_mp_kinematics(
     return result_mp_kinematics.data
 
 
-@router.get(
-    "/{video_id}/results/{result_video_id}/blendshapes/{blendshapes_id}/download"
-)
-def download_blendshapes(
-    video_id: str, result_video_id: str, blendshapes_id: str, response: Response
-):
+@router.get("/{video_id}/results/{result_video_id}/blendshapes/{blendshapes_id}/download")
+def download_blendshapes(video_id: str, result_video_id: str, blendshapes_id: str, response: Response, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+    # @todo check result videoid matches given video id
+
     file_name = result_video_id + "_blendshapes.json"
 
     result_blendshapes = result_blendshapes_manager.fetch_result_blendshapes_entry(
@@ -275,10 +308,12 @@ def download_blendshapes(
     return result_blendshapes.data
 
 
-@router.get(
-    "/{video_id}/results/{result_video_id}/audio_files/{audio_file_id}/download"
-)
-def download_audio_file(video_id: str, result_video_id: str, audio_file_id: str):
+@router.get("/{video_id}/results/{result_video_id}/audio_files/{audio_file_id}/download")
+def download_audio_file(video_id: str, result_video_id: str, audio_file_id: str, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+    # @todo check result videoid matches given video id
+
     file_name = result_video_id + "_masked_voice.mp3"
 
     result_audio_file = result_audio_files_manager.fetch_result_audio_files_entry(
@@ -291,10 +326,12 @@ def download_audio_file(video_id: str, result_video_id: str, audio_file_id: str)
     return response
 
 
-@router.get(
-    "/{video_id}/results/{result_video_id}/extra_files/{extra_file_id}/download"
-)
-def download_extra_file(video_id: str, result_video_id: str, extra_file_id: str):
+@router.get("/{video_id}/results/{result_video_id}/extra_files/{extra_file_id}/download")
+def download_extra_file(video_id: str, result_video_id: str, extra_file_id: str, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+    # @todo check result videoid matches given video id
+
     result_extra_file = result_extra_files_manager.fetch_result_extra_files_entry(
         extra_file_id
     )

@@ -4,6 +4,7 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { ResultVideo } from "../../../state/types/ResultVideo";
 import React from "react";
 import file from "../../../assets/previews/file.png";
+import KeycloakAuth from "../../../keycloakAuth";
 
 interface VideoResultCardProps {
     resultVideo: ResultVideo;
@@ -21,7 +22,7 @@ const VideoResultCard = (props: VideoResultCardProps) => {
 
     const lookupPreviewForResult = () => {
         if (props.resultVideo.videoResultExists) {
-            return `${Config.api.baseUrl}/videos/${props.resultVideo.originalVideoId}/results/${props.resultVideo.videoResultId}/preview`;
+            return `${Config.api.baseUrl}/videos/${props.resultVideo.originalVideoId}/results/${props.resultVideo.videoResultId}/preview?token=` + KeycloakAuth.instance.token;
         }
 
         if (props.resultVideo.blendshapeResultsExists) {

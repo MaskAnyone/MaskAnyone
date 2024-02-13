@@ -2,6 +2,7 @@ import {Badge, Box, Button, Checkbox, ListItem, ListItemText} from "@mui/materia
 import { Link } from "react-router-dom";
 import Config from "../config";
 import { useState } from "react";
+import KeycloakAuth from "../keycloakAuth";
 
 const styles = {
     item: {
@@ -74,7 +75,7 @@ const SideBarItem = (props: SideBarItemProps) => {
                         <Badge badgeContent={props.badge} max={9} color={'secondary'} sx={{ '& .MuiBadge-badge': { marginTop: 0.75, marginRight: 1.25 } }}>
                             <img
                                 style={{ width: '64px', objectFit: 'cover', marginRight: '8px', borderRadius: '4px' }}
-                                src={Config.api.baseUrl + '/videos/' + props.videoId + '/preview'}
+                                src={Config.api.baseUrl + '/videos/' + props.videoId + '/preview?token=' + KeycloakAuth.instance.token}
                             />
                         </Badge>
 

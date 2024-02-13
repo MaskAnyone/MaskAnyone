@@ -1,10 +1,13 @@
-import {AppBar, Badge, Box, Button, IconButton, Toolbar} from "@mui/material";
+import {AppBar, Badge, Box, Button, IconButton, Toolbar, Tooltip, Typography} from "@mui/material";
 import MenuIcon from '@mui/icons-material/Menu';
 import { Link } from "react-router-dom";
 import {useSelector} from "react-redux";
 import Selector from "../state/selector";
 import Paths from "../paths";
 import Assets from "../assets/assets";
+import LogoutIcon from "@mui/icons-material/Logout";
+import KeycloakAuth from "../keycloakAuth";
+import PersonIcon from '@mui/icons-material/Person';
 
 const styles = {
     appBar: (theme: any) => ({
@@ -25,6 +28,25 @@ const styles = {
         color: 'white',
         display: 'block',
     },
+    profileContainer: {
+        display: 'flex',
+        padding: 2,
+        marginRight: 1,
+        alignItems: 'center',
+    },
+    profilePicture: {
+        width: '48px',
+        height: '48px',
+        borderRadius: '24px',
+        backgroundColor: '#b9c0da',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    profileText: {
+        textAlign: 'right',
+        paddingRight: 1.5,
+    },
 };
 
 interface TopBarProps {
@@ -33,6 +55,7 @@ interface TopBarProps {
 }
 
 const TopBar = (props: TopBarProps) => {
+    const user = useSelector(Selector.Auth.user);
     const activeJobCount = useSelector(Selector.Job.openAndRunningJobCount);
 
     return (
@@ -75,6 +98,25 @@ const TopBar = (props: TopBarProps) => {
                     <IconButton sx={{color: 'white'}} onClick={props.onOpenSideBar}>
                         <MenuIcon />
                     </IconButton>
+                )}
+                {props.isLargeScreen && (
+                    <Box component={'div'} sx={{ display: 'flex', alignItems: 'center', marginLeft: 6 }}>
+                        {user && (
+                            <Box component={'div'} sx={styles.profileContainer}>
+                                <Typography variant={'body2'} sx={styles.profileText}>
+                                    <strong>{user.firstName} {user.lastName}</strong><br />
+                                </Typography>
+                                <Box component={'div'} sx={styles.profilePicture}>
+                                    <PersonIcon style={{ color: 'rgba(0, 0, 0, 0.4)', width: 30, height: 30 }} />
+                                </Box>
+                            </Box>
+                        )}
+                        <Tooltip title={'Logout'}>
+                            <IconButton sx={{color: 'white'}} onClick={KeycloakAuth.logout}>
+                                <LogoutIcon />
+                            </IconButton>
+                        </Tooltip>
+                    </Box>
                 )}
             </Toolbar>
         </AppBar>

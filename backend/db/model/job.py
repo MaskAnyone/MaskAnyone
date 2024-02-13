@@ -13,3 +13,4 @@ class Job:
     started_at: str
     finished_at: str
     progress: int
+    user_id: str
