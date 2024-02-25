@@ -53,4 +53,4 @@ class MpKinematicsType(str, Enum):
 
 
 class RegisterWorkerParams(BaseModel):
-    type: str
+    capabilities: list[str]

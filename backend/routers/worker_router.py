@@ -35,7 +35,7 @@ router = APIRouter(
 
 @router.post("/register")
 def register_worker(worker_id: str, params: RegisterWorkerParams):
-    worker_manager.register_worker(worker_id, params.type)
+    worker_manager.register_worker(worker_id, params.capabilities)
 
 
 @router.get("/jobs/next/{job_type}")

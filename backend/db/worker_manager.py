@@ -7,12 +7,12 @@ class WorkerManager:
     def __init__(self, db_connection: DBConnection):
         self.__db_connection = db_connection
 
-    def register_worker(self, id: str, type: str):
+    def register_worker(self, id: str, capabilities: list[str]):
         self.__db_connection.execute(
             "INSERT INTO workers (id, type, last_activity) VALUES (%(id)s, %(type)s, current_timestamp)",
             {
                 "id": id,
-                "type": type,
+                "type": capabilities[0], # @todo switch to capabilities
             },
         )
 

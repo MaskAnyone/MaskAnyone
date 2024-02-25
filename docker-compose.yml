@@ -62,3 +62,12 @@ services:
       - "8080:8080"
     depends_on:
       - postgres
+
+  worker:
+    build:
+      context: ./docker/worker
+    command: "python worker.py"
+    env_file:
+      - ./app.env
+    volumes:
+      - ./worker:/app
