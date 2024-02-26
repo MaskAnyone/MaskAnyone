@@ -20,7 +20,10 @@ class BackendClient:
             self._make_url("ping")
         )
 
-    def fetch_next_job(self, job_type: str):
+    def fetch_next_job(self):
+        # @todo remove job type
+        job_type = "basic_masking"
+
         response = requests.get(
             self._make_url(f"jobs/next/{job_type}")
         )

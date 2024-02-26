@@ -1,5 +1,5 @@
 import asyncio
-import sys
+import threading
 
 from communication.backend_client import BackendClient
 
@@ -10,11 +10,14 @@ class BackgroundProcess:
         self._backend_client = backend_client
 
     def start(self):
+        thread = threading.Thread(target=self._run_loop_in_thread, daemon=True)
+        thread.start()
+
+    def _run_loop_in_thread(self):
         asyncio.run(self._run_background_process())
 
     async def _run_background_process(self):
         while True:
             self._backend_client.ping_backend()
             print("Pinged backend.")
-            sys.stdout.flush()
             await asyncio.sleep(60)
