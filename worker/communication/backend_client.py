@@ -20,6 +20,29 @@ class BackendClient:
             self._make_url("ping")
         )
 
+    def fetch_next_job(self, job_type: str):
+        response = requests.get(
+            self._make_url(f"jobs/next/{job_type}")
+        )
+
+        return response.json()["job"]
+
+    def fetch_video(self, video_id: str):
+        response = requests.get(
+            self._make_url("videos/" + video_id)
+        )
+
+        return response.content
+
+    def mark_job_as_finished(self, job_id: str):
+        requests.post(
+            self._make_url("jobs/" + job_id + "/finish")
+        )
+
+    def mark_job_as_failed(self, job_id: str):
+        requests.post(
+            self._make_url("jobs/" + job_id + "/fail")
+        )
+
     def _make_url(self, path: str) -> str:
-        print(BASE_PATH, path)
         return BASE_PATH + self._worker_id + "/" + path
