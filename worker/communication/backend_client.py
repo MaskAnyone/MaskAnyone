@@ -15,6 +15,11 @@ class BackendClient:
             json={"capabilities": ["media_pipe"]}
         )
 
+    def ping_backend(self):
+        requests.post(
+            self._make_url("ping")
+        )
+
     def _make_url(self, path: str) -> str:
         print(BASE_PATH, path)
         return BASE_PATH + self._worker_id + "/" + path
