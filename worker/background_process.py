@@ -15,5 +15,6 @@ class BackgroundProcess:
     async def _run_background_process(self):
         while True:
             self._backend_client.ping_backend()
+            print("Pinged backend.")
             sys.stdout.flush()
             await asyncio.sleep(60)
