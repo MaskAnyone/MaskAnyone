@@ -1,13 +1,13 @@
 import os
 import requests
 
-BASE_PATH = os.environ["WORKER_BACKEND_BASE_PATH"]
-
 class BackendClient:
     _worker_id: str
+    _base_path: str
 
-    def __init__(self, worker_id: str):
+    def __init__(self, worker_id: str, base_path: str):
         self._worker_id = worker_id
+        self._base_path = base_path
 
     def register_worker(self):
         requests.post(
@@ -48,4 +48,4 @@ class BackendClient:
         )
 
     def _make_url(self, path: str) -> str:
-        return BASE_PATH + self._worker_id + "/" + path
+        return self._base_path + self._worker_id + "/" + path

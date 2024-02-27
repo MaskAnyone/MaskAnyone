@@ -2,12 +2,16 @@ import sys
 import time
 
 from communication.backend_client import BackendClient
+from communication.video_manager import VideoManager
+from masking.media_pipe_pose_masker import MediaPipePoseMasker
 
 class WorkerProcess:
     _backend_client: BackendClient
+    _video_manager: VideoManager
 
-    def __init__(self, backend_client: BackendClient):
+    def __init__(self, backend_client: BackendClient, video_manager: VideoManager):
         self._backend_client = backend_client
+        self._video_manager = video_manager
 
     def run(self):
         while True:
@@ -33,10 +37,18 @@ class WorkerProcess:
 
     def _process_job(self, job):
         try:
-            # @todo process job
+            # @todo fetch video
+            self._video_manager.load_original_video(job["video_id"])
+
+            # @todo add support for different job types
+            self._run_media_pipe_pose_masker(job)
+
             self._backend_client.mark_job_as_finished(job["id"])
             print("Finished processing job with id " + job["id"], flush=True)
         except Exception as e:
             print("Error while processing job, marking as failed.", flush=True)
             print(e, flush=True)
             self._backend_client.mark_job_as_failed(job["id"])
+
+    def _run_media_pipe_pose_masker(self, job):
+        media_pipe_pose_masker = MediaPipePoseMasker()
