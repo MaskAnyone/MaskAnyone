@@ -5,6 +5,10 @@ import numpy
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
 
+# @todo check this
+# https://github.com/google/mediapipe/issues/5120
+# I0000 00:00:1709055327.274616       1 task_runner.cc:85] GPU suport is not available: INTERNAL: ; RET_CHECK failure (mediapipe/gpu/gl_context_egl.cc:77) display != EGL_NO_DISPLAYeglGetDisplay() returned error 0x300c
+
 MODEL_PATH = '/worker_models/pose_landmarker_full.task'
 
 PoseLandmarker = mediapipe.tasks.vision.PoseLandmarker

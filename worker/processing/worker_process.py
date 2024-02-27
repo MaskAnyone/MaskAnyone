@@ -1,5 +1,8 @@
 import sys
 import time
+import cv2
+import os
+import traceback
 
 from communication.backend_client import BackendClient
 from communication.video_manager import VideoManager
@@ -43,11 +46,16 @@ class WorkerProcess:
             self._run_media_pipe_pose_masker(job)
             self._video_manager.upload_result_video(job["video_id"], job["result_video_id"])
 
+            self._generate_preview_image(self._video_manager.get_output_video_path(job["video_id"]))
+            self._video_manager.upload_result_video_preview_image(job["video_id"], job["result_video_id"])
+
             self._backend_client.mark_job_as_finished(job["id"])
             print("Finished processing job with id " + job["id"], flush=True)
         except Exception as e:
             print("Error while processing job, marking as failed.", flush=True)
-            print(e, flush=True)
+            stack_trace = traceback.format_exc()
+            print("An exception occurred:", e, flush=True)
+            print("Stack trace:", stack_trace, flush=True)
             self._backend_client.mark_job_as_failed(job["id"])
 
     def _run_media_pipe_pose_masker(self, job):
@@ -57,3 +65,12 @@ class WorkerProcess:
         )
 
         media_pipe_pose_masker.mask()
+
+    def _generate_preview_image(self, video_path: str) -> None:
+        video_cap = cv2.VideoCapture(video_path)
+        file_name = os.path.splitext(os.path.basename(video_path))[0] + ".png"
+        preview_img_path = os.path.join(os.path.split(video_path)[0], file_name)
+        num_frames = int(video_cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        video_cap.set(cv2.CAP_PROP_POS_FRAMES, int(num_frames / 2))
+        _, frame = video_cap.read()
+        cv2.imwrite(preview_img_path, frame)

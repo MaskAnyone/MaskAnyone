@@ -29,7 +29,7 @@ class VideoManager:
             )
 
     def upload_result_video_preview_image(self, video_id: str, result_video_id: str):
-        path = os.path.join("results", video_id + ".png")
+        path = self._get_output_video_path(video_id).replace(".mp4", ".png")
 
         if self.__local_data_manager.path_exists(path):
             image_data = self.__local_data_manager.read_binary(path)
