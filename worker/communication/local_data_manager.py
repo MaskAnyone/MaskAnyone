@@ -37,3 +37,6 @@ class LocalDataManager:
 
     def delete_file(self, file_path: str):
         os.remove(os.path.join(self.__base_dir, file_path))
+
+    def get_base_dir(self):
+        return self.__base_dir

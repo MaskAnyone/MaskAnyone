@@ -47,5 +47,19 @@ class BackendClient:
             self._make_url("jobs/" + job_id + "/fail")
         )
 
+    def upload_result_video(self, video_id: str, result_video_id: str, content):
+        requests.post(
+            self._make_url("videos/" + video_id + "/results/" + result_video_id),
+            data=content,
+            headers={"Content-Type": "application/octet-stream"},
+        )
+
+    def upload_result_video_preview_image(self, video_id: str, result_video_id: str, content):
+        requests.post(
+            self._make_url("videos/" + video_id + "/results/" + result_video_id + "/preview"),
+            data=content,
+            headers={"Content-Type": "image/png"},
+        )
+
     def _make_url(self, path: str) -> str:
         return self._base_path + self._worker_id + "/" + path

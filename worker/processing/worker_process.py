@@ -37,11 +37,11 @@ class WorkerProcess:
 
     def _process_job(self, job):
         try:
-            # @todo fetch video
             self._video_manager.load_original_video(job["video_id"])
 
             # @todo add support for different job types
             self._run_media_pipe_pose_masker(job)
+            self._video_manager.upload_result_video(job["video_id"], job["result_video_id"])
 
             self._backend_client.mark_job_as_finished(job["id"])
             print("Finished processing job with id " + job["id"], flush=True)
@@ -51,4 +51,9 @@ class WorkerProcess:
             self._backend_client.mark_job_as_failed(job["id"])
 
     def _run_media_pipe_pose_masker(self, job):
-        media_pipe_pose_masker = MediaPipePoseMasker()
+        media_pipe_pose_masker = MediaPipePoseMasker(
+            self._video_manager.get_original_video_path(job["video_id"]),
+            self._video_manager.get_output_video_path(job["video_id"])
+        )
+
+        media_pipe_pose_masker.mask()
