@@ -2,6 +2,7 @@ import {Menu, MenuItem} from "@mui/material";
 import {useSelector} from "react-redux";
 import Selector from "../../../state/selector";
 import Config from "../../../config";
+import KeycloakAuth from "../../../keycloakAuth";
 
 interface DownloadMenuProps {
     videoId: string;
@@ -17,12 +18,12 @@ const DownloadMenu = (props: DownloadMenuProps) => {
     const open = Boolean(props.anchorEl);
 
     const downloadOriginalVideo = () => {
-        window.open(`/api/videos/${props.videoId}/download`, '_blank');
+        window.open(`/api/videos/${props.videoId}/download?token=${KeycloakAuth.instance.token}`, '_blank');
         props.onClose();
     };
 
     const downloadResultVideo = () => {
-        window.open(`/api/videos/${props.videoId}/results/${props.resultVideoId}/download`, '_blank');
+        window.open(`/api/videos/${props.videoId}/results/${props.resultVideoId}/download?token=${KeycloakAuth.instance.token}`, '_blank');
         props.onClose();
     };
 

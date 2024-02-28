@@ -1,4 +1,5 @@
-FROM ubuntu:22.04
+#FROM ubuntu:22.04
+FROM nvidia/cuda:11.7.1-runtime-ubuntu22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -23,5 +24,11 @@ RUN mkdir /worker_models \
         -O /worker_models/pose_landmarker_full.task \
     && wget https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/latest/pose_landmarker_heavy.task \
         -O /worker_models/pose_landmarker_heavy.task
+
+RUN apt-get update \
+    && apt-get -y install \
+        mesa-common-dev libegl1-mesa-dev libgles2-mesa-dev mesa-utils \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
