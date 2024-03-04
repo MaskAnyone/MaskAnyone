@@ -35,6 +35,11 @@ class LocalDataManager:
             content = json.load(f)
             return content
 
+    def read_text(self, file_path: str):
+        with open(os.path.join(self.__base_dir, file_path), "r") as f:
+            content = f.read()
+            return content
+
     def delete_file(self, file_path: str):
         os.remove(os.path.join(self.__base_dir, file_path))
 

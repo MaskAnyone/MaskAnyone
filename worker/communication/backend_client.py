@@ -61,5 +61,13 @@ class BackendClient:
             headers={"Content-Type": "image/png"},
         )
 
+    def upload_result_mp_kinematics(
+        self, video_id: str, result_video_id: str, data: dict
+    ):
+        requests.post(
+            self._make_url("videos/" + video_id + "/results/" + result_video_id + "/mp_kinematics/body"),
+            json=data,
+        )
+
     def _make_url(self, path: str) -> str:
         return self._base_path + self._worker_id + "/" + path

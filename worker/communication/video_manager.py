@@ -37,11 +37,23 @@ class VideoManager:
                 video_id, result_video_id, image_data
             )
 
+    def upload_result_mp_kinematics(self, video_id: str, result_video_id):
+        path = self._get_output_video_path(video_id).replace(".mp4", ".json")
+
+        if self.__local_data_manager.path_exists(path):
+            data = self.__local_data_manager.read_json(path)
+            self.__backend_client.upload_result_mp_kinematics(
+                video_id, result_video_id, data
+            )
+
     def get_original_video_path(self, video_id: str):
         return os.path.join(self.__local_data_manager.get_base_dir(), self._get_original_video_path(video_id))
 
     def get_output_video_path(self, video_id: str):
         return os.path.join(self.__local_data_manager.get_base_dir(), self._get_output_video_path(video_id))
+
+    def get_result_mp_kinematics_path(self, video_id: str):
+        return os.path.join(self.__local_data_manager.get_base_dir(), "timeseries", "body_" + video_id + ".json")
 
     def _get_original_video_path(self, video_id: str) -> str:
         return os.path.join("original", video_id + ".mp4")

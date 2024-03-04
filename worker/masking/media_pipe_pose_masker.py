@@ -1,9 +1,16 @@
 import mediapipe
 import cv2
 import numpy
+import json
+import os
 
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
+
+from util.timeseries import (
+    create_header_mp,
+    list_positions_mp_body,
+)
 
 # @todo check this
 # https://github.com/google/mediapipe/issues/5120
@@ -17,7 +24,7 @@ options = mediapipe.tasks.vision.PoseLandmarkerOptions(
     base_options=mediapipe.tasks.BaseOptions(model_asset_path=MODEL_PATH, delegate=mediapipe.tasks.BaseOptions.Delegate.CPU),
     running_mode=mediapipe.tasks.vision.RunningMode.VIDEO,
     output_segmentation_masks=True,
-    num_poses=2
+    num_poses=12
 )
 
 class MediaPipePoseMasker:
@@ -38,12 +45,17 @@ class MediaPipePoseMasker:
             frameSize = (int(frame_width), int(frame_height))
         )
 
+        # @todo remove duplication
+        kinematics_timeseries_file_path = output_path.replace('.mp4', '.json')
+        self._kinematics_timeseries_file = open(kinematics_timeseries_file_path, "w")
+
     def mask(self):
         # Forward pass
         landmarker = mediapipe.tasks.vision.PoseLandmarker.create_from_options(options)
 
         masked_frames = []
         video_output_frames = []
+        kinematics_data = []
 
         frame_counter = 0
         while self._video_capture.isOpened():
@@ -56,6 +68,9 @@ class MediaPipePoseMasker:
                 mp_image = mediapipe.Image(image_format=mediapipe.ImageFormat.SRGB, data=frame)
 
                 pose_landmarker_result = landmarker.detect_for_video(mp_image, int(frame_timestamp_ms))
+
+                # @todo make this nice
+                kinematics_data.append(list_positions_mp_body(pose_landmarker_result, frame_timestamp_ms))
 
                 output_image = cv2.cvtColor(mp_image.numpy_view(), cv2.COLOR_RGB2BGR)
 
@@ -76,9 +91,12 @@ class MediaPipePoseMasker:
 
             frame_counter += 1
 
+        self._kinematics_timeseries_file.write(json.dumps(kinematics_data))
+        self._kinematics_timeseries_file.close()
         print('Forward pass finished, starting backwards pass', flush=True)
 
         # Backwards pass
+        """
         landmarker = mediapipe.tasks.vision.PoseLandmarker.create_from_options(options)
 
         total_frames = int(self._video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -123,6 +141,7 @@ class MediaPipePoseMasker:
                 break
 
         print('Backward pass finished, writing video', flush=True)
+        """
 
         for frame in video_output_frames:
             self._video_writer.write(frame)
@@ -154,3 +173,4 @@ class MediaPipePoseMasker:
             )
 
         return annotated_image
+

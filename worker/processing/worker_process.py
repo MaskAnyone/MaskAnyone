@@ -49,6 +49,8 @@ class WorkerProcess:
             self._generate_preview_image(self._video_manager.get_output_video_path(job["video_id"]))
             self._video_manager.upload_result_video_preview_image(job["video_id"], job["result_video_id"])
 
+            self._video_manager.upload_result_mp_kinematics(job["video_id"], job["result_video_id"])
+
             self._backend_client.mark_job_as_finished(job["id"])
             print("Finished processing job with id " + job["id"], flush=True)
         except Exception as e:
