@@ -8,8 +8,7 @@ from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
 
 from util.timeseries import (
-    create_header_mp,
-    list_positions_mp_body,
+    serialize_pose_landmarker_result,
 )
 
 # @todo check this
@@ -41,6 +40,7 @@ class MediaPipePoseMasker:
         self._video_writer = cv2.VideoWriter(
             output_path,
             cv2.VideoWriter_fourcc(*'vp09'),
+            #cv2.VideoWriter_fourcc(*'avc1'),
             fps = sample_rate,
             frameSize = (int(frame_width), int(frame_height))
         )
@@ -70,7 +70,7 @@ class MediaPipePoseMasker:
                 pose_landmarker_result = landmarker.detect_for_video(mp_image, int(frame_timestamp_ms))
 
                 # @todo make this nice
-                kinematics_data.append(list_positions_mp_body(pose_landmarker_result, frame_timestamp_ms))
+                kinematics_data.append(serialize_pose_landmarker_result(pose_landmarker_result, frame_timestamp_ms))
 
                 output_image = cv2.cvtColor(mp_image.numpy_view(), cv2.COLOR_RGB2BGR)
 
@@ -91,12 +91,9 @@ class MediaPipePoseMasker:
 
             frame_counter += 1
 
-        self._kinematics_timeseries_file.write(json.dumps(kinematics_data))
-        self._kinematics_timeseries_file.close()
         print('Forward pass finished, starting backwards pass', flush=True)
 
         # Backwards pass
-        """
         landmarker = mediapipe.tasks.vision.PoseLandmarker.create_from_options(options)
 
         total_frames = int(self._video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -134,6 +131,7 @@ class MediaPipePoseMasker:
 
                     print("Override output frame", i, flush=True)
                     video_output_frames[i] = output_image
+                    kinematics_data[i] = serialize_pose_landmarker_result(pose_landmarker_result, frame_timestamp_ms)
 
                 #self._video_writer.set(cv2.CAP_PROP_POS_FRAMES, i)
                 #self._video_writer.write(output_image)
@@ -141,7 +139,9 @@ class MediaPipePoseMasker:
                 break
 
         print('Backward pass finished, writing video', flush=True)
-        """
+
+        self._kinematics_timeseries_file.write(json.dumps(kinematics_data))
+        self._kinematics_timeseries_file.close()
 
         for frame in video_output_frames:
             self._video_writer.write(frame)

@@ -1,4 +1,5 @@
 import json
+import dataclasses
 from typing import Literal
 
 markersbody = [
@@ -153,3 +154,17 @@ def list_positions_mp_face(
             output_obj[facemarks[i]] = create_landmark_object(landmark)
 
     return output_obj
+
+
+def serialize_pose_landmarker_result(pose_landmarker_result, timestamp_ms: int):
+# Convert each NormalizedLandmark object to a dict and maintain the list of lists structure
+    serialized_landmarks = [[dataclasses.asdict(landmark) for landmark in inner_list] for inner_list in pose_landmarker_result.pose_landmarks]
+    serialized_world_landmarks = [[dataclasses.asdict(landmark) for landmark in inner_list] for inner_list in pose_landmarker_result.pose_world_landmarks]
+
+    return {
+        "data": {
+            "landmarks": serialized_landmarks,
+            "world_landmarks": serialized_world_landmarks,
+        },
+        "timestamp": timestamp_ms,
+    }

@@ -1,8 +1,10 @@
 import os
 import cv2
+import io
+import csv
 
 from fastapi import APIRouter, Request, Response, HTTPException, Depends
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 from utils.request_utils import range_requests_response
@@ -229,17 +231,21 @@ def get_downloadable_result_files(video_id: str, result_video_id: str, token_pay
         )
 
     for mp_kinematics_id, mp_kinematics_type in mp_kinematics_entries:
+        url = "/videos/" + video_id + "/results/" + result_video_id + "/mp-kinematics/" + mp_kinematics_id + "/download"
+
         files.append(
             {
                 "id": mp_kinematics_id,
                 "title": "MP Kinematics " + mp_kinematics_type,
-                "url": "/videos/"
-                + video_id
-                + "/results/"
-                + result_video_id
-                + "/mp-kinematics/"
-                + mp_kinematics_id
-                + "/download",
+                "url": url,
+            }
+        )
+
+        files.append(
+            {
+                "id": mp_kinematics_id,
+                "title": "MP Kinematics " + mp_kinematics_type,
+                "url": url + "/csv",
             }
         )
 
@@ -290,6 +296,66 @@ def download_mp_kinematics(video_id: str, result_video_id: str, mp_kinematics_id
 
     response.headers["Content-Disposition"] = 'attachment; filename="' + file_name + '"'
     return result_mp_kinematics.data
+
+
+@router.get("/{video_id}/results/{result_video_id}/mp-kinematics/{mp_kinematics_id}/download/csv")
+def download_mp_kinematics(video_id: str, result_video_id: str, mp_kinematics_id: str, response: Response, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+    # @todo check result videoid matches given video id
+
+    file_name = result_video_id + "_mp-kinematics.json"
+
+    result_mp_kinematics = (
+        result_mp_kinematics_manager.fetch_result_mp_kinematics_entry(mp_kinematics_id)
+    )
+
+    json_data = result_mp_kinematics.data
+
+    # Pre-calculate the maximum number of poses and landmarks per pose for both landmarks and world_landmarks
+    max_poses = max((len(entry['data']['landmarks']) for entry in json_data if entry['data']['landmarks']), default=0)
+    max_landmarks_per_pose = max((max((len(pose) for pose in entry['data']['landmarks'])) for entry in json_data if entry['data']['landmarks']), default=0)
+    max_world_landmarks_per_pose = max((max((len(pose) for pose in entry['data']['world_landmarks'])) for entry in json_data if entry['data']['world_landmarks']), default=0)
+
+    print(max_poses, max_landmarks_per_pose, max_world_landmarks_per_pose)
+
+    columns = ['timestamp']
+    for pose in range(max_poses):
+        for lm in range(max_landmarks_per_pose):
+            columns += [f'pose_{pose}_landmark_{lm}_x', f'pose_{pose}_landmark_{lm}_y', f'pose_{pose}_landmark_{lm}_z', f'pose_{pose}_landmark_{lm}_visibility', f'pose_{pose}_landmark_{lm}_presence']
+        for wlm in range(max_world_landmarks_per_pose):
+            columns += [f'pose_{pose}_world_landmark_{wlm}_x', f'pose_{pose}_world_landmark_{wlm}_y', f'pose_{pose}_world_landmark_{wlm}_z', f'pose_{pose}_world_landmark_{wlm}_visibility', f'pose_{pose}_world_landmark_{wlm}_presence']
+
+    def iterfile():
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(columns)
+
+        for entry in json_data:
+            row = [entry['timestamp']]
+            for pose in entry['data']['landmarks']:
+                for lm in pose:
+                    row += [lm.get('x', ''), lm.get('y', ''), lm.get('z', ''), lm.get('visibility', ''), lm.get('presence', '')]
+                # Fill missing landmarks for this pose
+                row += [''] * (max_landmarks_per_pose - len(pose)) * 5
+            # Fill missing poses
+            row += [''] * ((max_poses - len(entry['data']['landmarks'])) * max_landmarks_per_pose * 5)
+
+            for pose in entry['data']['world_landmarks']:
+                for wlm in pose:
+                    row += [wlm.get('x', ''), wlm.get('y', ''), wlm.get('z', ''), wlm.get('visibility', ''), wlm.get('presence', '')]
+                # Fill missing world landmarks for this pose
+                row += [''] * (max_world_landmarks_per_pose - len(pose)) * 5
+            # Fill missing world poses
+            row += [''] * ((max_poses - len(entry['data']['world_landmarks'])) * max_world_landmarks_per_pose * 5)
+
+            writer.writerow(row)
+            buffer.seek(0)
+            yield buffer.getvalue()
+            buffer.truncate(0)
+            buffer.seek(0)
+
+    return StreamingResponse(iterfile(), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=kinematics_data.csv"})
 
 
 @router.get("/{video_id}/results/{result_video_id}/blendshapes/{blendshapes_id}/download")

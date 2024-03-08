@@ -39,7 +39,7 @@ const DownloadMenu = (props: DownloadMenuProps) => {
                 <MenuItem
                     key={file.id}
                     onClick={() => {
-                        window.open(Config.api.baseUrl + file.url, '_blank');
+                        window.open(Config.api.baseUrl + file.url + `?token=${KeycloakAuth.instance.token}`, '_blank');
                         props.onClose();
                     }}
                     children={file.title}
