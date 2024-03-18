@@ -176,7 +176,8 @@ const DoubleVideo = (props: DoubleVideoProps) => {
                     {displaySelectedView()}
                 </Box>
             </Box>
-            <Box component={'div'} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            {/* @todo not in use right now */}
+            <Box component={'div'} sx={{ /*display: 'flex',*/ justifyContent: 'flex-end', display: 'none' }}>
                 {props.resultVideoId && (
                     <ResultSelector
                         value={view}

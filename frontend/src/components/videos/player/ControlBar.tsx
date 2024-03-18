@@ -5,8 +5,9 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import SpeedIcon from '@mui/icons-material/Speed';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import SyncIcon from '@mui/icons-material/Sync';
 import TimerDisplay from "../../common/TimerDisplay";
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 
 interface ControlBarProps {
     playing: boolean;
@@ -33,6 +34,38 @@ const ControlBar = (props: ControlBarProps) => {
     const handleClose = () => {
         setAnchorEl(null);
     };
+
+    const reSyncVideos = () => {
+        props.onTogglePlaying(false);
+        props.onToggleSeeking(true);
+        props.onPositionChange(props.position + 0.01);
+        setTimeout(() => props.onToggleSeeking(false), 10);
+        setTimeout(() => props.onTogglePlaying(true), 20);
+    };
+
+    // @todo make this nicer for navigating with keys
+    useEffect(() => {
+        function handleKeyPress(event: KeyboardEvent) {
+            switch(event.key) {
+                case 'ArrowRight':
+                    props.onToggleSeeking(true);
+                    props.onPositionChange(props.position + 0.001);
+                    setTimeout(() => props.onToggleSeeking(false), 10);
+                    break;
+                case 'ArrowLeft':
+                    props.onToggleSeeking(true);
+                    props.onPositionChange(props.position - 0.001);
+                    setTimeout(() => props.onToggleSeeking(false), 10);
+                    break;
+            }
+        }
+
+        document.addEventListener('keydown', handleKeyPress);
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyPress);
+        };
+    }, [props.position]);
 
     return (
         <Box component={'div'} sx={{ display: 'flex', flexDirection: 'column', width: '100%', paddingLeft: '24px' }}>
@@ -66,6 +99,7 @@ const ControlBar = (props: ControlBarProps) => {
                     <IconButton><FastForwardIcon /></IconButton>
                 </Box>
                 <Box component={'div'}>
+                    <IconButton onClick={reSyncVideos}><SyncIcon /></IconButton>
                     <IconButton disabled={true}><SpeedIcon /></IconButton>
                     <IconButton onClick={handleClick}><VolumeUpIcon /></IconButton>
                 </Box>
