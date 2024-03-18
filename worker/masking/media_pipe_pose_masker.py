@@ -63,6 +63,7 @@ class MediaPipePoseMasker:
 
             if ret:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                #frame = self._preprocess_test(frame)
                 frame_timestamp_ms = self._video_capture.get(cv2.CAP_PROP_POS_MSEC)
 
                 mp_image = mediapipe.Image(image_format=mediapipe.ImageFormat.SRGB, data=frame)
@@ -109,6 +110,7 @@ class MediaPipePoseMasker:
 
             if ret:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = self._preprocess_test(frame)
                 frame_timestamp_ms = total_duration_ms - self._video_capture.get(cv2.CAP_PROP_POS_MSEC)
 
                 mp_image = mediapipe.Image(image_format=mediapipe.ImageFormat.SRGB, data=frame)
@@ -173,4 +175,33 @@ class MediaPipePoseMasker:
             )
 
         return annotated_image
+
+    # @todo properly integrate this or remove it
+    def _preprocess_test(self, image):
+        # Apply a slight Gaussian blur to smooth out transitions and reduce artifacts
+        blurred_image = cv2.GaussianBlur(image, (5, 5), 0)
+
+        # Calculate the 10th percentile value per channel on the blurred image
+        p10_val_per_channel = numpy.percentile(blurred_image, 10, axis=(0, 1))
+
+        # Subtract the 10th percentile value from each channel of the original image
+        normalized_image = image - p10_val_per_channel
+
+        # Clip to ensure no negative values
+        normalized_image = numpy.clip(normalized_image, 0, None)
+
+        # Find the maximum value per channel after normalization
+        max_val_per_channel = numpy.max(normalized_image, axis=(0, 1))
+
+        # Add a small epsilon to avoid division by zero
+        epsilon = 1e-10
+        max_val_per_channel = numpy.where(max_val_per_channel == 0, 1,
+                                       max_val_per_channel)  # Replace 0s with 1s to avoid division by 0
+
+        # Scale the values to the 0-255 range, adding epsilon to avoid division by zero
+        scaled_image = (normalized_image / (max_val_per_channel + epsilon)) * 255
+
+        # Convert the scaled values to unsigned 8-bit integers, as this is the standard format for images
+        final_image = scaled_image.astype(numpy.uint8)
+        return final_image
 
