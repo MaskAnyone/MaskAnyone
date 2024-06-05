@@ -1,34 +1,16 @@
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import SelectableCard from "../../../../common/SelectableCard";
-import { StepProps } from "./HidingStep";
-import { maskingMethods } from "../../../../../util/maskingMethods";
-import MethodSettings from "../../MethodSettings";
+import {StepProps} from "./StepProps";
 
 const VideoMaskingStep = (props: StepProps) => {
-    const maskingStrategy = props.runParams.videoMasking.maskingStrategy
+    const maskingStrategy = props.runParams.videoMasking.strategy;
 
     const setMaskingStrategy = (newMaskingStrategy: string) => {
         props.onParamsChange({
             ...props.runParams,
             videoMasking: {
                 ...props.runParams.videoMasking,
-                maskingStrategy: {
-                    key: newMaskingStrategy,
-                    params: maskingMethods[newMaskingStrategy].defaultValues!
-                }
-            }
-        })
-    }
-
-    const setMaskingStrategyParams = (newParams: object) => {
-        props.onParamsChange({
-            ...props.runParams,
-            videoMasking: {
-                ...props.runParams.videoMasking,
-                maskingStrategy: {
-                    ...props.runParams.videoMasking.maskingStrategy,
-                    params: newParams
-                }
+                strategy: newMaskingStrategy,
             }
         })
     }
@@ -40,38 +22,25 @@ const VideoMaskingStep = (props: StepProps) => {
                     What masking strategy do you want to apply?
                 </Typography >
                 <Typography variant={'body2'}>
-                    Please select the masking strategy you would like to apply. The different masking strategies offer various ways of preserving kinematic information of the masked person.
+                    Please select the masking strategy you would like to apply. The different masking strategies offer various ways trade-offs between privacy and utility.
                 </Typography>
             </Box>
             <Box component="div" sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '24px' }} mt={1}>
-                {
-                    Object.keys(maskingMethods).map((methodName) => {
-                        const maskingMethod = maskingMethods[methodName];
-
-                        return (
-                            <SelectableCard
-                                title={maskingMethod.name}
-                                description={maskingMethod.description}
-                                imagePath={maskingMethod.imagePath}
-                                onSelect={() => setMaskingStrategy(methodName)}
-                                selected={maskingStrategy.key == methodName}
-                            />
-                        )
-                    })
-                }
+                <SelectableCard
+                    title={'Blurring'}
+                    description={'Displays a basic skeleton containing landmarks for the head, torso, arms and legs'}
+                    imagePath={'/images/masking_strategy/skeleton.jpg'}
+                    onSelect={() => setMaskingStrategy('blurring')}
+                    selected={maskingStrategy === 'blurring'}
+                />
+                <SelectableCard
+                    title={'Blackout'}
+                    description={'Displays a basic skeleton containing landmarks for the head, torso, arms and legs'}
+                    imagePath={'/images/masking_strategy/skeleton.jpg'}
+                    onSelect={() => setMaskingStrategy('blackout')}
+                    selected={maskingStrategy === 'blackout'}
+                />
             </Box>
-            <Typography variant="body1" sx={{ fontWeight: 500 }} mt={3}>
-                Edit fine-grained settings of selected masking method:
-                <Button>
-                    <MethodSettings
-                        methodName={maskingStrategy.key}
-                        formSchema={maskingMethods[maskingStrategy.key].parameterSchema}
-                        uiSchema={maskingMethods[maskingStrategy.key].uiSchema}
-                        values={maskingStrategy.params}
-                        onSet={setMaskingStrategyParams}
-                    />
-                </Button>
-            </Typography >
 
         </Box>
     )

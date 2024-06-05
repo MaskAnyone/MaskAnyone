@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { v4 as uuidv4 } from 'uuid';
-import PresetView from "./presets/PresetView";
-import { Preset, RunParams } from "../../../state/types/Run";
+import { RunParams } from "../../../state/types/Run";
 import Command from "../../../state/actions/command";
 import CustomSettingsContainer from "./customSettings/CustomSettingsContainer";
 
@@ -13,50 +12,16 @@ interface MaskingFormProps {
 
 const initialRunParams: RunParams = {
     videoMasking: {
-        hidingTarget: "none",
-        hidingStrategyTarget: {
-            key: "none",
-            params: {}
-        },
-        hidingStrategyBG: {
-            key: "none",
-            params: {}
-        },
-        maskingStrategy: {
-            key: "none",
-            params: {}
-        }
-    },
-    threeDModelCreation: {
-        skeleton: false,
-        skeletonParams: {},
-        blender: false,
-        blenderParams: {},
-        blendshapes: false,
-        blendshapesParams: {}
+        strategy: 'blurring',
     },
     voiceMasking: {
-        maskingStrategy: {
-            key: 'preserve',
-            params: {},
-        },
+        strategy: 'preserve',
     },
-}
+};
 
 const MaskingForm = (props: MaskingFormProps) => {
     const dispatch = useDispatch();
-    const [presetView, setPresetView] = useState(true)
-    const [runParams, setRunParams] = useState<RunParams>(initialRunParams)
-    const [selectedPresetId, setSelectedPresetId] = useState<string>()
-
-    const handlePresetSelected = (presetId: string, runParams: RunParams) => {
-        setRunParams(runParams);
-        setSelectedPresetId(presetId);
-    };
-
-    const handlePresetParamRefinementClicked = () => {
-        setPresetView(false)
-    }
+    const [runParams, setRunParams] = useState<RunParams>(initialRunParams);
 
     const maskVideo = () => {
         if (!props.videoIds) {
@@ -73,16 +38,8 @@ const MaskingForm = (props: MaskingFormProps) => {
         props.onClose();
     };
 
-    return presetView ? (
-        <PresetView
-            onPresetSelected={handlePresetSelected}
-            onPresetParamRefinementClicked={handlePresetParamRefinementClicked}
-            maskVideo={maskVideo}
-            selectedPresetId={selectedPresetId}
-        />
-    ) : (
+    return (
         <CustomSettingsContainer
-            onBackClicked={() => setPresetView(true)}
             onParamsChange={setRunParams}
             onRunClicked={maskVideo}
             runParams={runParams}

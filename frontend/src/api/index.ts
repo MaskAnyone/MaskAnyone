@@ -8,7 +8,6 @@ import {
     ApiFetchVideosResponse, ApiFetchWorkersResponse
 } from "./types";
 import { RunParams } from '../state/types/Run';
-import { asBackendRunData } from './helpers';
 import KeycloakAuth from "../keycloakAuth";
 
 const configuredAxios = axios.create({
@@ -90,7 +89,7 @@ const Api = {
             method: 'post',
             data: {
                 id,
-                run_data: asBackendRunData(runData),
+                run_data: runData,
                 video_ids: videoIds,
                 result_video_id: resultVideoId
             }

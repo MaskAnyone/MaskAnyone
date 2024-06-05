@@ -17,13 +17,8 @@ import {
 } from "./formSchemas";
 
 export const maskingMethods: MaskingMethods = {
-    none: {
-        name: "None",
-        description: "Does not mask the subject in the video",
-        imagePath: '/images/masking_strategy/none.jpg',
-    },
-    skeleton: {
-        name: "Skeleton",
+    blurring: {
+        name: "Blurring",
         description: "Displays a basic skeleton containing landmarks for the head, torso, arms and legs",
         imagePath: '/images/masking_strategy/skeleton.jpg',
         parameterSchema: skeletonFormSchema,
@@ -38,26 +33,11 @@ export const maskingMethods: MaskingMethods = {
             "face": "skeleton"
         }
     },
-    faceMesh: {
-        name: "Face Mesh",
-        description: "Displays a detailed facemesh containing 478 Landmarks",
-        imagePath: '/images/masking_strategy/face_mesh.jpg',
-        parameterSchema: faceMeshFormSchema,
-        defaultValues: {
-            maskingModel: "mediapipe",
-            numPoses: 1,
-            confidence: 0.5,
-            timeseries: false
-        },
-        backendFormat: {
-            "face": "faceMesh"
-        }
-    },
-    faceMeshSkeleton: {
-        name: "Skeleton & Face Mesh",
-        description: "Displays a skeleton with a detailed facemesh containing 478 Landmarks",
-        imagePath: '/images/masking_strategy/face_mesh_skeleton.jpg',
-        parameterSchema: faceMeshFormSchema,
+    pixelation: {
+        name: "Pixelation",
+        description: "Displays a basic skeleton containing landmarks for the head, torso, arms and legs",
+        imagePath: '/images/masking_strategy/skeleton.jpg',
+        parameterSchema: skeletonFormSchema,
         defaultValues: {
             maskingModel: "mediapipe",
             numPoses: 1,
@@ -66,36 +46,39 @@ export const maskingMethods: MaskingMethods = {
         },
         backendFormat: {
             "body": "skeleton",
-            "face": "faceMesh"
+            "face": "skeleton"
         }
     },
-    faceSwap: {
-        name: "Face Swap",
-        description: "Swaps the face of the subject with the face of another person",
-        imagePath: '/images/masking_strategy/face_swap.jpg',
-        parameterSchema: faceswapFormSchema,
+    blackout: {
+        name: "Blackout",
+        description: "Displays a basic skeleton containing landmarks for the head, torso, arms and legs",
+        imagePath: '/images/masking_strategy/skeleton.jpg',
+        parameterSchema: skeletonFormSchema,
         defaultValues: {
-            sourceImage: "scholz",
-            maskingModel: "roop"
+            maskingModel: "mediapipe",
+            numPoses: 1,
+            confidence: 0.5,
+            timeseries: false
         },
         backendFormat: {
-            "face": "swap"
+            "body": "skeleton",
+            "face": "skeleton"
         }
     },
-    blender: {
-        name: "Blender Avatar",
-        description: "Displays a rigged avatar based on mediapipe and rendered in blender",
-        imagePath: '/images/masking_strategy/blender.jpg',
-        parameterSchema: blenderMocapFormSchema,
+    contours: {
+        name: "Contours",
+        description: "Displays a basic skeleton containing landmarks for the head, torso, arms and legs",
+        imagePath: '/images/masking_strategy/skeleton.jpg',
+        parameterSchema: skeletonFormSchema,
         defaultValues: {
-            maskingModel: "blender",
-            character: "rigged_char",
-            render: 1,
-            export: 1,
-            smoothing: 0
+            maskingModel: "mediapipe",
+            numPoses: 1,
+            confidence: 0.5,
+            timeseries: false
         },
         backendFormat: {
-            "body": "blender"
+            "body": "skeleton",
+            "face": "skeleton"
         }
     }
 }

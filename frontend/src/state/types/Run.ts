@@ -44,7 +44,10 @@ export type ThreeDModelCreationParams = {
 }
 
 export type RunParams = {
-    videoMasking: VideoMaskingParams
-    threeDModelCreation: ThreeDModelCreationParams
-    voiceMasking: VoiceMaskingParams
-}
+    videoMasking: {
+        strategy: string;
+    };
+    voiceMasking: {
+        strategy: string;
+    }
+};

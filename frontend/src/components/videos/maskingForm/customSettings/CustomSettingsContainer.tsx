@@ -1,18 +1,14 @@
-import {Box, Button, DialogActions, DialogContent, IconButton, Step, StepButton, Stepper} from "@mui/material"
+import {Box, Button, DialogActions, DialogContent, Step, StepButton, Stepper} from "@mui/material"
 import React, { useState } from "react";
 import { RunParams } from "../../../../state/types/Run";
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import HidingStep, { StepProps } from "./steps/HidingStep";
 import VideoMaskingStep from "./steps/VideoMaskingStep";
 import VoiceMaskingStep from "./steps/VoiceMaskingStep";
 import DataExctactionStep from "./steps/DataExtractionStep";
 import ShieldLogoIcon from "../../../common/ShieldLogoIcon";
+import {StepProps} from "./steps/StepProps";
 
 const steps = [
-    {
-        name: "Hiding",
-        component: HidingStep
-    },
+    // HidingSteps
     {
         name: "Video Masking",
         component: VideoMaskingStep
@@ -42,7 +38,6 @@ interface RunSettingsContainerProps {
     runParams: RunParams
     onParamsChange: (runParams: RunParams) => void
     onRunClicked: () => void
-    onBackClicked: () => void
 }
 
 const CustomSettingsContainer = (props: RunSettingsContainerProps) => {
@@ -75,11 +70,7 @@ const CustomSettingsContainer = (props: RunSettingsContainerProps) => {
         <DialogContent sx={{ minHeight: 550, padding: '20px 32px' }}>
             <Box component="div" sx={{ width: '100%' }}>
                 <Box component="div" sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', marginTop: 1, marginBottom: 1 }}>
-                    <Button
-                        startIcon={<ArrowBackIcon />}
-                        onClick={() => setTimeout(props.onBackClicked, 150)}
-                        children={'Presets'}
-                    />
+                    {/* Spacer */}<Box component={'div'} sx={{ width: '100px' }}></Box>
 
                     <Stepper nonLinear activeStep={activeStep} sx={{ width: 700 }}>
                         {steps.map((step, index) => {
