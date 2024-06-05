@@ -13,6 +13,10 @@ interface MaskingFormProps {
 const initialRunParams: RunParams = {
     videoMasking: {
         strategy: 'blurring',
+        options: {
+            level: 3,
+            skeleton: true,
+        }
     },
     voiceMasking: {
         strategy: 'preserve',

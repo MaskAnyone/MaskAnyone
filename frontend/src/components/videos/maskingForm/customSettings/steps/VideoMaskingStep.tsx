@@ -1,9 +1,9 @@
-import { Box, Typography } from "@mui/material";
+import {Box, Checkbox, Slider, Typography} from "@mui/material";
 import SelectableCard from "../../../../common/SelectableCard";
 import {StepProps} from "./StepProps";
 
 const VideoMaskingStep = (props: StepProps) => {
-    const maskingStrategy = props.runParams.videoMasking.strategy;
+    const maskingStrategy = props.runParams.videoMasking;
 
     const setMaskingStrategy = (newMaskingStrategy: string) => {
         props.onParamsChange({
@@ -13,6 +13,32 @@ const VideoMaskingStep = (props: StepProps) => {
                 strategy: newMaskingStrategy,
             }
         })
+    };
+
+    const setMaskingStrategyLevel = (level: number) => {
+        props.onParamsChange({
+            ...props.runParams,
+            videoMasking: {
+                ...props.runParams.videoMasking,
+                options: {
+                    ...props.runParams.videoMasking.options,
+                    level: level,
+                }
+            }
+        });
+    };
+
+    const setMaskingStrategySkeleton = (skeleton: boolean) => {
+        props.onParamsChange({
+            ...props.runParams,
+            videoMasking: {
+                ...props.runParams.videoMasking,
+                options: {
+                    ...props.runParams.videoMasking.options,
+                    skeleton,
+                }
+            }
+        });
     }
 
     return (
@@ -31,17 +57,45 @@ const VideoMaskingStep = (props: StepProps) => {
                     description={'Displays a basic skeleton containing landmarks for the head, torso, arms and legs'}
                     imagePath={'/images/masking_strategy/skeleton.jpg'}
                     onSelect={() => setMaskingStrategy('blurring')}
-                    selected={maskingStrategy === 'blurring'}
+                    selected={maskingStrategy.strategy === 'blurring'}
                 />
                 <SelectableCard
                     title={'Blackout'}
                     description={'Displays a basic skeleton containing landmarks for the head, torso, arms and legs'}
                     imagePath={'/images/masking_strategy/skeleton.jpg'}
                     onSelect={() => setMaskingStrategy('blackout')}
-                    selected={maskingStrategy === 'blackout'}
+                    selected={maskingStrategy.strategy === 'blackout'}
                 />
             </Box>
-
+            <Box component={'div'} sx={{ marginTop: 2 }}>
+                <Typography variant="h6">
+                    Options for {maskingStrategy.strategy}
+                </Typography>
+                <Box component={'div'} sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                    <Typography variant={'body2'}>
+                        Include skeleton overlay:
+                    </Typography>
+                    <Checkbox
+                        value={maskingStrategy.options.skeleton}
+                        onChange={(event, newValue) => setMaskingStrategySkeleton(newValue)}
+                    />
+                </Box>
+                {maskingStrategy.strategy !== 'blackout' && (
+                    <Box component={'div'} sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                        <Typography variant={'body2'}>
+                            Masking level (1 = weak to 5 = strong):
+                        </Typography>
+                        <Slider
+                            min={1}
+                            max={5}
+                            step={1}
+                            sx={{ maxWidth: 200, marginLeft: 2 }}
+                            value={maskingStrategy.options.level}
+                            onChange={(event, newValue) => setMaskingStrategyLevel(newValue as number)}
+                        />
+                    </Box>
+                )}
+            </Box>
         </Box>
     )
 }
