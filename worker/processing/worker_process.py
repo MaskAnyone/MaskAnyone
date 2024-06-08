@@ -42,7 +42,6 @@ class WorkerProcess:
         try:
             self._video_manager.load_original_video(job["video_id"])
 
-            # @todo add support for different job types
             self._run_media_pipe_pose_masker(job)
             self._video_manager.upload_result_video(job["video_id"], job["result_video_id"])
 
@@ -66,7 +65,7 @@ class WorkerProcess:
             self._video_manager.get_output_video_path(job["video_id"])
         )
 
-        media_pipe_pose_masker.mask()
+        media_pipe_pose_masker.mask(job['data']['videoMasking'])
 
     def _generate_preview_image(self, video_path: str) -> None:
         video_cap = cv2.VideoCapture(video_path)
