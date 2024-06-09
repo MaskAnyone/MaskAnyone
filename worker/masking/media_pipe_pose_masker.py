@@ -5,6 +5,7 @@ import numpy as np
 
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
+from typing import Callable
 
 from util.timeseries import (
     serialize_pose_landmarker_result,
@@ -79,9 +80,11 @@ options = mediapipe.tasks.vision.PoseLandmarkerOptions(
 class MediaPipePoseMasker:
     _video_capture: cv2.VideoCapture
     _video_writer: cv2.VideoWriter
+    _progress_callback: Callable[[int], None]
 
-    def __init__(self, input_path: str, output_path: str):
+    def __init__(self, input_path: str, output_path: str, progress_callback: Callable[[int], None]):
         self._video_capture = cv2.VideoCapture(input_path)
+        self._progress_callback = progress_callback
 
         frame_width = self._video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)
         frame_height = self._video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
@@ -104,6 +107,8 @@ class MediaPipePoseMasker:
 
         landmarker = mediapipe.tasks.vision.PoseLandmarker.create_from_options(options)
 
+        total_frame_count = int(self._video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
+        current_frame = 0
         kinematics_data = []
 
         while self._video_capture.isOpened():
@@ -132,6 +137,9 @@ class MediaPipePoseMasker:
                     self._draw_landmarks_on_image(output_image, pose_landmarker_result)
 
             self._video_writer.write(output_image)
+
+            current_frame += 1
+            self._progress_callback(round(current_frame / total_frame_count * 100))
 
         self._kinematics_timeseries_file.write(json.dumps(kinematics_data))
         self._kinematics_timeseries_file.close()

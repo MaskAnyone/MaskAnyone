@@ -11,6 +11,7 @@ from masking.media_pipe_pose_masker import MediaPipePoseMasker
 class WorkerProcess:
     _backend_client: BackendClient
     _video_manager: VideoManager
+    _last_api_call_time: int
 
     def __init__(self, backend_client: BackendClient, video_manager: VideoManager):
         self._backend_client = backend_client
@@ -60,12 +61,24 @@ class WorkerProcess:
             self._backend_client.mark_job_as_failed(job["id"])
 
     def _run_media_pipe_pose_masker(self, job):
+        self._last_api_call_time = 0
+
+        def progress_callback(progress: int) -> None:
+            self._report_masker_progress(job, progress)
+
         media_pipe_pose_masker = MediaPipePoseMasker(
             self._video_manager.get_original_video_path(job["video_id"]),
-            self._video_manager.get_output_video_path(job["video_id"])
+            self._video_manager.get_output_video_path(job["video_id"]),
+            progress_callback
         )
 
         media_pipe_pose_masker.mask(job['data']['videoMasking'])
+
+    def _report_masker_progress(self, job, progress: int) -> None:
+        current_time = time.time()
+        if current_time - self._last_api_call_time >= 10:
+            self._last_api_call_time = current_time
+            self._backend_client.update_progress(job["id"], progress)
 
     def _generate_preview_image(self, video_path: str) -> None:
         video_cap = cv2.VideoCapture(video_path)
