@@ -80,29 +80,29 @@ const VideoMaskingStep = (props: StepProps) => {
             <Box component="div" sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '24px' }} mt={1}>
                 <SelectableCard
                     title={'Blurring'}
-                    description={'Displays a basic skeleton containing landmarks for the head, torso, arms and legs'}
-                    imagePath={'/images/masking_strategy/skeleton.jpg'}
+                    description={'Segments the video for persons and applies blurring to their entire body.'}
+                    imagePath={'/images/masking_strategy/blurring.jpg'}
                     onSelect={() => setMaskingStrategy('blurring')}
                     selected={maskingStrategy.strategy === 'blurring'}
                 />
                 <SelectableCard
                     title={'Pixelation'}
-                    description={'Displays a basic skeleton containing landmarks for the head, torso, arms and legs'}
-                    imagePath={'/images/masking_strategy/skeleton.jpg'}
+                    description={'Segments the video for persons and applies pixelation to their entire body.'}
+                    imagePath={'/images/masking_strategy/pixelation.jpg'}
                     onSelect={() => setMaskingStrategy('pixelation')}
                     selected={maskingStrategy.strategy === 'pixelation'}
                 />
                 <SelectableCard
                     title={'Contours'}
-                    description={'Displays a basic skeleton containing landmarks for the head, torso, arms and legs'}
-                    imagePath={'/images/masking_strategy/skeleton.jpg'}
+                    description={'Segments the video for persons and applies contours (edge detection) to their entire body.'}
+                    imagePath={'/images/masking_strategy/contours.jpg'}
                     onSelect={() => setMaskingStrategy('contours')}
                     selected={maskingStrategy.strategy === 'contours'}
                 />
                 <SelectableCard
                     title={'Solid Fill'}
-                    description={'Displays a basic skeleton containing landmarks for the head, torso, arms and legs'}
-                    imagePath={'/images/masking_strategy/skeleton.jpg'}
+                    description={'Segments the video for persons and fills their entire body with a solid color.'}
+                    imagePath={'/images/masking_strategy/solid_fill.jpg'}
                     onSelect={() => setMaskingStrategy('solid_fill')}
                     selected={maskingStrategy.strategy === 'solid_fill'}
                 />
