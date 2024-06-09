@@ -1,6 +1,7 @@
 import mediapipe
 import cv2
 import json
+import numpy as np
 
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
@@ -23,6 +24,39 @@ PIXELATION_LEVELS = {
     3: 70,
     4: 50,
     5: 30
+}
+
+CONTOURS_LEVELS = {
+    1: {
+        "blur_kernel_size": 3,
+        "laplacian_kernel_size": 3,
+        "laplacian_scale": 1.9,
+        "laplacian_delta": 20,
+    },
+    2: {
+        "blur_kernel_size": 5,
+        "laplacian_kernel_size": 5,
+        "laplacian_scale": 1,
+        "laplacian_delta": -20,
+    },
+    3: {
+        "blur_kernel_size": 7,
+        "laplacian_kernel_size": 5,
+        "laplacian_scale": 1,
+        "laplacian_delta": -10,
+    },
+    4: {
+        "blur_kernel_size": 11,
+        "laplacian_kernel_size": 5,
+        "laplacian_scale": 1,
+        "laplacian_delta": 0,
+    },
+    5: {
+        "blur_kernel_size": 17,
+        "laplacian_kernel_size": 5,
+        "laplacian_scale": 1.2,
+        "laplacian_delta": 10,
+    },
 }
 
 # @todo check this
@@ -115,11 +149,15 @@ class MediaPipePoseMasker:
         mask = segmentation_mask.numpy_view()
         seg_mask = mask > 0.3
 
-        if video_masking_data['strategy'] == 'blackout':
-            # @todo average frame color or fixed color
-            rgb_image[seg_mask, 0] = 0
-            rgb_image[seg_mask, 1] = 0
-            rgb_image[seg_mask, 2] = 0
+        if video_masking_data['strategy'] == 'solid_fill':
+            if video_masking_data['options']['averageColor']:
+                average_color = np.mean(rgb_image, axis=(0, 1)).astype(int)
+                fill_color = average_color
+            else:
+                fill_color = self._hex_to_rgb(video_masking_data['options']['color'])[::-1]
+
+            rgb_image[seg_mask] = fill_color
+            # Access individual channels via rgb_image[seg_mask, 0] = ...
         elif video_masking_data['strategy'] == 'blurring':
             mask = segmentation_mask.numpy_view()
             seg_mask = mask > 0.3
@@ -138,7 +176,26 @@ class MediaPipePoseMasker:
             pixelated_image = cv2.resize(small_image, (width, height), interpolation=cv2.INTER_NEAREST)
             rgb_image[seg_mask] = pixelated_image[seg_mask]
         elif video_masking_data['strategy'] == 'contours':
-            pass
+            level_settings = CONTOURS_LEVELS[video_masking_data['options']['level']]
+
+            blurred_image = cv2.GaussianBlur(
+                rgb_image,
+                (level_settings["blur_kernel_size"], level_settings["blur_kernel_size"]),
+                0,
+            )
+
+            gray_image = cv2.cvtColor(blurred_image, cv2.COLOR_RGB2GRAY)
+            edge_image = cv2.Laplacian(
+                gray_image,
+                -1,
+                ksize=level_settings["laplacian_kernel_size"],
+                scale=level_settings["laplacian_scale"],
+                delta=level_settings["laplacian_delta"],
+                borderType=cv2.BORDER_DEFAULT,
+            )
+            final_contours_image = cv2.cvtColor(edge_image, cv2.COLOR_GRAY2RGB)
+
+            rgb_image[seg_mask] = final_contours_image[seg_mask]
         else:
             raise Exception(f'Unknown video masking strategy, got {video_masking_data["strategy"]}')
 
@@ -161,3 +218,14 @@ class MediaPipePoseMasker:
                 solutions.pose.POSE_CONNECTIONS,
                 solutions.drawing_styles.get_default_pose_landmarks_style()
             )
+
+    def _hex_to_rgb(self, hex_color):
+        hex_color = hex_color.lstrip('#')
+
+        hex_int = int(hex_color, 16)
+
+        r = (hex_int >> 16) & 255
+        g = (hex_int >> 8) & 255
+        b = hex_int & 255
+
+        return r, g, b

@@ -1,4 +1,4 @@
-import {Box, Checkbox, Slider, Typography} from "@mui/material";
+import {Box, Checkbox, Slider, Switch, Typography} from "@mui/material";
 import SelectableCard from "../../../../common/SelectableCard";
 import {StepProps} from "./StepProps";
 
@@ -39,7 +39,33 @@ const VideoMaskingStep = (props: StepProps) => {
                 }
             }
         });
-    }
+    };
+
+    const setMaskingStrategyAverageColor = (averageColor: boolean) => {
+        props.onParamsChange({
+            ...props.runParams,
+            videoMasking: {
+                ...props.runParams.videoMasking,
+                options: {
+                    ...props.runParams.videoMasking.options,
+                    averageColor,
+                }
+            }
+        });
+    };
+
+    const setMaskingStrategyColor = (hexColor: string) => {
+        props.onParamsChange({
+            ...props.runParams,
+            videoMasking: {
+                ...props.runParams.videoMasking,
+                options: {
+                    ...props.runParams.videoMasking.options,
+                    color: hexColor,
+                }
+            }
+        });
+    };
 
     return (
         <Box component="div">
@@ -67,11 +93,18 @@ const VideoMaskingStep = (props: StepProps) => {
                     selected={maskingStrategy.strategy === 'pixelation'}
                 />
                 <SelectableCard
-                    title={'Blackout'}
+                    title={'Contours'}
                     description={'Displays a basic skeleton containing landmarks for the head, torso, arms and legs'}
                     imagePath={'/images/masking_strategy/skeleton.jpg'}
-                    onSelect={() => setMaskingStrategy('blackout')}
-                    selected={maskingStrategy.strategy === 'blackout'}
+                    onSelect={() => setMaskingStrategy('contours')}
+                    selected={maskingStrategy.strategy === 'contours'}
+                />
+                <SelectableCard
+                    title={'Solid Fill'}
+                    description={'Displays a basic skeleton containing landmarks for the head, torso, arms and legs'}
+                    imagePath={'/images/masking_strategy/skeleton.jpg'}
+                    onSelect={() => setMaskingStrategy('solid_fill')}
+                    selected={maskingStrategy.strategy === 'solid_fill'}
                 />
             </Box>
             <Box component={'div'} sx={{ marginTop: 2 }}>
@@ -87,7 +120,7 @@ const VideoMaskingStep = (props: StepProps) => {
                         onChange={(event, newValue) => setMaskingStrategySkeleton(newValue)}
                     />
                 </Box>
-                {maskingStrategy.strategy !== 'blackout' && (
+                {maskingStrategy.strategy !== 'solid_fill' && (
                     <Box component={'div'} sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
                         <Typography variant={'body2'}>
                             Masking level (1 = weak to 5 = strong):
@@ -100,6 +133,25 @@ const VideoMaskingStep = (props: StepProps) => {
                             value={maskingStrategy.options.level}
                             onChange={(event, newValue) => setMaskingStrategyLevel(newValue as number)}
                         />
+                    </Box>
+                )}
+                {maskingStrategy.strategy === 'solid_fill' && (
+                    <Box component={'div'} sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                        <Typography variant={'body2'}>
+                            Fill color (average or explicit):
+                        </Typography>
+                        <Switch
+                            checked={maskingStrategy.options.averageColor}
+                            onChange={(event, newValue) => setMaskingStrategyAverageColor(newValue)}
+                        />
+                        {!maskingStrategy.options.averageColor && (
+                            <input
+                                type={'color'}
+                                value={maskingStrategy.options.color}
+                                onChange={e => setMaskingStrategyColor(e.target.value)}
+                                style={{ marginLeft: 12 }}
+                            />
+                        )}
                     </Box>
                 )}
             </Box>

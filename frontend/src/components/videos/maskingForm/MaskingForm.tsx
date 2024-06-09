@@ -16,6 +16,8 @@ const initialRunParams: RunParams = {
         options: {
             level: 3,
             skeleton: true,
+            averageColor: true,
+            color: '#000000',
         }
     },
     voiceMasking: {

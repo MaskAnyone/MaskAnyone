@@ -49,6 +49,8 @@ export type RunParams = {
         options: {
             level: number;
             skeleton: boolean;
+            averageColor: boolean;
+            color: string;
         };
     };
     voiceMasking: {
