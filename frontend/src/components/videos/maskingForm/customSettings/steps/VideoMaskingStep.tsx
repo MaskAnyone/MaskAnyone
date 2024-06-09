@@ -76,7 +76,7 @@ const VideoMaskingStep = (props: StepProps) => {
                         Include skeleton overlay:
                     </Typography>
                     <Checkbox
-                        value={maskingStrategy.options.skeleton}
+                        checked={maskingStrategy.options.skeleton}
                         onChange={(event, newValue) => setMaskingStrategySkeleton(newValue)}
                     />
                 </Box>

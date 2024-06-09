@@ -1,8 +1,6 @@
 import mediapipe
 import cv2
-import numpy
 import json
-import os
 
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
@@ -10,6 +8,14 @@ from mediapipe.framework.formats import landmark_pb2
 from util.timeseries import (
     serialize_pose_landmarker_result,
 )
+
+BLURRING_LEVELS = {
+    1: (15, 15),
+    2: (20, 20),
+    3: (25, 25),
+    4: (35, 35),
+    5: (51, 51)
+}
 
 # @todo check this
 # https://github.com/google/mediapipe/issues/5120
@@ -25,6 +31,8 @@ options = mediapipe.tasks.vision.PoseLandmarkerOptions(
     output_segmentation_masks=True,
     num_poses=3
 )
+
+# @todo interesting blur = cv.bilateralFilter(img,9,75,75)
 
 class MediaPipePoseMasker:
     _video_capture: cv2.VideoCapture
@@ -76,7 +84,7 @@ class MediaPipePoseMasker:
 
             if pose_landmarker_result.segmentation_masks:
                 for segmentation_mask in pose_landmarker_result.segmentation_masks:
-                    self._apply_segmentation_mask(output_image, segmentation_mask)
+                    self._apply_segmentation_mask(output_image, segmentation_mask, video_masking_data)
 
                 if video_masking_data['options']['skeleton']:
                     self._draw_landmarks_on_image(output_image, pose_landmarker_result)
@@ -91,17 +99,32 @@ class MediaPipePoseMasker:
         self._video_capture.release()
         self._video_writer.release()
 
-    def _apply_segmentation_mask(self, rgb_image, segmentation_mask) -> None:
+    def _apply_segmentation_mask(self, rgb_image, segmentation_mask, video_masking_data: dict) -> None:
         #mask = segmentation_mask.numpy_view()
         #seg_mask = numpy.repeat(mask[:, :, numpy.newaxis], 3, axis=2)
         #rgb_image[seg_mask > 0.3] = 0
 
-        mask = segmentation_mask.numpy_view()
-        seg_mask = mask > 0.3
+        if video_masking_data['strategy'] == 'blackout':
+            mask = segmentation_mask.numpy_view()
+            seg_mask = mask > 0.3
 
-        rgb_image[seg_mask, 0] = 0
-        rgb_image[seg_mask, 1] = 0
-        rgb_image[seg_mask, 2] = 0
+            # @todo blurring, pixelation and edge detection/contours, average frame color or fixed color
+            rgb_image[seg_mask, 0] = 0
+            rgb_image[seg_mask, 1] = 0
+            rgb_image[seg_mask, 2] = 0
+        elif video_masking_data['strategy'] == 'blurring':
+            mask = segmentation_mask.numpy_view()
+            seg_mask = mask > 0.3
+
+            kernel_size = BLURRING_LEVELS[video_masking_data['options']['level']]
+            blurred_image = cv2.GaussianBlur(rgb_image, kernel_size, 0)
+            rgb_image[seg_mask] = blurred_image[seg_mask]
+        elif video_masking_data['strategy'] == 'pixelation':
+            pass
+        elif video_masking_data['strategy'] == 'contours':
+            pass
+        else:
+            raise Exception(f'Unknown video masking strategy, got {video_masking_data["strategy"]}')
 
     def _draw_landmarks_on_image(self, rgb_image, detection_result) -> None:
         pose_landmarks_list = detection_result.pose_landmarks
