@@ -17,6 +17,14 @@ BLURRING_LEVELS = {
     5: (51, 51)
 }
 
+PIXELATION_LEVELS = {
+    1: 150,
+    2: 100,
+    3: 70,
+    4: 50,
+    5: 30
+}
+
 # @todo check this
 # https://github.com/google/mediapipe/issues/5120
 # I0000 00:00:1709055327.274616       1 task_runner.cc:85] GPU suport is not available: INTERNAL: ; RET_CHECK failure (mediapipe/gpu/gl_context_egl.cc:77) display != EGL_NO_DISPLAYeglGetDisplay() returned error 0x300c
@@ -104,11 +112,11 @@ class MediaPipePoseMasker:
         #seg_mask = numpy.repeat(mask[:, :, numpy.newaxis], 3, axis=2)
         #rgb_image[seg_mask > 0.3] = 0
 
-        if video_masking_data['strategy'] == 'blackout':
-            mask = segmentation_mask.numpy_view()
-            seg_mask = mask > 0.3
+        mask = segmentation_mask.numpy_view()
+        seg_mask = mask > 0.3
 
-            # @todo blurring, pixelation and edge detection/contours, average frame color or fixed color
+        if video_masking_data['strategy'] == 'blackout':
+            # @todo average frame color or fixed color
             rgb_image[seg_mask, 0] = 0
             rgb_image[seg_mask, 1] = 0
             rgb_image[seg_mask, 2] = 0
@@ -120,7 +128,15 @@ class MediaPipePoseMasker:
             blurred_image = cv2.GaussianBlur(rgb_image, kernel_size, 0)
             rgb_image[seg_mask] = blurred_image[seg_mask]
         elif video_masking_data['strategy'] == 'pixelation':
-            pass
+            height, width = rgb_image.shape[:2]
+            aspect_ratio = width / height
+
+            small_height = PIXELATION_LEVELS[video_masking_data['options']['level']]
+            small_width = int(small_height * aspect_ratio)
+
+            small_image = cv2.resize(rgb_image, (small_width, small_height), interpolation=cv2.INTER_LINEAR)
+            pixelated_image = cv2.resize(small_image, (width, height), interpolation=cv2.INTER_NEAREST)
+            rgb_image[seg_mask] = pixelated_image[seg_mask]
         elif video_masking_data['strategy'] == 'contours':
             pass
         else:

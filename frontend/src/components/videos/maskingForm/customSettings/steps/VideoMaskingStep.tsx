@@ -60,6 +60,13 @@ const VideoMaskingStep = (props: StepProps) => {
                     selected={maskingStrategy.strategy === 'blurring'}
                 />
                 <SelectableCard
+                    title={'Pixelation'}
+                    description={'Displays a basic skeleton containing landmarks for the head, torso, arms and legs'}
+                    imagePath={'/images/masking_strategy/skeleton.jpg'}
+                    onSelect={() => setMaskingStrategy('pixelation')}
+                    selected={maskingStrategy.strategy === 'pixelation'}
+                />
+                <SelectableCard
                     title={'Blackout'}
                     description={'Displays a basic skeleton containing landmarks for the head, torso, arms and legs'}
                     imagePath={'/images/masking_strategy/skeleton.jpg'}
