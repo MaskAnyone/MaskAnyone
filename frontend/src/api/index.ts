@@ -95,6 +95,12 @@ const Api = {
             }
         });
     },
+    deleteJob: async (id: string): Promise<void> => {
+        await sendApiRequest({
+            url: `jobs/${id}/delete`,
+            method: 'post',
+        });
+    },
     requestVideoUpload: async (videoId: string, videoName: string): Promise<void> => {
         await sendApiRequest({
             url: 'videos/upload/request',

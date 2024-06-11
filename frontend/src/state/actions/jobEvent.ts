@@ -7,8 +7,13 @@ export interface JobListFetchedPayload {
     jobList: Job[];
 }
 
+export interface JobDeletedPayload {
+    id: string;
+}
+
 const JobEvent = {
     jobListFetched: createJobEvent<JobListFetchedPayload>('JOB_LIST_FETCHED'),
+    jobDeleted: createJobEvent<JobDeletedPayload>('JOB_DELETED'),
 };
 
 export default JobEvent;

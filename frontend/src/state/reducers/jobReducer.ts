@@ -1,6 +1,6 @@
 import {Action, handleActions} from 'redux-actions';
 import Event from "../actions/event";
-import {JobListFetchedPayload} from "../actions/jobEvent";
+import {JobDeletedPayload, JobListFetchedPayload} from "../actions/jobEvent";
 import {Job} from "../types/Job";
 
 export interface JobState {
@@ -18,6 +18,12 @@ export const jobReducer = handleActions<JobState, any>(
             return {
                 ...state,
                 jobList: action.payload.jobList,
+            };
+        },
+        [Event.Job.jobDeleted.toString()]: (state, action: Action<JobDeletedPayload>): JobState => {
+            return {
+                ...state,
+                jobList: state.jobList.filter(job => job.id !== action.payload.id),
             };
         },
     },
