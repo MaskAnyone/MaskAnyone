@@ -1,13 +1,20 @@
-import {useSelector} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import Selector from "../state/selector";
 import {Box, Chip, Grid} from "@mui/material";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import {Link} from "react-router-dom";
 import Paths from "../paths";
+import Command from "../state/actions/command";
+import {useEffect} from "react";
 
 const WorkersPage = () => {
+    const dispatch = useDispatch();
     const workers = useSelector(Selector.Worker.workerList);
+
+    useEffect(() => {
+        dispatch(Command.Worker.fetchWorkerList({}));
+    }, []);
 
     return (
         <Box component={'div'}>

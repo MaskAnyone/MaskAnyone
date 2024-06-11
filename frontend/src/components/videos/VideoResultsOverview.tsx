@@ -41,6 +41,11 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
         setCreatePresetDialogOpen(true);
     };
 
+    const openShowRunParamsDialog = () => {
+        setVideoResultAnchorEl(null);
+        setCreateResultRunParamsDialogOpen(true);
+    };
+
     const createPreset = (name: string, description: string) => {
         const activeResultVideo = resultVideos.find(resultVideo => resultVideo.videoResultId === activeResultVideoId);
         if (!activeResultVideo) {
@@ -87,7 +92,7 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
                 anchorEl={videoResultAnchorEl}
                 onClose={() => setVideoResultAnchorEl(null)}
                 onCreatePreset={openCreatePresetDialog}
-                onShowRunParams={() => setCreateResultRunParamsDialogOpen(true)}
+                onShowRunParams={openShowRunParamsDialog}
             />
             <CreatePresetDialog
                 open={createPresetDialogOpen}

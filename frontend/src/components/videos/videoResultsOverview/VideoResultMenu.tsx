@@ -16,9 +16,10 @@ const VideoResultMenu = (props: DownloadMenuProps) => {
             open={open}
             onClose={props.onClose}
         >
-            <MenuItem onClick={() => props.onClose()}>Rename result</MenuItem>
             <MenuItem onClick={() => props.onShowRunParams()}>Show masking config</MenuItem>
-            <MenuItem onClick={props.onCreatePreset}>Create preset</MenuItem>
+            <MenuItem onClick={() => props.onClose()}>Rename result</MenuItem>
+            <MenuItem onClick={() => props.onClose()}>Delete result</MenuItem>
+            {/*<MenuItem onClick={props.onCreatePreset}>Create preset</MenuItem>*/}
         </Menu>
     );
 };

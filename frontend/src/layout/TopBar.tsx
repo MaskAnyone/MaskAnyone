@@ -74,13 +74,13 @@ const TopBar = (props: TopBarProps) => {
                     to={Paths.runs}
                     children={<Badge badgeContent={activeJobCount} max={9} color={'secondary'}>Runs</Badge>}
                 />
-                <Button
+                {/*<Button
                     sx={styles.navigationButton}
                     style={{ marginRight: '6px' }}
                     component={Link}
                     to={Paths.presets}
                     children={'My Presets'}
-                />
+                />*/}
                 <Button
                     sx={styles.navigationButton}
                     style={{ marginRight: '6px' }}
