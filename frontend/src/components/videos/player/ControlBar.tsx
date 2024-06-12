@@ -17,6 +17,7 @@ interface ControlBarProps {
     position: number;
     onPositionChange: (newPosition: number) => void;
     playedSeconds: number;
+    frame: number;
     duration: number;
     video2Available: boolean;
     volume1: number;
@@ -86,6 +87,7 @@ const ControlBar = (props: ControlBarProps) => {
                     <TimerDisplay timeInSeconds={props.playedSeconds} />
                     <Typography variant={'body1'} sx={{ fontSize: '1.2rem', paddingLeft: 1, paddingRight: 1 }}>/</Typography>
                     <TimerDisplay timeInSeconds={props.duration} />
+                    <Typography variant={'body2'} sx={{ paddingLeft: 1 }}>({props.frame})</Typography>
                 </Box>
                 <Box component={'div'}>
                     <IconButton><FastRewindIcon /></IconButton>

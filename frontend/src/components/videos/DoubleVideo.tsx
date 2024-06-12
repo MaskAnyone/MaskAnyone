@@ -1,4 +1,4 @@
-import { Box, FormControl, FormControlLabel, Radio, RadioGroup } from "@mui/material";
+import { Box } from "@mui/material";
 import Config from "../../config";
 import { useEffect, useMemo, useRef, useState } from "react";
 import PoseRenderer3D from "./PoseRenderer3D";
@@ -130,14 +130,18 @@ const DoubleVideo = (props: DoubleVideoProps) => {
         }
     }, [played]);
 
+    const updatePlayedSeconds = (newPlayedSeconds: number) => {
+        setPlayedSeconds(newPlayedSeconds);
+        setFrame(Math.round(newPlayedSeconds * videoFPS));
+    };
+
     const handleVideoProgress = (progressProps: OnProgressProps) => {
         if (seeking) {
             return;
         }
 
         setPlayed(progressProps.played);
-        setPlayedSeconds(progressProps.playedSeconds);
-        setFrame(Math.round(progressProps.playedSeconds * videoFPS));
+        updatePlayedSeconds(progressProps.playedSeconds);
     };
 
     const handleTogglePlaying = (newPlaying: boolean) => {
@@ -163,6 +167,7 @@ const DoubleVideo = (props: DoubleVideoProps) => {
                         url={originalPath}
                         playing={playing}
                         onProgress={handleVideoProgress}
+                        onSeek={updatePlayedSeconds}
                         onDuration={setDuration}
                         onPause={() => setPlaying(false)}
                         onEnded={resetVideos}
@@ -194,6 +199,7 @@ const DoubleVideo = (props: DoubleVideoProps) => {
                 position={played}
                 onPositionChange={setPlayed}
                 playedSeconds={playedSeconds}
+                frame={frame}
                 duration={duration}
                 video2Available={Boolean(view === ResultViews.video && props.resultVideoId)}
                 volume1={volume1}
