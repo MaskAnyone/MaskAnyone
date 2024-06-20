@@ -34,3 +34,20 @@ class ResultVideoManager:
             result.append(ResultVideo(*result_video_data))
 
         return result
+
+    def get_result_video(self, id: str):
+        result_video_data_list = self.__db_connection.select_all(
+            "SELECT * FROM result_videos WHERE id=%(id)s",
+            {"id": id},
+        )
+
+        if len(result_video_data_list) < 1:
+            raise Exception("Could not find result video with id " + id)
+
+        return ResultVideo(*result_video_data_list[0])
+
+    def delete_result_video(self, id: str):
+        self.__db_connection.execute(
+            "DELETE FROM result_videos WHERE id=%(id)s",
+            {"id": id},
+        )

@@ -1,3 +1,5 @@
+import os
+
 from fastapi import APIRouter, Depends
 
 from db.job_manager import JobManager
@@ -5,12 +7,16 @@ from db.db_connection import DBConnection
 from db.result_blendshapes_manager import ResultBlendshapesManager
 from db.result_mp_kinematics_manager import ResultMpKinematicsManager
 from db.video_manager import VideoManager
+from db.result_video_manager import ResultVideoManager
 from auth.jwt_bearer import JWTBearer
+from config import RESULT_BASE_PATH
 
-job_manager = JobManager(DBConnection())
-result_blendshapes_manager = ResultBlendshapesManager(DBConnection())
-result_mp_kinematics_manager = ResultMpKinematicsManager(DBConnection())
-video_manager = VideoManager(DBConnection())
+db_connection = DBConnection()
+job_manager = JobManager(db_connection)
+result_blendshapes_manager = ResultBlendshapesManager(db_connection)
+result_mp_kinematics_manager = ResultMpKinematicsManager(db_connection)
+video_manager = VideoManager(db_connection)
+result_video_manager = ResultVideoManager(db_connection)
 
 router = APIRouter(
     prefix="/results",
@@ -24,6 +30,20 @@ def get_all_results(video_id: str, token_payload: dict = Depends(JWTBearer())):
 
     results = video_manager.fetch_all_results(video_id)
     return {"results": results}
+
+
+@router.post("/{result_video_id}/delete")
+def delete_result(result_video_id: str, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+
+    result_video = result_video_manager.get_result_video(result_video_id)
+    video_manager.assert_user_has_video(result_video.video_id, user_id)
+
+    result_video_manager.delete_result_video(result_video_id)
+
+    result_video_path = os.path.join(RESULT_BASE_PATH, result_video.video_id, result_video_id + ".mp4")
+    if os.path.exists(result_video_path):
+        os.remove(result_video_path)
 
 
 @router.get("/{result_video_id}/blendshapes")

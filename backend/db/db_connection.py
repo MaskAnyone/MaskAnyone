@@ -14,16 +14,28 @@ class DBConnection:
 
     def execute(self, sql: str, bindings: dict = {}):
         cursor = self.__connection.cursor()
-        cursor.execute(sql, bindings)
-        self.__connection.commit()
-        cursor.close()
+
+        try:
+            cursor.execute(sql, bindings)
+            self.__connection.commit()
+        except psycopg2.Error as e:
+            self.__connection.rollback()
+            raise e
+        finally:
+            cursor.close()
 
     def select_all(self, sql: str, bindings: dict = {}):
         cursor = self.__connection.cursor()
-        cursor.execute(sql, bindings)
-        result = cursor.fetchall()
-        cursor.close()
-        return result
+
+        try:
+            cursor.execute(sql, bindings)
+            result = cursor.fetchall()
+            return result
+        except psycopg2.Error as e:
+            self.__connection.rollback()
+            raise e
+        finally:
+            cursor.close()
 
     def get_cursor(self):
         return self.__connection.cursor()

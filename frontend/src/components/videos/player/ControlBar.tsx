@@ -1,4 +1,4 @@
-import {Box, IconButton, Menu, MenuItem, Slider, Typography} from "@mui/material";
+import {Box, IconButton, Menu, MenuItem, Slider, Tooltip, Typography} from "@mui/material";
 import FastRewindIcon from '@mui/icons-material/FastRewind';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -90,7 +90,7 @@ const ControlBar = (props: ControlBarProps) => {
                     <Typography variant={'body2'} sx={{ paddingLeft: 1 }}>({props.frame})</Typography>
                 </Box>
                 <Box component={'div'}>
-                    <IconButton><FastRewindIcon /></IconButton>
+                    <IconButton disabled={true}><FastRewindIcon /></IconButton>
 
                     {props.playing ? (
                         <IconButton onClick={() => props.onTogglePlaying(false)}><PauseIcon /></IconButton>
@@ -98,10 +98,12 @@ const ControlBar = (props: ControlBarProps) => {
                         <IconButton onClick={() => props.onTogglePlaying(true)}><PlayArrowIcon /></IconButton>
                     )}
 
-                    <IconButton><FastForwardIcon /></IconButton>
+                    <IconButton disabled={true}><FastForwardIcon /></IconButton>
                 </Box>
                 <Box component={'div'}>
-                    <IconButton onClick={reSyncVideos}><SyncIcon /></IconButton>
+                    <Tooltip title={'Resync Videos'}>
+                        <IconButton onClick={reSyncVideos} disabled={!props.video2Available}><SyncIcon /></IconButton>
+                    </Tooltip>
                     <IconButton disabled={true}><SpeedIcon /></IconButton>
                     <IconButton onClick={handleClick}><VolumeUpIcon /></IconButton>
                 </Box>

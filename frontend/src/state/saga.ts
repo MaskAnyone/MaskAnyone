@@ -13,6 +13,7 @@ import { createNewPresetFlow } from "./sagas/preset/createNewPresetFlow";
 import { fetchBlendshapesFlow } from "./sagas/video/fetchBlendshapesFlow";
 import { fetchMpKinematicsFlow } from "./sagas/video/fetchMpKinematicsFlow";
 import {deleteJobFlow} from "./sagas/job/deleteJobFlow";
+import {deleteResultVideoFlow} from "./sagas/video/deleteResultVideoFlow";
 
 /**
  * Prevents the root saga from terminating entirely due to some error in another saga
@@ -48,6 +49,7 @@ const sagas: any[] = [
     fetchDownloadableResultFilesFlow,
     fetchBlendshapesFlow,
     fetchMpKinematicsFlow,
+    deleteResultVideoFlow,
 
     uploadFilesFlow,
     uploadProgressWatcherFlow,

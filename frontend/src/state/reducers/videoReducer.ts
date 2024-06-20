@@ -3,7 +3,7 @@ import Event from "../actions/event";
 import {
     BlendshapesFetchedPayload,
     DownloadableResultFilesFetchedPayload, MpKinematicsFetchedPayload,
-    ResultsListFetchedPayload,
+    ResultsListFetchedPayload, ResultVideoDeletedPayload,
     VideoListFetchedPayload,
 } from "../actions/videoEvent";
 import { Video } from "../types/Video";
@@ -69,6 +69,15 @@ export const videoReducer = handleActions<VideoState, any>(
                     ...state.mpKinematicsList,
                     [action.payload.resultVideoId]: action.payload.mpKinematics,
                 }
+            };
+        },
+        [Event.Video.resultVideoDeleted.toString()]: (state, action: Action<ResultVideoDeletedPayload>): VideoState => {
+            const newResultVideoLists = { ...state.resultVideoLists };
+            delete newResultVideoLists[action.payload.resultVideoId];
+
+            return {
+                ...state,
+                resultVideoLists: newResultVideoLists,
             };
         },
     },

@@ -46,6 +46,12 @@ const Api = {
 
         return result.data;
     },
+    deleteResultVideo: async (id: string): Promise<void> => {
+        await sendApiRequest({
+            url: `results/${id}/delete`,
+            method: 'post',
+        });
+    },
     fetchBlendshapes: async (resultVideoId: string): Promise<any> => {
         const result = await sendApiRequest({
             url: `/results/${resultVideoId}/blendshapes`,

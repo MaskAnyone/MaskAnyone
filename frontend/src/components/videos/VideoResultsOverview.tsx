@@ -9,6 +9,7 @@ import VideoResultMenu from "./videoResultsOverview/VideoResultMenu";
 import CreatePresetDialog from "../presets/CreatePresetDialog";
 import Command from "../../state/actions/command";
 import ResultRunParamsDialog from "./videoResultsOverview/ResultRunParamsDialog";
+import DeleteResultVideoDialog from "./videoResultsOverview/DeleteResultVideoDialog";
 
 interface VideoResultsProps {
     videoId: string;
@@ -24,6 +25,7 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
     const [createPresetDialogOpen, setCreatePresetDialogOpen] = useState<boolean>(false);
     const [activeResultVideoId, setActiveResultVideoId] = useState<string>();
     const [createResultRunParamsDialogOpen, setCreateResultRunParamsDialogOpen] = useState<boolean>(false);
+    const [deleteResultVideoDialogOpen, setDeleteResultVideoDialogOpen] = useState<boolean>(false);
 
     const resultVideos = resultVideoLists[props.videoId] || [];
 
@@ -44,6 +46,11 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
     const openShowRunParamsDialog = () => {
         setVideoResultAnchorEl(null);
         setCreateResultRunParamsDialogOpen(true);
+    };
+
+    const openDeleteResultVideoDialog = () => {
+        setVideoResultAnchorEl(null);
+        setDeleteResultVideoDialogOpen(true);
     };
 
     const createPreset = (name: string, description: string) => {
@@ -71,6 +78,17 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
         setActiveResultVideoId(undefined);
     };
 
+    const deleteResultVideo = () => {
+        if (activeResultVideoId) {
+            dispatch(Command.Video.deleteResultVideo({
+                resultVideoId: activeResultVideoId,
+            }));
+        }
+
+        setDeleteResultVideoDialogOpen(false);
+        setActiveResultVideoId(undefined);
+    };
+
     return (
         <Box component="div">
             <Box component={'div'}>
@@ -91,9 +109,10 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
             <VideoResultMenu
                 anchorEl={videoResultAnchorEl}
                 onClose={() => setVideoResultAnchorEl(null)}
-                onCreatePreset={openCreatePresetDialog}
                 onShowRunParams={openShowRunParamsDialog}
+                onDelete={openDeleteResultVideoDialog}
             />
+
             <CreatePresetDialog
                 open={createPresetDialogOpen}
                 onClose={() => setCreatePresetDialogOpen(false)}
@@ -104,9 +123,13 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
                 open={createResultRunParamsDialogOpen}
                 onClose={() => setCreateResultRunParamsDialogOpen(false)}
             />
+            <DeleteResultVideoDialog
+                open={Boolean(deleteResultVideoDialogOpen)}
+                onCancel={() => setDeleteResultVideoDialogOpen(false)}
+                onConfirm={deleteResultVideo}
+            />
         </Box>
     )
-
 }
 
 export default VideoResultsOverview
