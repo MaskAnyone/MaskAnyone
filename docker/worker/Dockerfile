@@ -1,5 +1,5 @@
-#FROM ubuntu:22.04
-FROM nvidia/cuda:11.7.1-runtime-ubuntu22.04
+FROM ubuntu:22.04
+#FROM nvidia/cuda:11.7.1-runtime-ubuntu22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -14,7 +14,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install \
-    mediapipe==0.10.10 \
+    mediapipe==0.10.14 \
     requests
 
 RUN mkdir /worker_models \

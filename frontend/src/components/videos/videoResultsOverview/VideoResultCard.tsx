@@ -21,23 +21,11 @@ const VideoResultCard = (props: VideoResultCardProps) => {
     };
 
     const lookupPreviewForResult = () => {
-        if (props.resultVideo.videoResultExists) {
-            return `${Config.api.baseUrl}/videos/${props.resultVideo.originalVideoId}/results/${props.resultVideo.videoResultId}/preview?token=` + KeycloakAuth.instance.token;
-        }
-
-        if (props.resultVideo.blendshapeResultsExists) {
-            return '/images/model_extraction/facial_3d_model.jpg';
-        }
-
-        if (props.resultVideo.kinematicResultsExists) {
-            return '/images/model_extraction/skeleton.png';
-        }
-
-        return file;
+        return `${Config.api.baseUrl}/videos/${props.resultVideo.originalVideoId}/results/${props.resultVideo.videoResultId}/preview?token=` + KeycloakAuth.instance.token;
     }
 
     const resultVideo = props.resultVideo;
-    const name = resultVideo.videoResultExists ? resultVideo.name : "File Result"
+    const name = resultVideo.name;
 
     return (
         <Card
