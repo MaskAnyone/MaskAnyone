@@ -81,6 +81,7 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
     const deleteResultVideo = () => {
         if (activeResultVideoId) {
             dispatch(Command.Video.deleteResultVideo({
+                videoId: props.videoId,
                 resultVideoId: activeResultVideoId,
             }));
         }

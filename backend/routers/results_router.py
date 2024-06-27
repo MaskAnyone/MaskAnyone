@@ -23,15 +23,6 @@ router = APIRouter(
 )
 
 
-@router.get("/{video_id}/all")
-def get_all_results(video_id: str, token_payload: dict = Depends(JWTBearer())):
-    user_id = token_payload["sub"]
-    video_manager.assert_user_has_video(video_id, user_id)
-
-    results = video_manager.fetch_all_results(video_id)
-    return {"results": results}
-
-
 @router.post("/{result_video_id}/delete")
 def delete_result(result_video_id: str, token_payload: dict = Depends(JWTBearer())):
     user_id = token_payload["sub"]

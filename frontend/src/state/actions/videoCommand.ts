@@ -31,6 +31,7 @@ export interface FetchMpKinematicsPayload {
 }
 
 export interface DeleteResultVideoPayload {
+    videoId: string;
     resultVideoId: string;
 }
 

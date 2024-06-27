@@ -72,12 +72,16 @@ export const videoReducer = handleActions<VideoState, any>(
             };
         },
         [Event.Video.resultVideoDeleted.toString()]: (state, action: Action<ResultVideoDeletedPayload>): VideoState => {
-            const newResultVideoLists = { ...state.resultVideoLists };
-            delete newResultVideoLists[action.payload.resultVideoId];
+            const resultVideos = state.resultVideoLists[action.payload.videoId];
 
             return {
                 ...state,
-                resultVideoLists: newResultVideoLists,
+                resultVideoLists: {
+                    ...state.resultVideoLists,
+                    [action.payload.videoId]: resultVideos.filter(
+                        resultVideo => resultVideo.videoResultId !== action.payload.resultVideoId
+                    ),
+                },
             };
         },
     },

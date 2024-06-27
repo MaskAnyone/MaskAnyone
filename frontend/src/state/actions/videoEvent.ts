@@ -29,6 +29,7 @@ export interface MpKinematicsFetchedPayload {
 }
 
 export interface ResultVideoDeletedPayload {
+    videoId: string;
     resultVideoId: string;
 }
 

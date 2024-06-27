@@ -9,7 +9,11 @@ const onDeleteResultVideo = function* (payload: DeleteResultVideoPayload) {
     try {
         yield call(Api.deleteResultVideo, payload.resultVideoId);
 
-        yield put(Event.Video.resultVideoDeleted({ resultVideoId: payload.resultVideoId }));
+        yield put(Event.Video.resultVideoDeleted({
+            videoId: payload.videoId,
+            resultVideoId: payload.resultVideoId,
+        }));
+
         yield put(Command.Notification.enqueueNotification({
             severity: 'success',
             message: 'Result video deleted successfully',
