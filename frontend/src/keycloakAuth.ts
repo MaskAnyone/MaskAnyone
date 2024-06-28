@@ -28,7 +28,26 @@ const KeycloakAuth = {
     register: () => keycloak.register(),
     login: () => keycloak.login(),
     logout: () => keycloak.logout(),
-    instance: keycloak,
+    getToken: () => keycloak.token,
+    getTokenParsed: () => keycloak.tokenParsed,
+};
+
+/**
+ * For local runtime mode we just override actual KeycloakAuth methods with dummy ones to act as if a user is logged in.
+ */
+export const switchToLocalAuthMode = () => {
+    KeycloakAuth.initialize = () => Promise.resolve(true);
+    KeycloakAuth.refreshToken = () => Promise.resolve();
+    KeycloakAuth.register = () => Promise.resolve();
+    KeycloakAuth.login = () => Promise.resolve();
+    KeycloakAuth.logout = () => Promise.resolve();
+    KeycloakAuth.getToken = () => '';
+    KeycloakAuth.getTokenParsed = () => ({
+        sub: '00000000-0000-0000-0000-000000000000',
+        email: null,
+        given_name: 'Local',
+        family_name: null,
+    });
 };
 
 export default KeycloakAuth;

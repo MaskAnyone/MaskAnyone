@@ -30,8 +30,8 @@ const DoubleVideo = (props: DoubleVideoProps) => {
     const video1Ref = useRef<ReactPlayer>(null);
     const video2Ref = useRef<ReactPlayer>(null);
     const videoBasePath = `${Config.api.baseUrl}/videos/${props.videoId}`;
-    const originalPath = `${videoBasePath}?token=${KeycloakAuth.instance.token}`;
-    const resultPath = `${videoBasePath}/results/${props.resultVideoId}?token=${KeycloakAuth.instance.token}`;
+    const originalPath = `${videoBasePath}?token=${KeycloakAuth.getToken()}`;
+    const resultPath = `${videoBasePath}/results/${props.resultVideoId}?token=${KeycloakAuth.getToken()}`;
     const [view, setView] = useState<ResultViews>(ResultViews.video)
     const [frame, setFrame] = useState<number>(0);
 

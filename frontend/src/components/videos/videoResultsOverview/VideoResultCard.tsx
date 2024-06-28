@@ -21,7 +21,7 @@ const VideoResultCard = (props: VideoResultCardProps) => {
     };
 
     const lookupPreviewForResult = () => {
-        return `${Config.api.baseUrl}/videos/${props.resultVideo.originalVideoId}/results/${props.resultVideo.videoResultId}/preview?token=` + KeycloakAuth.instance.token;
+        return `${Config.api.baseUrl}/videos/${props.resultVideo.originalVideoId}/results/${props.resultVideo.videoResultId}/preview?token=` + KeycloakAuth.getToken();
     }
 
     const resultVideo = props.resultVideo;

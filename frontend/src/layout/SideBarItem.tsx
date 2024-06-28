@@ -75,7 +75,7 @@ const SideBarItem = (props: SideBarItemProps) => {
                         <Badge badgeContent={props.badge} max={9} color={'secondary'} sx={{ '& .MuiBadge-badge': { marginTop: 0.75, marginRight: 1.25 } }}>
                             <img
                                 style={{ width: '64px', objectFit: 'cover', marginRight: '8px', borderRadius: '4px' }}
-                                src={Config.api.baseUrl + '/videos/' + props.videoId + '/preview?token=' + KeycloakAuth.instance.token}
+                                src={Config.api.baseUrl + '/videos/' + props.videoId + '/preview?token=' + KeycloakAuth.getToken()}
                             />
                         </Badge>
 

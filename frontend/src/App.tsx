@@ -12,16 +12,17 @@ import WorkersPage from "./pages/WorkersPage";
 import VideosMaskingPage from "./pages/VideosMaskingPage"
 import LandingPage from "./pages/LandingPage";
 import AboutPage from "./pages/AboutPage";
-import KeycloakAuth from "./keycloakAuth";
+import KeycloakAuth, {switchToLocalAuthMode} from "./keycloakAuth";
 import {store} from "./state/store";
 import Event from "./state/actions/event";
 import Selector from "./state/selector";
 import LandingPageLayout from "./layout/LandingPageLayout";
+import Api from "./api";
 
 const initializeKeycloak = () => {
     KeycloakAuth.initialize().then(loggedIn => {
         if (loggedIn) {
-            const tokenParsed = KeycloakAuth.instance.tokenParsed!;
+            const tokenParsed = KeycloakAuth.getTokenParsed()!;
             store.dispatch(Event.Auth.userAuthenticated({
                 user: {
                     id: tokenParsed.sub!,
@@ -44,7 +45,20 @@ const App = () => {
     const location = useLocation();
 
     useEffect(() => {
-        initializeKeycloak();
+        Api.fetchPlatformMode()
+            .then(platformMode => {
+                if (platformMode === 'local') {
+                    switchToLocalAuthMode();
+                }
+
+                initializeKeycloak();
+            })
+            .catch(() => {
+                dispatch(Command.Notification.enqueueNotification({
+                    severity: 'error',
+                    message: 'Could not establish communication with the backend.',
+                }));
+            });
     }, []);
 
     useEffect(() => {

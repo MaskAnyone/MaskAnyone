@@ -18,12 +18,12 @@ const DownloadMenu = (props: DownloadMenuProps) => {
     const open = Boolean(props.anchorEl);
 
     const downloadOriginalVideo = () => {
-        window.open(`/api/videos/${props.videoId}/download?token=${KeycloakAuth.instance.token}`, '_blank');
+        window.open(`/api/videos/${props.videoId}/download?token=${KeycloakAuth.getToken()}`, '_blank');
         props.onClose();
     };
 
     const downloadResultVideo = () => {
-        window.open(`/api/videos/${props.videoId}/results/${props.resultVideoId}/download?token=${KeycloakAuth.instance.token}`, '_blank');
+        window.open(`/api/videos/${props.videoId}/results/${props.resultVideoId}/download?token=${KeycloakAuth.getToken()}`, '_blank');
         props.onClose();
     };
 
@@ -39,7 +39,7 @@ const DownloadMenu = (props: DownloadMenuProps) => {
                 <MenuItem
                     key={file.id}
                     onClick={() => {
-                        window.open(Config.api.baseUrl + file.url + `?token=${KeycloakAuth.instance.token}`, '_blank');
+                        window.open(Config.api.baseUrl + file.url + `?token=${KeycloakAuth.getToken()}`, '_blank');
                         props.onClose();
                     }}
                     children={file.title}

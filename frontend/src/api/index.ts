@@ -8,6 +8,7 @@ import {
 } from "./types";
 import { RunParams } from '../state/types/Run';
 import KeycloakAuth from "../keycloakAuth";
+import {PlatformMode} from "../state/types/Platform";
 
 const configuredAxios = axios.create({
     baseURL: Config.api.baseUrl,
@@ -15,12 +16,20 @@ const configuredAxios = axios.create({
 
 const sendApiRequest = async (config: AxiosRequestConfig): Promise<AxiosResponse> => {
     await KeycloakAuth.refreshToken(10);
-    configuredAxios.defaults.headers.Authorization = 'Bearer ' + KeycloakAuth.instance.token;
+    configuredAxios.defaults.headers.Authorization = 'Bearer ' + KeycloakAuth.getToken();
 
     return configuredAxios(config);
 };
 
 const Api = {
+    fetchPlatformMode: async (): Promise<PlatformMode> => {
+        const result = await configuredAxios({
+            url: 'platform/mode',
+            method: 'get',
+        });
+
+        return result.data.platform_mode;
+    },
     fetchVideos: async (): Promise<ApiFetchVideosResponse> => {
         const result = await sendApiRequest({
             url: 'videos',

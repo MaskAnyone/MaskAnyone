@@ -6,9 +6,13 @@ import routers.workers_router as workers_router
 import routers.worker_router as worker_router
 import routers.results_router as results_router
 import routers.presets_router as presets_router
+import routers.platform_router as platform_router
 from auth.jwt_bearer import JWTBearer
 
 app = FastAPI()
+
+# /platform
+app.include_router(platform_router.router)
 
 # /videos
 app.include_router(videos_router.router, dependencies=[Depends(JWTBearer())])

@@ -2,13 +2,18 @@ from fastapi import Request, HTTPException, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt
 
-from config import AUTH_TOKEN_ISSUER, AUTH_TOKEN_AUDIENCE, AUTH_ALGORITHM, AUTH_PUBLIC_KEY
+from config import AUTH_TOKEN_ISSUER, AUTH_TOKEN_AUDIENCE, AUTH_ALGORITHM, AUTH_PUBLIC_KEY, MASK_ANYONE_PLATFORM_MODE
+
 
 class JWTBearer(HTTPBearer):
     def __init__(self, auto_error: bool = True):
         super(JWTBearer, self).__init__(auto_error=auto_error)
 
     async def __call__(self, request: Request):
+        # In local mode there is no login and authentication, so we just fake a logged-in user
+        if MASK_ANYONE_PLATFORM_MODE == "local":
+            return {"sub": "00000000-0000-0000-0000-000000000000"}
+
         authorization: str = request.headers.get("Authorization")
         token = None
 
