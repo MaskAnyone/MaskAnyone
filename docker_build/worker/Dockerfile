@@ -31,6 +31,8 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+COPY ./worker /app
+
 WORKDIR /app
 
 CMD ["python3", "/app/worker.py"]
