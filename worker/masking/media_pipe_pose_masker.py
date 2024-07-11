@@ -92,10 +92,9 @@ class MediaPipePoseMasker:
 
         self._video_writer = cv2.VideoWriter(
             output_path,
-            cv2.VideoWriter_fourcc(*'vp09'),
-            #cv2.VideoWriter_fourcc(*'avc1'),
-            fps = sample_rate,
-            frameSize = (int(frame_width), int(frame_height))
+            cv2.VideoWriter_fourcc(*'mp4v'),
+            fps=sample_rate,
+            frameSize=(int(frame_width), int(frame_height))
         )
 
         # @todo remove duplication

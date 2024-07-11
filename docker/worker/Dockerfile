@@ -10,6 +10,7 @@ RUN apt-get update \
         python-is-python3 \
         python3-opencv \
         wget \
+        ffmpeg \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

@@ -7,6 +7,7 @@ import traceback
 from communication.backend_client import BackendClient
 from communication.video_manager import VideoManager
 from masking.media_pipe_pose_masker import MediaPipePoseMasker
+from masking.ffmpeg_converter import FFmpegConverter
 
 class WorkerProcess:
     _backend_client: BackendClient
@@ -44,6 +45,8 @@ class WorkerProcess:
             self._video_manager.load_original_video(job["video_id"])
 
             self._run_media_pipe_pose_masker(job)
+            self._convert_to_h264_codec_and_apply_audio(job)
+
             self._video_manager.upload_result_video(job["video_id"], job["result_video_id"])
 
             self._generate_preview_image(self._video_manager.get_output_video_path(job["video_id"]))
@@ -73,6 +76,17 @@ class WorkerProcess:
         )
 
         media_pipe_pose_masker.mask(job['data']['videoMasking'])
+
+    def _convert_to_h264_codec_and_apply_audio(self, job):
+        ffmpeg_converter = FFmpegConverter()
+
+        if job['data']['voiceMasking']['strategy'] != 'preserve':
+            ffmpeg_converter.convert_video_in_place(self._video_manager.get_output_video_path(job["video_id"]))
+        else:
+            ffmpeg_converter.convert_video_with_audio_in_place(
+                self._video_manager.get_output_video_path(job["video_id"]),
+                self._video_manager.get_original_video_path(job["video_id"]),
+            )
 
     def _report_masker_progress(self, job, progress: int) -> None:
         current_time = time.time()
