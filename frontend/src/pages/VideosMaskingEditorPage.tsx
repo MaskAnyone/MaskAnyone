@@ -1,14 +1,17 @@
 import React, {useEffect, useRef, useState} from "react";
 import {useParams} from "react-router";
 import {Box} from "@mui/material";
-import {useSelector} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import Selector from "../state/selector";
 import Api from "../api";
 import Config from "../config";
 import KeycloakAuth from "../keycloakAuth";
 import DraggablePoint from "../components/videosMakingEditor/DraggablePoint";
+import Command from "../state/actions/command";
+import {v4 as uuidv4} from "uuid";
 
 const VideoMaskingEditorPage = () => {
+    const dispatch = useDispatch();
     const videoList = useSelector(Selector.Video.videoList);
     const { videoId } = useParams<{ videoId: string }>();
 
@@ -114,12 +117,26 @@ const VideoMaskingEditorPage = () => {
         return null;
     }
 
+    const maskVideo = () => {
+        dispatch(Command.Video.maskVideo({
+            id: uuidv4(),
+            videoIds: [videoId!],
+            resultVideoId: uuidv4(),
+            runData: {
+                videoMasking: {
+                    posePrompts,
+                },
+            } as any,
+        }));
+    }
+
     return (
         <Box
             component="div"
             style={{ position: 'relative', display: 'inline-block' }}
             onContextMenu={handleRightClickImage}
         >
+            <button onClick={maskVideo}>test</button>
             {videoId && (
                 <img
                     ref={imgRef}

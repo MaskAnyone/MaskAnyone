@@ -13,6 +13,7 @@ router = APIRouter(
 
 model = YOLO('./models/yolov8m-pose.pt')
 
+
 @router.get("/{video_id}/pose")
 def fetch_pose_prompts(video_id: str, token_payload: dict = Depends(JWTBearer())):
     user_id = token_payload["sub"]
