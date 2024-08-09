@@ -5,6 +5,8 @@ import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import DownloadMenu from "./videoTaskBar/DownloadMenu";
 import ShieldLogoIcon from "../common/ShieldLogoIcon";
+import Paths from "../../paths";
+import {useNavigate} from "react-router";
 
 const styles = {
     container: {
@@ -21,11 +23,16 @@ interface VideoTaskBarProps {
 }
 
 const VideoTaskBar = (props: VideoTaskBarProps) => {
+    const navigate = useNavigate();
     const [videoRunParamsOpen, setVideoRunParamsOpen] = useState<boolean>(false);
     const [downloadAnchorEl, setDownloadAnchorEl] = useState<null | HTMLElement>(null);
 
     const openDownloadMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
         setDownloadAnchorEl(event.currentTarget);
+    };
+
+    const openVideoMaskingEditor = () => {
+        navigate(Paths.makeVideoMaskingEditorUrl(props.videoId));
     };
 
     return (<>
@@ -35,6 +42,13 @@ const VideoTaskBar = (props: VideoTaskBarProps) => {
                     variant={'contained'}
                     onClick={() => setVideoRunParamsOpen(true)}
                     children={'Mask Video'}
+                    color={'secondary'}
+                    startIcon={<ShieldLogoIcon />}
+                />
+                <Button
+                    variant={'contained'}
+                    onClick={openVideoMaskingEditor}
+                    children={'Martin\'s Fancy Masking'}
                     color={'secondary'}
                     startIcon={<ShieldLogoIcon />}
                 />

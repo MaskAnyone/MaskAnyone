@@ -184,6 +184,14 @@ const Api = {
             url: `presets/${id}/delete`,
             method: 'post',
         });
+    },
+    fetchPosePrompt: async (videoId: string): Promise<any> => {
+        const result = await sendApiRequest({
+            url: `prompts/${videoId}/pose`,
+            method: 'get',
+        });
+
+        return result.data;
     }
 };
 

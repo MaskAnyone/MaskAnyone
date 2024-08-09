@@ -134,13 +134,13 @@ Clone this repository by running `git clone https://github.com/rohansaw/Privacy4
 If this is the first time you are running the project, this process can take a while depending on your internet connection. If your connection times out, just run the command again.
 
 ```bash
-docker-compose build
-docker-compose run --rm yarn yarn install
-docker-compose up -d postgres
+docker compose build
+docker compose run --rm yarn yarn install
+docker compose up -d postgres
 ```
 Wait a few seconds
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 <a name="run"></a>
@@ -148,7 +148,7 @@ docker-compose up -d
 Once you have installed the application, you can always start up the application with 
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 The application will then be reachable under [https://localhost](https://localhost)
@@ -171,10 +171,10 @@ In this section we have collected some further information for developers. Pleas
 ### Debugging
 Run the application with 
 ```bash
-docker-compose up
+docker compose up
 ```
 to get the live output of the applicaiton and see where it might crash.
-Alternatively you can use `docker-compose logs -f` if you already started the application using the detached (`-d`) flag.
+Alternatively you can use `docker compose logs -f` if you already started the application using the detached (`-d`) flag.
 
 ### Algorithms
 
@@ -208,7 +208,7 @@ Alternatively you can use `docker-compose logs -f` if you already started the ap
 }
 ```
 
-5. Add the worker to the `docker-compose.yml`.` 
+5. Add the worker to the `docker compose.yml`.` 
   ```my-worker-name:
     build:
       context: ./docker/python/workers/my-worker-name
@@ -258,24 +258,24 @@ A list of pre-trained voice models can be found under: [Link](https://docs.googl
 If you changed the schema of the DB please run the following command to refresh the schema dump.
 This is to ensure that the DB schema dump is up-to-date for whenever someone sets up the project.
 ```bash
-docker-compose exec postgres pg_dump --schema-only --no-owner --username dev --create prototype > ./docker/postgres/docker-entrypoint-initdb.d/prototype.sql
+docker compose exec postgres pg_dump --schema-only --no-owner --username dev --create prototype > ./docker/postgres/docker-entrypoint-initdb.d/prototype.sql
 ```
 You can also exclude the `--schema-only` parameter to include both the schema and the data in the dump.
 
 Similarly, if you changed anything regarding the Keycloak configuration that should be included in the initial setup, please run the following command to update the Keycloak dump.
 ```bash
-docker-compose exec postgres pg_dump --username dev --create keycloak > ./docker/postgres/docker-entrypoint-initdb.d/keycloak.sql
+docker compose exec postgres pg_dump --username dev --create keycloak > ./docker/postgres/docker-entrypoint-initdb.d/keycloak.sql
 ```
 
 **Reset DB**
 To reset the DB to the latest schema simply run the following commands.
 ```bash
-docker-compose down -v
-docker-compose up -d postgres
+docker compose down -v
+docker compose up -d postgres
 ```
 Wait 30 seconds
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ## Status of the project

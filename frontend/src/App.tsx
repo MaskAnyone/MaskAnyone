@@ -18,6 +18,7 @@ import Event from "./state/actions/event";
 import Selector from "./state/selector";
 import LandingPageLayout from "./layout/LandingPageLayout";
 import Api from "./api";
+import VideoMaskingEditorPage from "./pages/VideosMaskingEditorPage";
 
 const initializeKeycloak = () => {
     KeycloakAuth.initialize().then(loggedIn => {
@@ -97,6 +98,7 @@ const App = () => {
                 <Route path={Paths.videos} element={<VideosPage />} />
                 <Route path={Paths.videoDetails} element={<VideosPage />} />
                 <Route path={Paths.videoRunMasking} element={<VideosMaskingPage />} />
+                <Route path={Paths.videoMaskingEditor} element={<VideoMaskingEditorPage />} />
                 <Route path={Paths.resultVideoDetails} element={<VideosPage />} />
                 <Route path={Paths.runs} element={<RunsPage />} />
                 <Route path={Paths.presets} element={<PresetsPage />} />
