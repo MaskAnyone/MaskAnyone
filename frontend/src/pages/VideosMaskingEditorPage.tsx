@@ -28,7 +28,6 @@ const VideoMaskingEditorPage = () => {
         });
     }, [videoId]);
 
-
     useEffect(() => {
         if (imgRef.current) {
             // Set the bounds dynamically based on the image dimensions
@@ -73,12 +72,37 @@ const VideoMaskingEditorPage = () => {
         }
     };
 
+    const handleRightClickPoint = (e: React.MouseEvent, poseIndex: number, pointIndex: number) => {
+        e.preventDefault(); // Prevent the default context menu from appearing
+        e.stopPropagation(); // Stop the event from propagating to the image's context menu handler
+        const newPoints = [...posePrompts];
+        newPoints[poseIndex] = newPoints[poseIndex].filter((_, index) => index !== pointIndex);
+        setPosePrompts(newPoints);
+    };
+
+    const handleRightClickImage = (e: React.MouseEvent) => {
+        e.preventDefault(); // Prevent the default context menu from appearing
+        if (imgRef.current) {
+            const rect = imgRef.current.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const newPoints = [...posePrompts];
+            newPoints.push([[x, y, 1]]);
+            setPosePrompts(newPoints);
+        }
+    };
+
     if (!videoId && videoList.length > 0) {
         return null;
     }
 
     return (
-        <Box component="div" style={{ position: 'relative', display: 'inline-block' }}>
+        <Box
+            component="div"
+            style={{ position: 'relative', display: 'inline-block' }}
+            onContextMenu={handleRightClickImage}
+        >
             {videoId && (
                 <img
                     ref={imgRef}
@@ -104,6 +128,7 @@ const VideoMaskingEditorPage = () => {
                                 cursor: 'pointer',
                                 textAlign: 'center',
                             }}
+                            onContextMenu={(e) => handleRightClickPoint(e, poseIndex, pointIndex)}
                         >
                             <div
                                 style={{
