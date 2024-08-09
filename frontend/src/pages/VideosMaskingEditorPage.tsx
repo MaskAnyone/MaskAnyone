@@ -6,7 +6,7 @@ import Selector from "../state/selector";
 import Api from "../api";
 import Config from "../config";
 import KeycloakAuth from "../keycloakAuth";
-import Draggable from 'react-draggable';
+import DraggablePoint from "../components/videosMakingEditor/DraggablePoint";
 
 const VideoMaskingEditorPage = () => {
     const videoList = useSelector(Selector.Video.videoList);
@@ -87,8 +87,25 @@ const VideoMaskingEditorPage = () => {
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
 
+            let closestPoseIndex = 0;
+            let minDistance = Infinity;
+
+            // Iterate through each pose and find the closest point
+            posePrompts.forEach((pose, poseIndex) => {
+                pose.forEach(point => {
+                    const distance = Math.sqrt(Math.pow(point[0] - x, 2) + Math.pow(point[1] - y, 2));
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestPoseIndex = poseIndex;
+                    }
+                });
+            });
+
             const newPoints = [...posePrompts];
-            newPoints.push([[x, y, 1]]);
+
+            // Add the new point to the closest pose
+            newPoints[closestPoseIndex] = [...newPoints[closestPoseIndex], [x, y, 1]];
+
             setPosePrompts(newPoints);
         }
     };
@@ -113,47 +130,17 @@ const VideoMaskingEditorPage = () => {
             )}
             {posePrompts.map((pose, poseIndex) => (
                 pose.map((point, pointIndex) => (
-                    <Draggable
+                    <DraggablePoint
                         key={`${poseIndex}-${pointIndex}`}
                         position={{ x: point[0], y: point[1] }}
                         onStart={handleDragStart}
                         onStop={(e, data) => handleDragStop(poseIndex, pointIndex, e, data)}
+                        onContextMenu={(e) => handleRightClickPoint(e, poseIndex, pointIndex)}
                         bounds={bounds}
-                    >
-                        <div
-                            style={{
-                                position: 'absolute',
-                                top: -5,
-                                left: -5,
-                                cursor: 'pointer',
-                                textAlign: 'center',
-                            }}
-                            onContextMenu={(e) => handleRightClickPoint(e, poseIndex, pointIndex)}
-                        >
-                            <div
-                                style={{
-                                    width: '10px',
-                                    height: '10px',
-                                    backgroundColor: point[2] ? 'green' : 'red',
-                                    borderRadius: '50%',
-                                }}
-                            />
-                            <div
-                                style={{
-                                    fontSize: '8px',
-                                    color: 'white',
-                                    marginTop: '2px',
-                                    whiteSpace: 'nowrap',
-                                    textShadow: '1px 1px 2px black',
-                                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                                    padding: '1px 3px',
-                                    borderRadius: '3px',
-                                }}
-                            >
-                                ({Math.round(point[0])}, {Math.round(point[1])})
-                            </div>
-                        </div>
-                    </Draggable>
+                        isActive={!!point[2]}
+                        pointLabel={`(${Math.round(point[0])}, ${Math.round(point[1])})`}
+                        promptNumber={poseIndex + 1}
+                    />
                 ))
             ))}
         </Box>
