@@ -13,18 +13,21 @@ const VideoMaskingEditorPage = () => {
     const { videoId } = useParams<{ videoId: string }>();
 
     const imgRef = useRef<HTMLImageElement>(null);
-    const [points, setPoints] = useState<[number, number, number][]>([]);
+    const [posePrompts, setPosePrompts] = useState<[number, number, number][][]>([]);
     const [bounds, setBounds] = useState({ left: 0, top: 0, right: 0, bottom: 0 });
+
+    const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
 
     useEffect(() => {
         if (!videoId) {
             return;
         }
 
-        Api.fetchPosePrompt(videoId).then(posePrompt => {
-            setPoints(posePrompt);
+        Api.fetchPosePrompt(videoId).then(posePrompts => {
+            setPosePrompts(posePrompts);
         });
     }, [videoId]);
+
 
     useEffect(() => {
         if (imgRef.current) {
@@ -42,10 +45,32 @@ const VideoMaskingEditorPage = () => {
         }
     }, [imgRef.current]);
 
-    const handleDrag = (index: number, e: any, data: any) => {
-        const newPoints = [...points];
-        newPoints[index] = [data.x, data.y, points[index][2]];
-        setPoints(newPoints);
+    const handleDragStart = (e: any, data: any) => {
+        setDragStartPosition({ x: data.x, y: data.y });
+    };
+
+    const handleDragStop = (poseIndex: number, pointIndex: number, e: any, data: any) => {
+        const deltaX = Math.abs(data.x - dragStartPosition.x);
+        const deltaY = Math.abs(data.y - dragStartPosition.y);
+        const threshold = 1; // Adjust this threshold as needed
+
+        if (deltaX < threshold && deltaY < threshold) {
+            // Consider it a click
+            const newPoints = [...posePrompts];
+            newPoints[poseIndex] = [...newPoints[poseIndex]];
+            newPoints[poseIndex][pointIndex] = [
+                newPoints[poseIndex][pointIndex][0],
+                newPoints[poseIndex][pointIndex][1],
+                newPoints[poseIndex][pointIndex][2] ? 0 : 1
+            ];
+            setPosePrompts(newPoints);
+        } else {
+            // Consider it a drag
+            const newPoints = [...posePrompts];
+            newPoints[poseIndex] = [...newPoints[poseIndex]];
+            newPoints[poseIndex][pointIndex] = [data.x, data.y, posePrompts[poseIndex][pointIndex][2]];
+            setPosePrompts(newPoints);
+        }
     };
 
     if (!videoId && videoList.length > 0) {
@@ -62,46 +87,49 @@ const VideoMaskingEditorPage = () => {
                     style={{ display: 'block' }}
                 />
             )}
-            {points.map((point, index) => (
-                <Draggable
-                    key={index}
-                    position={{ x: point[0], y: point[1] }}
-                    onDrag={(e, data) => handleDrag(index, e, data)}
-                    bounds={bounds}
-                >
-                    <div
-                        style={{
-                            position: 'absolute',
-                            top: -5,
-                            left: -5,
-                            cursor: 'pointer',
-                            textAlign: 'center',
-                        }}
+            {posePrompts.map((pose, poseIndex) => (
+                pose.map((point, pointIndex) => (
+                    <Draggable
+                        key={`${poseIndex}-${pointIndex}`}
+                        position={{ x: point[0], y: point[1] }}
+                        onStart={handleDragStart}
+                        onStop={(e, data) => handleDragStop(poseIndex, pointIndex, e, data)}
+                        bounds={bounds}
                     >
                         <div
                             style={{
-                                width: '10px',
-                                height: '10px',
-                                backgroundColor: point[2] ? 'green' : 'red',
-                                borderRadius: '50%',
-                            }}
-                        />
-                        <div
-                            style={{
-                                fontSize: '8px',
-                                color: 'white',
-                                marginTop: '2px',
-                                whiteSpace: 'nowrap',
-                                textShadow: '1px 1px 2px black',
-                                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                                padding: '1px 3px',
-                                borderRadius: '3px',
+                                position: 'absolute',
+                                top: -5,
+                                left: -5,
+                                cursor: 'pointer',
+                                textAlign: 'center',
                             }}
                         >
-                            ({Math.round(point[0])}, {Math.round(point[1])})
+                            <div
+                                style={{
+                                    width: '10px',
+                                    height: '10px',
+                                    backgroundColor: point[2] ? 'green' : 'red',
+                                    borderRadius: '50%',
+                                }}
+                            />
+                            <div
+                                style={{
+                                    fontSize: '8px',
+                                    color: 'white',
+                                    marginTop: '2px',
+                                    whiteSpace: 'nowrap',
+                                    textShadow: '1px 1px 2px black',
+                                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                                    padding: '1px 3px',
+                                    borderRadius: '3px',
+                                }}
+                            >
+                                ({Math.round(point[0])}, {Math.round(point[1])})
+                            </div>
                         </div>
-                    </div>
-                </Draggable>
+                    </Draggable>
+                ))
             ))}
         </Box>
     );

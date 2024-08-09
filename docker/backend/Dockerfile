@@ -16,9 +16,12 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+
 RUN pip install \
     fastapi \
     uvicorn[standard] \
     psycopg2 \
     requests \
-    python-jose[cryptography]
+    python-jose[cryptography] \
+    ultralytics --no-deps  # When installing it with deps, it will also install all CUDA deps even if there is not GPU

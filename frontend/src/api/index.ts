@@ -191,7 +191,7 @@ const Api = {
             method: 'get',
         });
 
-        return result.data;
+        return result.data.pose_prompts;
     }
 };
 
