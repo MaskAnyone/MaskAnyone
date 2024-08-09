@@ -23,5 +23,16 @@ RUN pip install \
     uvicorn[standard] \
     psycopg2 \
     requests \
-    python-jose[cryptography] \
-    ultralytics --no-deps  # When installing it with deps, it will also install all CUDA deps even if there is not GPU
+    python-jose[cryptography]
+
+# When installing it with deps, it will also install all CUDA deps even if there is not GPU
+RUN pip install ultralytics --no-deps
+
+# Manually install ultralytics deps
+RUN pip install \
+    numpy==1.24.4 \
+    psutil \
+    matplotlib \
+    tqdm \
+    pandas
+
