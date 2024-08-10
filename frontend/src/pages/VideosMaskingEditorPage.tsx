@@ -128,28 +128,33 @@ const VideoMaskingEditorPage = () => {
                 },
             } as any,
         }));
-    }
+    };
+
+    const segmentPrompt = () => {
+        Api.fetchPosePromptSegmentation(videoId!, posePrompts);
+    };
 
     return (
         <Box
             component="div"
-            style={{ position: 'relative', display: 'inline-block' }}
+            style={{position: 'relative', display: 'inline-block'}}
             onContextMenu={handleRightClickImage}
         >
             <button onClick={maskVideo}>test</button>
+            <button onClick={segmentPrompt}>segment</button>
             {videoId && (
                 <img
                     ref={imgRef}
                     src={`${Config.api.baseUrl}/videos/${videoId}/first-frame?token=${KeycloakAuth.getToken()}`}
                     alt="Video Frame"
-                    style={{ display: 'block' }}
+                    style={{display: 'block'}}
                 />
             )}
             {posePrompts.map((pose, poseIndex) => (
                 pose.map((point, pointIndex) => (
                     <DraggablePoint
                         key={`${poseIndex}-${pointIndex}`}
-                        position={{ x: point[0], y: point[1] }}
+                        position={{x: point[0], y: point[1]}}
                         onStart={handleDragStart}
                         onStop={(e, data) => handleDragStop(poseIndex, pointIndex, e, data)}
                         onContextMenu={(e) => handleRightClickPoint(e, poseIndex, pointIndex)}

@@ -1,10 +1,13 @@
 import cv2
 import os
+import requests
+import json
 
 from fastapi import APIRouter, Request, Depends
 from auth.jwt_bearer import JWTBearer
 from ultralytics import YOLO
 from config import VIDEOS_BASE_PATH
+from pydantic import BaseModel
 
 
 router = APIRouter(
@@ -17,6 +20,7 @@ model = YOLO('./models/yolov8m-pose.pt')
 @router.get("/{video_id}/pose")
 def fetch_pose_prompts(video_id: str, token_payload: dict = Depends(JWTBearer())):
     user_id = token_payload["sub"]
+    # @todo must be users video
 
     video_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
     capture = cv2.VideoCapture(video_path)
@@ -34,6 +38,46 @@ def fetch_pose_prompts(video_id: str, token_payload: dict = Depends(JWTBearer())
 
     return {'pose_prompts': pose_prompts}
 
+
+class Sam2Params(BaseModel):
+    pose_prompts: list[list[list[int]]]
+
+
+@router.post("/{video_id}/sam2")
+def test(sam2_params: Sam2Params, video_id: str, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    # @todo must be users video
+
+    video_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
+    capture = cv2.VideoCapture(video_path)
+    success, frame = capture.read()
+    capture.release()
+
+    if not success:
+        # Handle error if the frame couldn't be read
+        return {"error": "Could not read video frame"}
+
+    _, buffer = cv2.imencode('.jpg', frame)
+    image_data = buffer.tobytes()
+
+    # Prepare the files and data for the multipart request
+    files = {
+        'image': ('frame.jpg', image_data, 'image/jpeg'),
+    }
+
+    data = {
+        'pose_prompts': json.dumps(sam2_params.pose_prompts),
+    }
+
+    print(data)
+
+    # Send the image along with the JSON data in a multipart request
+    response = requests.post(
+        'http://sam2:8000/platform/mode',
+        files=files,
+        data=data,
+    )
+    print(response)
 
 
 def is_valid(point):

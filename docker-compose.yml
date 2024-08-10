@@ -80,3 +80,20 @@ services:
 #            - driver: nvidia
 #              count: 1
 #              capabilities: [gpu]
+
+  sam2:
+    build:
+      context: ./docker/sam2
+    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+    env_file:
+      - ./app.env
+    volumes:
+      - ./sam2:/app
+    restart: on-failure
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]

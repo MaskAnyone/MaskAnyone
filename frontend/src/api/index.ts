@@ -192,6 +192,17 @@ const Api = {
         });
 
         return result.data.pose_prompts;
+    },
+    fetchPosePromptSegmentation: async (videoId: string, posePrompts: [number, number, number][][]): Promise<any> => {
+        const result = await sendApiRequest({
+            url: `prompts/${videoId}/sam2`,
+            method: 'post',
+            data: {
+                pose_prompts: posePrompts,
+            }
+        });
+
+        // return result.data.pose_segmentation_prompts;
     }
 };
 
