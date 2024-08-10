@@ -199,8 +199,11 @@ const Api = {
             method: 'post',
             data: {
                 pose_prompts: posePrompts,
-            }
+            },
+            responseType: 'blob',
         });
+
+        return result.data;
 
         // return result.data.pose_segmentation_prompts;
     }

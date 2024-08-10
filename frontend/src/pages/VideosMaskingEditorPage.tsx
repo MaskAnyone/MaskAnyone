@@ -18,8 +18,8 @@ const VideoMaskingEditorPage = () => {
     const imgRef = useRef<HTMLImageElement>(null);
     const [posePrompts, setPosePrompts] = useState<[number, number, number][][]>([]);
     const [bounds, setBounds] = useState({ left: 0, top: 0, right: 0, bottom: 0 });
-
     const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
+    const [segmentationImageUrl, setSegmentationImageUrl] = useState<string | null>(null);
 
     useEffect(() => {
         if (!videoId) {
@@ -33,7 +33,6 @@ const VideoMaskingEditorPage = () => {
 
     useEffect(() => {
         if (imgRef.current) {
-            // Set the bounds dynamically based on the image dimensions
             imgRef.current.onload = () => {
                 const imgWidth = imgRef.current!.offsetWidth;
                 const imgHeight = imgRef.current!.offsetHeight;
@@ -54,10 +53,9 @@ const VideoMaskingEditorPage = () => {
     const handleDragStop = (poseIndex: number, pointIndex: number, e: any, data: any) => {
         const deltaX = Math.abs(data.x - dragStartPosition.x);
         const deltaY = Math.abs(data.y - dragStartPosition.y);
-        const threshold = 1; // Adjust this threshold as needed
+        const threshold = 1;
 
         if (deltaX < threshold && deltaY < threshold) {
-            // Consider it a click
             const newPoints = [...posePrompts];
             newPoints[poseIndex] = [...newPoints[poseIndex]];
             newPoints[poseIndex][pointIndex] = [
@@ -67,7 +65,6 @@ const VideoMaskingEditorPage = () => {
             ];
             setPosePrompts(newPoints);
         } else {
-            // Consider it a drag
             const newPoints = [...posePrompts];
             newPoints[poseIndex] = [...newPoints[poseIndex]];
             newPoints[poseIndex][pointIndex] = [data.x, data.y, posePrompts[poseIndex][pointIndex][2]];
@@ -76,15 +73,15 @@ const VideoMaskingEditorPage = () => {
     };
 
     const handleRightClickPoint = (e: React.MouseEvent, poseIndex: number, pointIndex: number) => {
-        e.preventDefault(); // Prevent the default context menu from appearing
-        e.stopPropagation(); // Stop the event from propagating to the image's context menu handler
+        e.preventDefault();
+        e.stopPropagation();
         const newPoints = [...posePrompts];
         newPoints[poseIndex] = newPoints[poseIndex].filter((_, index) => index !== pointIndex);
         setPosePrompts(newPoints);
     };
 
     const handleRightClickImage = (e: React.MouseEvent) => {
-        e.preventDefault(); // Prevent the default context menu from appearing
+        e.preventDefault();
         if (imgRef.current) {
             const rect = imgRef.current.getBoundingClientRect();
             const x = e.clientX - rect.left;
@@ -93,7 +90,6 @@ const VideoMaskingEditorPage = () => {
             let closestPoseIndex = 0;
             let minDistance = Infinity;
 
-            // Iterate through each pose and find the closest point
             posePrompts.forEach((pose, poseIndex) => {
                 pose.forEach(point => {
                     const distance = Math.sqrt(Math.pow(point[0] - x, 2) + Math.pow(point[1] - y, 2));
@@ -105,10 +101,7 @@ const VideoMaskingEditorPage = () => {
             });
 
             const newPoints = [...posePrompts];
-
-            // Add the new point to the closest pose
             newPoints[closestPoseIndex] = [...newPoints[closestPoseIndex], [x, y, 1]];
-
             setPosePrompts(newPoints);
         }
     };
@@ -131,7 +124,14 @@ const VideoMaskingEditorPage = () => {
     };
 
     const segmentPrompt = () => {
-        Api.fetchPosePromptSegmentation(videoId!, posePrompts);
+        Api.fetchPosePromptSegmentation(videoId!, posePrompts).then((segmentationImage) => {
+            // Create a Blob from the binary data
+            const blob = new Blob([segmentationImage], { type: 'image/jpeg' }); // Adjust the MIME type if needed
+            // Create a URL for the Blob
+            const imageUrl = URL.createObjectURL(blob);
+            // Set the image URL in state
+            setSegmentationImageUrl(imageUrl);
+        });
     };
 
     return (
@@ -145,7 +145,7 @@ const VideoMaskingEditorPage = () => {
             {videoId && (
                 <img
                     ref={imgRef}
-                    src={`${Config.api.baseUrl}/videos/${videoId}/first-frame?token=${KeycloakAuth.getToken()}`}
+                    src={segmentationImageUrl || `${Config.api.baseUrl}/videos/${videoId}/first-frame?token=${KeycloakAuth.getToken()}`}
                     alt="Video Frame"
                     style={{display: 'block'}}
                 />

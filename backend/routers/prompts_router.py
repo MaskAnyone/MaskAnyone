@@ -3,7 +3,7 @@ import os
 import requests
 import json
 
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, Response
 from auth.jwt_bearer import JWTBearer
 from ultralytics import YOLO
 from config import VIDEOS_BASE_PATH
@@ -77,7 +77,8 @@ def test(sam2_params: Sam2Params, video_id: str, token_payload: dict = Depends(J
         files=files,
         data=data,
     )
-    print(response)
+
+    return Response(content=response.content, media_type="image/jpeg")
 
 
 def is_valid(point):
