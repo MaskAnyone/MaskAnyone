@@ -9,8 +9,8 @@ def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
     configure_torch()
     torch.cuda.empty_cache()
 
-    sam2_checkpoint = "/workspace/segment-anything-2/checkpoints/sam2_hiera_large.pt"
-    model_cfg = "sam2_hiera_l.yaml"
+    sam2_checkpoint = "/workspace/segment-anything-2/checkpoints/sam2_hiera_tiny.pt"
+    model_cfg = "sam2_hiera_t.yaml"
     predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint)
 
     try:
