@@ -21,11 +21,8 @@ class BackendClient:
         )
 
     def fetch_next_job(self):
-        # @todo remove job type
-        job_type = "basic_masking"
-
         response = requests.get(
-            self._make_url(f"jobs/next/{job_type}")
+            self._make_url('jobs/next')
         )
 
         return response.json()["job"]

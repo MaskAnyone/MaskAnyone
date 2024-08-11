@@ -7,8 +7,9 @@ import Api from "../../../api";
 const onMaskVideo = function* (payload: MaskVideoPayload) {
     try {
         yield call(
-            Api.createBasicMaskingJob,
+            Api.createMaskingJob,
             payload.id,
+            payload.type,
             payload.videoIds,
             payload.resultVideoId,
             payload.runData

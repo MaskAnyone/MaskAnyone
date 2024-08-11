@@ -10,3 +10,5 @@ export interface Job {
     finishedAt?: Date;
     progress: number;
 }
+
+export type JobType = 'basic_masking'|'sam2_masking';

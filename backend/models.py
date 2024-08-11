@@ -20,6 +20,7 @@ class MaskingStrategy(IntEnum):
 
 class RunParams(BaseModel):
     id: str
+    type: str
     video_ids: list[str]
     result_video_id: str
     run_data: dict

@@ -17,7 +17,7 @@ const DraggablePoint = (props: DraggablePointProps) => {
     const pointStyles = {
         pointContainer: {
             position: 'absolute',
-            top: -5,
+            top: 18,
             left: -5,
             cursor: 'pointer',
             textAlign: 'center',

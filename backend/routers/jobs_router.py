@@ -42,6 +42,6 @@ def create_job(run_params: RunParams, token_payload: dict = Depends(JWTBearer())
         run_params.video_ids,
         run_params.result_video_id,
         run_params.run_data,
-        "basic_masking",
+        run_params.type,
         user_id,
     )

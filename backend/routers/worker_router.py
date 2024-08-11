@@ -43,9 +43,9 @@ def ping_backend(worker_id: str):
     worker_manager.update_worker_activity(worker_id)
 
 
-@router.get("/jobs/next/{job_type}")
-def fetch_next_job(job_type: str, worker_id: str):
-    job = job_manager.fetch_next_job(job_type)
+@router.get("/jobs/next")
+def fetch_next_job(worker_id: str):
+    job = job_manager.fetch_next_job()
 
     if job:
         worker_manager.set_worker_job(worker_id, job.id)

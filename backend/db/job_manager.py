@@ -47,7 +47,7 @@ class JobManager:
                 },
             )
 
-    def fetch_next_job(self, job_type: str):
+    def fetch_next_job(self):
         # @todo make this nice
         cursor = self.__db_connection.get_cursor()
         jobs = []
@@ -55,8 +55,8 @@ class JobManager:
         try:
             cursor.execute("BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ")
             cursor.execute(
-                "SELECT * FROM jobs WHERE status=%(status)s AND type=%(job_type)s LIMIT 1",
-                {"status": "open", "job_type": job_type},
+                "SELECT * FROM jobs WHERE status=%(status)s LIMIT 1",
+                {"status": "open"},
             )
             jobs = cursor.fetchall()
 

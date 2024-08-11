@@ -73,7 +73,7 @@ def test(sam2_params: Sam2Params, video_id: str, token_payload: dict = Depends(J
 
     # Send the image along with the JSON data in a multipart request
     response = requests.post(
-        'http://sam2:8000/platform/mode',
+        'http://sam2:8000/sam2/segment-image',
         files=files,
         data=data,
     )

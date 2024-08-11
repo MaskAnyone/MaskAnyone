@@ -113,13 +113,17 @@ const VideoMaskingEditorPage = () => {
     const maskVideo = () => {
         dispatch(Command.Video.maskVideo({
             id: uuidv4(),
+            type: 'sam2_masking',
             videoIds: [videoId!],
             resultVideoId: uuidv4(),
             runData: {
                 videoMasking: {
                     posePrompts,
+                } as any,
+                voiceMasking: {
+                    strategy: 'remove',
                 },
-            } as any,
+            },
         }));
     };
 

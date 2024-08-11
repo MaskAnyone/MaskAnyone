@@ -9,6 +9,7 @@ import {
 import { RunParams } from '../state/types/Run';
 import KeycloakAuth from "../keycloakAuth";
 import {PlatformMode} from "../state/types/Platform";
+import { JobType } from '../state/types/Job';
 
 const configuredAxios = axios.create({
     baseURL: Config.api.baseUrl,
@@ -84,8 +85,9 @@ const Api = {
 
         return result.data;
     },
-    createBasicMaskingJob: async (
+    createMaskingJob: async (
         id: string,
+        type: JobType,
         videoIds: string[],
         resultVideoId: string,
         runData: RunParams
@@ -95,6 +97,7 @@ const Api = {
             method: 'post',
             data: {
                 id,
+                type,
                 run_data: runData,
                 video_ids: videoIds,
                 result_video_id: resultVideoId
@@ -204,8 +207,6 @@ const Api = {
         });
 
         return result.data;
-
-        // return result.data.pose_segmentation_prompts;
     }
 };
 

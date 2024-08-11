@@ -1,18 +1,16 @@
 import torch
 import sys
 
-#sys.path.append('/workspace')
 sys.path.append('/workspace/segment-anything-2')
-#sys.path.append('/workspace/segment-anything-2/sam2')
-
 from sam2.build_sam import build_sam2_video_predictor
 
 
 def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
     configure_torch()
+    torch.cuda.empty_cache()
 
-    sam2_checkpoint = "/workspace/segment-anything-2/checkpoints/sam2_hiera_tiny.pt"
-    model_cfg = "sam2_hiera_t.yaml"
+    sam2_checkpoint = "/workspace/segment-anything-2/checkpoints/sam2_hiera_large.pt"
+    model_cfg = "sam2_hiera_l.yaml"
     predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint)
 
     try:
@@ -23,8 +21,6 @@ def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
 
         obj_id = 1
         for points, labels in zip(points_list, labels_list):
-            print('-->', points, labels)
-
             _, out_obj_ids, out_mask_logits = predictor.add_new_points(
                 inference_state=inference_state,
                 frame_idx=0,
@@ -41,9 +37,9 @@ def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
                 for i, out_obj_id in enumerate(out_obj_ids)
             }
 
-        return video_segments[0]
+        return video_segments
     finally:
-        pass
+        torch.cuda.empty_cache()
 
 
 def configure_torch():

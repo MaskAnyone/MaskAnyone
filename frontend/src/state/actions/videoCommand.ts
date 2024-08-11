@@ -1,5 +1,6 @@
 import { createAction } from 'redux-actions';
 import { RunParams } from '../types/Run';
+import { JobType } from '../types/Job';
 
 const createVideoCommand = <T>(type: string) => createAction<T>('_C/VD/' + type);
 
@@ -8,6 +9,7 @@ export interface FetchVideoListPayload {
 
 export interface MaskVideoPayload {
     id: string;
+    type: JobType;
     videoIds: string[];
     resultVideoId: string;
     runData: RunParams

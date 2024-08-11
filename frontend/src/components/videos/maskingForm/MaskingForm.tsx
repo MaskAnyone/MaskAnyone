@@ -36,6 +36,7 @@ const MaskingForm = (props: MaskingFormProps) => {
 
         dispatch(Command.Video.maskVideo({
             id: uuidv4(),
+            type: 'basic_masking',
             videoIds: props.videoIds,
             resultVideoId: uuidv4(),
             runData: runParams,

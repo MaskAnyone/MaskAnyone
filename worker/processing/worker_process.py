@@ -5,17 +5,26 @@ import os
 import traceback
 
 from communication.backend_client import BackendClient
+from communication.sam2_client import Sam2Client
 from communication.video_manager import VideoManager
 from masking.media_pipe_pose_masker import MediaPipePoseMasker
+from masking.sam2_pose_masker import Sam2PoseMasker
 from masking.ffmpeg_converter import FFmpegConverter
 
 class WorkerProcess:
     _backend_client: BackendClient
+    _sam2_client: Sam2Client
     _video_manager: VideoManager
     _last_api_call_time: int
 
-    def __init__(self, backend_client: BackendClient, video_manager: VideoManager):
+    def __init__(
+            self,
+            backend_client: BackendClient,
+            sam2_client: Sam2Client,
+            video_manager: VideoManager,
+    ):
         self._backend_client = backend_client
+        self._sam2_client = sam2_client
         self._video_manager = video_manager
 
     def run(self):
@@ -44,7 +53,13 @@ class WorkerProcess:
         try:
             self._video_manager.load_original_video(job["video_id"])
 
-            self._run_media_pipe_pose_masker(job)
+            if job['type'] == 'basic_masking':
+                self._run_media_pipe_pose_masker(job)
+            elif job['type'] == 'sam2_masking':
+                self._run_sam2_masking(job)
+            else:
+                raise Exception(f'Unknown job type, got {job["type"]}')
+
             self._convert_to_h264_codec_and_apply_audio(job)
 
             self._video_manager.upload_result_video(job["video_id"], job["result_video_id"])
@@ -52,7 +67,9 @@ class WorkerProcess:
             self._generate_preview_image(self._video_manager.get_output_video_path(job["video_id"]))
             self._video_manager.upload_result_video_preview_image(job["video_id"], job["result_video_id"])
 
-            self._video_manager.upload_result_mp_kinematics(job["video_id"], job["result_video_id"])
+            # @todo fix this
+            if job['type'] == 'basic_masking':
+                self._video_manager.upload_result_mp_kinematics(job["video_id"], job["result_video_id"])
 
             self._backend_client.mark_job_as_finished(job["id"])
             print("Finished processing job with id " + job["id"], flush=True)
@@ -77,6 +94,21 @@ class WorkerProcess:
 
         media_pipe_pose_masker.mask(job['data']['videoMasking'])
 
+    def _run_sam2_masking(self, job):
+        self._last_api_call_time = 0
+
+        def progress_callback(progress: int) -> None:
+            self._report_masker_progress(job, progress)
+
+        sam2_pose_masker = Sam2PoseMasker(
+            self._sam2_client,
+            self._video_manager.get_original_video_path(job["video_id"]),
+            self._video_manager.get_output_video_path(job["video_id"]),
+            progress_callback
+        )
+
+        sam2_pose_masker.mask(job['data']['videoMasking'])
+
     def _convert_to_h264_codec_and_apply_audio(self, job):
         ffmpeg_converter = FFmpegConverter()
 
@@ -90,7 +122,7 @@ class WorkerProcess:
 
     def _report_masker_progress(self, job, progress: int) -> None:
         current_time = time.time()
-        if current_time - self._last_api_call_time >= 10:
+        if current_time - self._last_api_call_time >= 5:
             self._last_api_call_time = current_time
             self._backend_client.update_progress(job["id"], progress)
 
