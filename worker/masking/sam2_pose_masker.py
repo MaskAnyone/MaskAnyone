@@ -66,25 +66,29 @@ class Sam2PoseMasker:
                 break
 
             output_frame = frame.copy()
-            alpha = 0.5
-
-            for object_id in range(1, len(masks[idx]) + 1):
-                mask = masks[idx][object_id][0]
-                color = colors[(object_id - 1) % len(colors)]
-
-                overlay = np.zeros_like(output_frame)
-                overlay[:, :, 0] = color[0]
-                overlay[:, :, 1] = color[1]
-                overlay[:, :, 2] = color[2]
-
-                border_color = (0, 0, 0)
-                contours, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-                output_frame[mask] = (alpha * overlay[mask] + (1 - alpha) * output_frame[mask]).astype(np.uint8)
-                cv2.drawContours(output_frame, contours, -1, border_color, round(frame_width / 600), cv2.LINE_AA)
-
+            self._render_all_masks_on_image(output_frame, frame_width, idx, masks)
             video_writer.write(output_frame)
             idx += 1
 
         video_capture.release()
         video_writer.release()
+
+    def _render_all_masks_on_image(self, image, frame_width, frame_idx, masks):
+        for object_id in range(1, len(masks[frame_idx]) + 1):
+            mask = masks[frame_idx][object_id][0]
+            color = colors[(object_id - 1) % len(colors)]
+            self._render_mask_on_image(image, frame_width, mask, color)
+
+    def _render_mask_on_image(self, image, frame_width, mask, color):
+        alpha = 0.5
+
+        overlay = np.zeros_like(image)
+        overlay[:, :, 0] = color[0]
+        overlay[:, :, 1] = color[1]
+        overlay[:, :, 2] = color[2]
+
+        border_color = (0, 0, 0)
+        contours, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        image[mask] = (alpha * overlay[mask] + (1 - alpha) * image[mask]).astype(np.uint8)
+        cv2.drawContours(image, contours, -1, border_color, round(frame_width / 600), cv2.LINE_AA)
