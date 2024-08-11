@@ -77,7 +77,11 @@ class Sam2PoseMasker:
                 overlay[:, :, 1] = color[1]
                 overlay[:, :, 2] = color[2]
 
+                border_color = (0, 0, 0)
+                contours, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
                 output_frame[mask] = (alpha * overlay[mask] + (1 - alpha) * output_frame[mask]).astype(np.uint8)
+                cv2.drawContours(output_frame, contours, -1, border_color, round(frame_width / 600), cv2.LINE_AA)
 
             video_writer.write(output_frame)
             idx += 1
