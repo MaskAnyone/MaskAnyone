@@ -75,26 +75,11 @@ class Sam2PoseMasker:
     def mask(self, video_masking_data: dict):
         print("Starting SAM2 video masking with options", video_masking_data)
 
-        file = open(self._input_path, "rb")
-        content = file.read()
-        file.close()
+        content = self._read_video_content()
+        masks = self._sam2_client.segment_video(video_masking_data['posePrompts'], content)
 
-        masks = self._sam2_client.segment_video(
-            video_masking_data['posePrompts'],
-            content
-        )
-
-        video_capture = cv2.VideoCapture(self._input_path)
-        frame_width = video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)
-        frame_height = video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
-        sample_rate = video_capture.get(cv2.CAP_PROP_FPS)
-
-        video_writer = cv2.VideoWriter(
-            self._output_path,
-            cv2.VideoWriter_fourcc(*'mp4v'),
-            fps=sample_rate,
-            frameSize=(int(frame_width), int(frame_height))
-        )
+        video_capture, frame_width, frame_height, sample_rate = self._open_video()
+        video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)
 
         bounding_boxes = self._calculate_full_object_bounding_boxes(masks)
         estimation_input_bounding_boxes = self._calculate_estimation_input_bounding_boxes(bounding_boxes, frame_width, frame_height)
@@ -128,12 +113,7 @@ class Sam2PoseMasker:
 
             for object_id, bbox_dict in estimation_input_bounding_boxes.items():
                 # Get the correct bounding box for the current frame index (idx)
-                bbox = None
-                for frame_idx in sorted(bbox_dict.keys()):
-                    if frame_idx <= idx:
-                        bbox = bbox_dict[frame_idx]
-                    else:
-                        break
+                bbox = self._select_bounding_box(bbox_dict, idx)
 
                 if bbox is not None:
                     # Check if the bounding box has changed
@@ -191,6 +171,35 @@ class Sam2PoseMasker:
 
         video_capture.release()
         video_writer.release()
+
+    def _open_video(self):
+        video_capture = cv2.VideoCapture(self._input_path)
+        frame_width = video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)
+        frame_height = video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        sample_rate = video_capture.get(cv2.CAP_PROP_FPS)
+
+        return video_capture, frame_width, frame_height, sample_rate
+
+    def _initialize_video_writer(self, frame_width, frame_height, sample_rate):
+        return cv2.VideoWriter(
+            self._output_path,
+            cv2.VideoWriter_fourcc(*'mp4v'),
+            fps=sample_rate,
+            frameSize=(int(frame_width), int(frame_height))
+        )
+
+    def _read_video_content(self):
+        with open(self._input_path, "rb") as file:
+            return file.read()
+
+    def _select_bounding_box(self, bbox_dict, idx):
+        bbox = None
+        for frame_idx in sorted(bbox_dict.keys()):
+            if frame_idx <= idx:
+                bbox = bbox_dict[frame_idx]
+            else:
+                break
+        return bbox
 
     def _calculate_full_object_bounding_boxes(self, masks, iou_threshold=0.5):
         bounding_boxes = {}
