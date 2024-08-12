@@ -54,6 +54,57 @@ def draw_landmarks_on_image(rgb_image, detection_result):
         )
 
 
+def configure_face_landmarker():
+    model_path = '/worker_models/face_landmarker.task'
+
+    options = mediapipe.tasks.vision.FaceLandmarkerOptions(
+        base_options=mediapipe.tasks.BaseOptions(model_asset_path=model_path, delegate=mediapipe.tasks.BaseOptions.Delegate.CPU),
+        running_mode=mediapipe.tasks.vision.RunningMode.VIDEO,
+        output_face_blendshapes=True,
+        output_facial_transformation_matrixes=True,
+        num_faces=1
+    )
+
+    landmarker = mediapipe.tasks.vision.FaceLandmarker.create_from_options(options)
+    return landmarker
+
+
+def draw_face_landmarks_on_image(rgb_image, detection_result):
+  face_landmarks_list = detection_result.face_landmarks
+
+  # Loop through the detected faces to visualize.
+  for idx in range(len(face_landmarks_list)):
+    face_landmarks = face_landmarks_list[idx]
+
+    # Draw the face landmarks.
+    face_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
+    face_landmarks_proto.landmark.extend([
+      landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in face_landmarks
+    ])
+
+    solutions.drawing_utils.draw_landmarks(
+        image=rgb_image,
+        landmark_list=face_landmarks_proto,
+        connections=mediapipe.solutions.face_mesh.FACEMESH_TESSELATION,
+        landmark_drawing_spec=None,
+        connection_drawing_spec=mediapipe.solutions.drawing_styles
+        .get_default_face_mesh_tesselation_style())
+    solutions.drawing_utils.draw_landmarks(
+        image=rgb_image,
+        landmark_list=face_landmarks_proto,
+        connections=mediapipe.solutions.face_mesh.FACEMESH_CONTOURS,
+        landmark_drawing_spec=None,
+        connection_drawing_spec=mediapipe.solutions.drawing_styles
+        .get_default_face_mesh_contours_style())
+    solutions.drawing_utils.draw_landmarks(
+        image=rgb_image,
+        landmark_list=face_landmarks_proto,
+        connections=mediapipe.solutions.face_mesh.FACEMESH_IRISES,
+          landmark_drawing_spec=None,
+          connection_drawing_spec=mediapipe.solutions.drawing_styles
+          .get_default_face_mesh_iris_connections_style())
+
+
 class Sam2PoseMasker:
     _sam2_client: Sam2Client
     _input_path: str
@@ -113,7 +164,13 @@ class Sam2PoseMasker:
                     # Check if the bounding box has changed
                     if object_id not in landmarkers or previous_bbox[object_id] != bbox:
                         # Initialize a new landmarker since the bounding box has changed
-                        landmarkers[object_id] = configure_landmarker()
+                        if video_masking_data['overlayStrategies'][object_id - 1] == 'mp_face':
+                            landmarkers[object_id] = configure_face_landmarker()
+                        elif video_masking_data['overlayStrategies'][object_id - 1] == 'mp_pose':
+                            landmarkers[object_id] = configure_landmarker()
+                        else:
+                            raise Exception(f'Got unknown overlayStrategy: {video_masking_data["overlayStrategies"][object_id - 1]}')
+
                         previous_bbox[object_id] = bbox  # Update the previous bbox
 
                     mask = masks[idx][object_id][0]
@@ -125,7 +182,11 @@ class Sam2PoseMasker:
                     # Get the region of interest and draw landmarks on it
                     x_min, y_min, x_max, y_max = bbox
                     region_of_interest = output_frame[y_min:y_max, x_min:x_max]
-                    draw_landmarks_on_image(region_of_interest, pose_landmarker_result)
+
+                    if video_masking_data['overlayStrategies'][object_id - 1] == 'mp_face':
+                        draw_face_landmarks_on_image(region_of_interest, pose_landmarker_result)
+                    elif video_masking_data['overlayStrategies'][object_id - 1] == 'mp_pose':
+                        draw_landmarks_on_image(region_of_interest, pose_landmarker_result)
 
                     # Place the updated region back into the output frame
                     output_frame[y_min:y_max, x_min:x_max] = region_of_interest

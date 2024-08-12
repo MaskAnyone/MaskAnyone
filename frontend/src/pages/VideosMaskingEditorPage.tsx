@@ -119,6 +119,7 @@ const VideoMaskingEditorPage = () => {
             runData: {
                 videoMasking: {
                     posePrompts,
+                    overlayStrategies: ['mp_face', 'mp_pose']
                 } as any,
                 voiceMasking: {
                     strategy: 'remove',
