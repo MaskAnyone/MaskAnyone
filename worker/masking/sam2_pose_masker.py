@@ -105,12 +105,6 @@ class Sam2PoseMasker:
             self._render_bounding_boxes(output_frame, bounding_boxes, idx, (255, 255, 255))
             self._render_bounding_boxes(output_frame, estimation_input_bounding_boxes, idx, (0, 255, 0))
 
-
-
-
-            # ======================================
-            crop_alpha = 0.85
-
             for object_id, bbox_dict in estimation_input_bounding_boxes.items():
                 # Get the correct bounding box for the current frame index (idx)
                 bbox = self._select_bounding_box(bbox_dict, idx)
@@ -122,37 +116,10 @@ class Sam2PoseMasker:
                         landmarkers[object_id] = configure_landmarker()
                         previous_bbox[object_id] = bbox  # Update the previous bbox
 
-                    # Crop the frame using the bounding box
-                    cropped_frame = frame[bbox[1]:bbox[3], bbox[0]:bbox[2]]
-                    cropped_frame = cropped_frame.astype(np.uint8)
-                    cropped_frame_height, cropped_frame_width, _ = cropped_frame.shape
-
-                    # Crop the mask using the bounding box
                     mask = masks[idx][object_id][0]
-                    cropped_mask = mask[bbox[1]:bbox[3], bbox[0]:bbox[2]]
+                    cropped_frame = self._prepare_estimation_input_frame(frame, mask, bbox)
 
-                    # Create reverse mask
-                    reverse_mask = ~cropped_mask
-                    reverse_mask_8bit = (reverse_mask * 255).astype(np.uint8)
-
-                    # Find contours and draw them on the reverse mask
-                    cropped_contours, _ = cv2.findContours(cropped_mask.astype(np.uint8), cv2.RETR_EXTERNAL,
-                                                           cv2.CHAIN_APPROX_SIMPLE)
-                    cv2.drawContours(reverse_mask_8bit, cropped_contours, -1, 0, round(cropped_frame_width / 200))
-
-                    # Create a boolean mask
-                    reverse_mask_bool = reverse_mask_8bit > 0
-
-                    # Apply the overlay using crop_alpha
-                    overlay = np.zeros_like(cropped_frame)
-                    cropped_frame[reverse_mask_bool] = (
-                                crop_alpha * overlay[reverse_mask_bool] + (1 - crop_alpha) * cropped_frame[
-                            reverse_mask_bool]).astype(np.uint8)
-
-                    # Convert cropped_frame to mediapipe image
                     mp_image = mediapipe.Image(image_format=mediapipe.ImageFormat.SRGB, data=cropped_frame)
-
-                    # Detect landmarks
                     pose_landmarker_result = landmarkers[object_id].detect_for_video(mp_image, int(frame_timestamp_ms))
 
                     # Get the region of interest and draw landmarks on it
@@ -162,8 +129,6 @@ class Sam2PoseMasker:
 
                     # Place the updated region back into the output frame
                     output_frame[y_min:y_max, x_min:x_max] = region_of_interest
-
-            # ==========================================
 
             output_frame = cv2.cvtColor(output_frame, cv2.COLOR_RGB2BGR)
             video_writer.write(output_frame)
@@ -200,6 +165,35 @@ class Sam2PoseMasker:
             else:
                 break
         return bbox
+
+    def _prepare_estimation_input_frame(self, frame, mask, bbox):
+        crop_alpha = 0.85
+
+        # Crop the frame using the bounding box
+        cropped_frame = frame[bbox[1]:bbox[3], bbox[0]:bbox[2]]
+        cropped_frame = cropped_frame.astype(np.uint8)
+        cropped_frame_height, cropped_frame_width, _ = cropped_frame.shape
+
+        # Crop the mask using the bounding box
+        cropped_mask = mask[bbox[1]:bbox[3], bbox[0]:bbox[2]]
+
+        # Create reverse mask
+        reverse_mask = ~cropped_mask
+        reverse_mask_8bit = (reverse_mask * 255).astype(np.uint8)
+
+        # Find contours and draw them on the reverse mask
+        cropped_contours, _ = cv2.findContours(cropped_mask.astype(np.uint8), cv2.RETR_EXTERNAL,
+                                               cv2.CHAIN_APPROX_SIMPLE)
+        cv2.drawContours(reverse_mask_8bit, cropped_contours, -1, 0, round(cropped_frame_width / 200))
+
+        # Create a boolean mask
+        reverse_mask_bool = reverse_mask_8bit > 0
+
+        # Apply the overlay using crop_alpha
+        overlay = np.zeros_like(cropped_frame)
+        cropped_frame[reverse_mask_bool] = (crop_alpha * overlay[reverse_mask_bool] + (1 - crop_alpha) * cropped_frame[reverse_mask_bool]).astype(np.uint8)
+
+        return cropped_frame
 
     def _calculate_full_object_bounding_boxes(self, masks, iou_threshold=0.5):
         bounding_boxes = {}
@@ -273,12 +267,7 @@ class Sam2PoseMasker:
     def _render_bounding_boxes(self, output_frame, bounding_boxes, current_frame_idx, color):
         for object_id, bboxes in bounding_boxes.items():
             # Find the most recent bounding box for the current frame
-            relevant_bbox = None
-            for frame_idx in sorted(bboxes.keys()):
-                if frame_idx <= current_frame_idx:
-                    relevant_bbox = bboxes[frame_idx]
-                else:
-                    break
+            relevant_bbox = self._select_bounding_box(bboxes, current_frame_idx)
 
             if relevant_bbox is not None:
                 start_point = (relevant_bbox[0], relevant_bbox[1])
