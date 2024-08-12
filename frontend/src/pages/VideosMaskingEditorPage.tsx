@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from "react";
 import {useParams} from "react-router";
-import {Box} from "@mui/material";
+import {Box, InputLabel, MenuItem, Select} from "@mui/material";
 import {useDispatch, useSelector} from "react-redux";
 import Selector from "../state/selector";
 import Api from "../api";
@@ -17,6 +17,7 @@ const VideoMaskingEditorPage = () => {
 
     const imgRef = useRef<HTMLImageElement>(null);
     const [posePrompts, setPosePrompts] = useState<[number, number, number][][]>([]);
+    const [overlayStrategies, setOverlayStrategories] = useState<string[]>([]);
     const [bounds, setBounds] = useState({ left: 0, top: 0, right: 0, bottom: 0 });
     const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
     const [segmentationImageUrl, setSegmentationImageUrl] = useState<string | null>(null);
@@ -28,6 +29,7 @@ const VideoMaskingEditorPage = () => {
 
         Api.fetchPosePrompt(videoId).then(posePrompts => {
             setPosePrompts(posePrompts);
+            setOverlayStrategories(posePrompts.map((_: any) => 'mp_pose'));
         });
     }, [videoId]);
 
@@ -119,7 +121,7 @@ const VideoMaskingEditorPage = () => {
             runData: {
                 videoMasking: {
                     posePrompts,
-                    overlayStrategies: ['mp_face', 'mp_pose']
+                    overlayStrategies,
                 } as any,
                 voiceMasking: {
                     strategy: 'remove',
@@ -139,37 +141,63 @@ const VideoMaskingEditorPage = () => {
         });
     };
 
+    const updateOverlayStrategy = (newValue: string, index: number) => {
+        const newOverlayStrategies = [...overlayStrategies];
+        newOverlayStrategies[index] = newValue;
+        setOverlayStrategories(newOverlayStrategies);
+    };
+
     return (
-        <Box
-            component="div"
-            style={{position: 'relative', display: 'inline-block'}}
-            onContextMenu={handleRightClickImage}
-        >
-            <button onClick={maskVideo}>test</button>
-            <button onClick={segmentPrompt}>segment</button>
-            {videoId && (
-                <img
-                    ref={imgRef}
-                    src={segmentationImageUrl || `${Config.api.baseUrl}/videos/${videoId}/first-frame?token=${KeycloakAuth.getToken()}`}
-                    alt="Video Frame"
-                    style={{display: 'block'}}
-                />
-            )}
-            {posePrompts.map((pose, poseIndex) => (
-                pose.map((point, pointIndex) => (
-                    <DraggablePoint
-                        key={`${poseIndex}-${pointIndex}`}
-                        position={{x: point[0], y: point[1]}}
-                        onStart={handleDragStart}
-                        onStop={(e, data) => handleDragStop(poseIndex, pointIndex, e, data)}
-                        onContextMenu={(e) => handleRightClickPoint(e, poseIndex, pointIndex)}
-                        bounds={bounds}
-                        isActive={!!point[2]}
-                        pointLabel={`(${Math.round(point[0])}, ${Math.round(point[1])})`}
-                        promptNumber={poseIndex + 1}
+        <Box component="div">
+            <Box component='div'>
+                <button onClick={maskVideo}>test</button>
+                <button onClick={segmentPrompt}>segment</button>
+
+                {posePrompts.map((_, index) => (
+                    <Box component='div' sx={{ display: 'inline-block' }}>
+                        <InputLabel id="demo-simple-select-label">Overlay Strategy {index + 1}</InputLabel>
+                        <Select 
+                            labelId="demo-simple-select-label" 
+                            label={`Overlay Strategy ${index + 1}`} 
+                            value={overlayStrategies[index] || ''}
+                            onChange={e => updateOverlayStrategy(e.target.value as string, index)}
+                            size='small'
+                        >
+                            <MenuItem value={'mp_pose'}>MediaPipe Pose</MenuItem>
+                            <MenuItem value={'mp_face'}>MediaPipe Face</MenuItem>
+                        </Select>
+                    </Box>
+                ))}
+            </Box>
+            <Box 
+                component="div" 
+                style={{position: 'relative', display: 'inline-block'}}
+                onContextMenu={handleRightClickImage}
+            >
+                {videoId && (
+                    <img
+                        ref={imgRef}
+                        src={segmentationImageUrl || `${Config.api.baseUrl}/videos/${videoId}/first-frame?token=${KeycloakAuth.getToken()}`}
+                        alt="Video Frame"
+                        style={{display: 'block'}}
                     />
-                ))
-            ))}
+                )}
+                {posePrompts.map((pose, poseIndex) => (
+                    pose.map((point, pointIndex) => (
+                        <DraggablePoint
+                            key={`${poseIndex}-${pointIndex}`}
+                            position={{x: point[0], y: point[1]}}
+                            onStart={handleDragStart}
+                            onStop={(e, data) => handleDragStop(poseIndex, pointIndex, e, data)}
+                            onContextMenu={(e) => handleRightClickPoint(e, poseIndex, pointIndex)}
+                            bounds={bounds}
+                            isActive={!!point[2]}
+                            pointLabel={`(${Math.round(point[0])}, ${Math.round(point[1])})`}
+                            promptNumber={poseIndex + 1}
+                        />
+                    ))
+                ))}
+            </Box>
         </Box>
     );
 };
