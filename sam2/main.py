@@ -57,7 +57,7 @@ async def segment_image(
             overlay[:, :, 0] = color[0]
             overlay[:, :, 1] = color[1]
             overlay[:, :, 2] = color[2]
-            alpha = 0.7
+            alpha = 0.5
             output_image[mask] = (alpha * overlay[mask] + (1 - alpha) * output_image[mask]).astype(np.uint8)
 
         _, output_buffer = cv2.imencode('.jpg', output_image)

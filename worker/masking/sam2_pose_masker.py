@@ -18,6 +18,8 @@ colors = [
     # Add more colors if needed
 ]
 
+DEBUG = False
+
 
 def configure_landmarker():
     model_path = '/worker_models/pose_landmarker_heavy.task'
@@ -153,8 +155,10 @@ class Sam2PoseMasker:
 
             output_frame = frame.copy()
             self._render_all_masks_on_image(output_frame, frame_width, idx, masks)
-            self._render_bounding_boxes(output_frame, bounding_boxes, idx, (255, 255, 255))
-            self._render_bounding_boxes(output_frame, estimation_input_bounding_boxes, idx, (0, 255, 0))
+
+            if DEBUG:
+                self._render_bounding_boxes(output_frame, bounding_boxes, idx, (255, 255, 255))
+                self._render_bounding_boxes(output_frame, estimation_input_bounding_boxes, idx, (0, 255, 0))
 
             for object_id, bbox_dict in estimation_input_bounding_boxes.items():
                 # Get the correct bounding box for the current frame index (idx)
@@ -228,7 +232,7 @@ class Sam2PoseMasker:
         return bbox
 
     def _prepare_estimation_input_frame(self, frame, mask, bbox):
-        crop_alpha = 0.85
+        crop_alpha = 0.95
 
         # Crop the frame using the bounding box
         cropped_frame = frame[bbox[1]:bbox[3], bbox[0]:bbox[2]]
@@ -265,6 +269,9 @@ class Sam2PoseMasker:
             for object_id in range(1, len(masks[idx]) + 1):
                 mask = masks[idx][object_id][0]
                 current_bbox = self._calculate_bounding_box_from_mask(mask)
+                if current_bbox is None:
+                    continue
+
                 start_point = current_bbox[0], current_bbox[1]
                 end_point = current_bbox[2], current_bbox[3]
 

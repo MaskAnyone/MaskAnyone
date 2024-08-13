@@ -69,7 +69,11 @@ const VideoMaskingEditorPage = () => {
         } else {
             const newPoints = [...posePrompts];
             newPoints[poseIndex] = [...newPoints[poseIndex]];
-            newPoints[poseIndex][pointIndex] = [data.x, data.y, posePrompts[poseIndex][pointIndex][2]];
+            newPoints[poseIndex][pointIndex] = [
+                Math.round(data.x), 
+                Math.round(data.y), 
+                posePrompts[poseIndex][pointIndex][2],
+            ];
             setPosePrompts(newPoints);
         }
     };
@@ -79,6 +83,11 @@ const VideoMaskingEditorPage = () => {
         e.stopPropagation();
         const newPoints = [...posePrompts];
         newPoints[poseIndex] = newPoints[poseIndex].filter((_, index) => index !== pointIndex);
+
+        if (newPoints[poseIndex].length === 0) {
+            newPoints.splice(poseIndex, 1);
+        }
+
         setPosePrompts(newPoints);
     };
 
@@ -86,8 +95,8 @@ const VideoMaskingEditorPage = () => {
         e.preventDefault();
         if (imgRef.current) {
             const rect = imgRef.current.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+            const x = Math.round(e.clientX - rect.left);
+            const y = Math.round(e.clientY - rect.top);
 
             let closestPoseIndex = 0;
             let minDistance = Infinity;
