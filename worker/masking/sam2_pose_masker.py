@@ -232,7 +232,7 @@ class Sam2PoseMasker:
         return bbox
 
     def _prepare_estimation_input_frame(self, frame, mask, bbox):
-        crop_alpha = 0.95
+        crop_alpha = 0.99
 
         # Crop the frame using the bounding box
         cropped_frame = frame[bbox[1]:bbox[3], bbox[0]:bbox[2]]

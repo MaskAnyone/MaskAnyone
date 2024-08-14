@@ -10,6 +10,7 @@ from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 from utils.request_utils import range_requests_response
 from utils.preview_image_utils import aspect_preserving_resize_and_crop
 from utils.video_utils import extract_video_info_from_capture
+from utils.ffmpeg_converter import FFmpegConverter
 from models import (
     RunParams,
     RequestVideoUploadParams,
@@ -33,6 +34,7 @@ result_mp_kinematics_manager = ResultMpKinematicsManager(db_connection)
 result_blendshapes_manager = ResultBlendshapesManager(db_connection)
 result_audio_files_manager = ResultAudioFilesManager(db_connection)
 result_extra_files_manager = ResultExtraFilesManager(db_connection)
+ffmpeg_converter = FFmpegConverter()
 
 router = APIRouter(
     prefix="/videos",
@@ -131,6 +133,8 @@ def finalize_video_upload(params: FinalizeVideoUploadParams, token_payload: dict
         raise HTTPException(
             status_code=400, detail="A video with this name does not exist"
         )
+
+    ffmpeg_converter.convert_video_in_place(video_path)
 
     capture = cv2.VideoCapture(video_path)
 
