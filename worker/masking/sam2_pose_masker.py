@@ -1,11 +1,13 @@
 import cv2
 import numpy as np
 import mediapipe
+import supervision as sv
 
 from typing import Callable
 from communication.sam2_client import Sam2Client
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
+from masking.smoothing import smooth_poses
 
 
 colors = [
@@ -28,7 +30,10 @@ def configure_landmarker():
         base_options=mediapipe.tasks.BaseOptions(model_asset_path=model_path, delegate=mediapipe.tasks.BaseOptions.Delegate.CPU),
         running_mode=mediapipe.tasks.vision.RunningMode.VIDEO,
         output_segmentation_masks=True,
-        num_poses=1
+        num_poses=1,
+        min_pose_detection_confidence=0.7,
+        min_pose_presence_confidence=0.7,
+        min_tracking_confidence=0.7
     )
 
     landmarker = mediapipe.tasks.vision.PoseLandmarker.create_from_options(options)
@@ -190,7 +195,18 @@ class Sam2PoseMasker:
                     if video_masking_data['overlayStrategies'][object_id - 1] == 'mp_face':
                         draw_face_landmarks_on_image(region_of_interest, pose_landmarker_result)
                     elif video_masking_data['overlayStrategies'][object_id - 1] == 'mp_pose':
-                        draw_landmarks_on_image(region_of_interest, pose_landmarker_result)
+                        # smooth_poses(pose_landmarker_result.pose_landmarks)
+                        sv_key_points = sv.KeyPoints.from_mediapipe(pose_landmarker_result, (x_max - x_min, y_max - y_min))
+                        edge_annotator = sv.EdgeAnnotator(
+                            color=sv.Color.GREEN,
+                            thickness=4
+                        )
+                        region_of_interest = edge_annotator.annotate(
+                            scene=region_of_interest.copy(),
+                            key_points=sv_key_points
+                        )
+
+                        #draw_landmarks_on_image(region_of_interest, pose_landmarker_result)
 
                     # Place the updated region back into the output frame
                     output_frame[y_min:y_max, x_min:x_max] = region_of_interest
@@ -260,7 +276,7 @@ class Sam2PoseMasker:
 
         return cropped_frame
 
-    def _calculate_full_object_bounding_boxes(self, masks, iou_threshold=0.5):
+    def _calculate_full_object_bounding_boxes(self, masks, iou_threshold=0.4):
         bounding_boxes = {}
         active_bboxes = {}
 

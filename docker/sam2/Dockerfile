@@ -25,6 +25,7 @@ RUN git clone https://github.com/facebookresearch/segment-anything-2.git \
     && pip install -e .
 
 RUN cd segment-anything-2/checkpoints \
-    && wget https://dl.fbaipublicfiles.com/segment_anything_2/072824/sam2_hiera_tiny.pt
+    && wget https://dl.fbaipublicfiles.com/segment_anything_2/072824/sam2_hiera_tiny.pt \
+    && wget https://dl.fbaipublicfiles.com/segment_anything_2/072824/sam2_hiera_large.pt
 
 WORKDIR /app
