@@ -21,7 +21,7 @@ def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
     inference_state = predictor.init_state(
         video_path=frame_dir_path,
         offload_video_to_cpu=True,
-        offload_state_to_cpu=True,
+        offload_state_to_cpu=False,
         async_loading_frames=True,
     )
 
@@ -48,6 +48,7 @@ def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
             for i, out_obj_id in enumerate(out_obj_ids)
         }
 
+    predictor.reset_state(inference_state)
     torch.cuda.empty_cache()
 
     return video_segments
