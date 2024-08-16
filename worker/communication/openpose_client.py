@@ -1,4 +1,6 @@
 import requests
+import io
+import pickle
 
 
 class OpenposeClient:
@@ -15,10 +17,12 @@ class OpenposeClient:
         response = requests.post(
             self._make_url("estimate-pose-on-video"),
             files=files,
-            #data=data,
         )
 
-        return []
+        buffer = io.BytesIO(response.content)
+        pose_data = pickle.load(buffer)
+
+        return pose_data
 
     def _make_url(self, path: str) -> str:
         return self._base_path + "/" + path

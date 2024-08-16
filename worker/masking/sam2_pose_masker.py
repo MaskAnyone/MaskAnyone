@@ -22,6 +22,7 @@ colors = [
 ]
 
 DEBUG = False
+OPENPOSE_SWITCH = True
 
 
 def configure_landmarker():
@@ -113,6 +114,52 @@ def draw_face_landmarks_on_image(rgb_image, detection_result):
           .get_default_face_mesh_iris_connections_style())
 
 
+BODY_25_PAIRS = [
+    (0, 1), (1, 2), (2, 3), (3, 4), (1, 5), (5, 6), (6, 7), (1, 8),
+    (8, 9), (9, 10), (10, 11), (8, 12), (12, 13), (13, 14), (0, 15),
+    (15, 17), (0, 16), (16, 18), (14, 19), (19, 20), (14, 21),
+    (11, 22), (22, 23), (11, 24)
+]
+
+
+def render_body25_pose(image, keypoints, threshold=0.1):
+    """
+    Renders BODY_25 keypoints on the input image.
+
+    Parameters:
+    - image: The input image as a NumPy array.
+    - keypoints: A list or NumPy array with the keypoints for BODY_25. The array shape should be (25, 3), where each keypoint is (x, y, confidence).
+    - threshold: Minimum confidence to consider a keypoint valid.
+
+    Returns:
+    - Image with BODY_25 keypoints rendered.
+    """
+    # Ensure keypoints are a numpy array
+    keypoints = np.array(keypoints)
+
+    # Iterate over each pair and draw lines
+    for pair in BODY_25_PAIRS:
+        partA = pair[0]
+        partB = pair[1]
+
+        # Check confidence
+        if keypoints[partA][2] > threshold and keypoints[partB][2] > threshold:
+            # Get coordinates
+            pointA = tuple(map(int, keypoints[partA][:2]))
+            pointB = tuple(map(int, keypoints[partB][:2]))
+
+            # Draw line
+            cv2.line(image, pointA, pointB, (0, 255, 0), 2)
+
+    # Draw all keypoints
+    for i in range(len(keypoints)):
+        if keypoints[i][2] > threshold:
+            point = tuple(map(int, keypoints[i][:2]))
+            cv2.circle(image, point, 4, (0, 0, 255), -1)
+
+    return image
+
+
 class Sam2PoseMasker:
     _sam2_client: Sam2Client
     _openpose_client: OpenposeClient
@@ -140,7 +187,8 @@ class Sam2PoseMasker:
         content = self._read_video_content()
         masks = self._sam2_client.segment_video(video_masking_data['posePrompts'], content)
 
-        self._openpose_client.estimate_pose_on_video(content)
+        if OPENPOSE_SWITCH:
+            pose_data = self._openpose_client.estimate_pose_on_video(content)
 
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
         video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)
@@ -167,11 +215,20 @@ class Sam2PoseMasker:
             output_frame = frame.copy()
             self._render_all_masks_on_image(output_frame, frame_width, idx, masks)
 
+            if OPENPOSE_SWITCH:
+                poses = pose_data[idx]
+                if poses is not None:
+                    for pose in poses:
+                        render_body25_pose(output_frame, pose)
+
             if DEBUG:
                 self._render_bounding_boxes(output_frame, bounding_boxes, idx, (255, 255, 255))
                 self._render_bounding_boxes(output_frame, estimation_input_bounding_boxes, idx, (0, 255, 0))
 
             for object_id, bbox_dict in estimation_input_bounding_boxes.items():
+                if OPENPOSE_SWITCH:
+                    break
+
                 # Get the correct bounding box for the current frame index (idx)
                 bbox = self._select_bounding_box(bbox_dict, idx)
 

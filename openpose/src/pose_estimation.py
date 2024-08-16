@@ -7,6 +7,7 @@ from openpose import pyopenpose as op
 
 def perform_openpose_pose_estimation(input_path: str):
     video_capture = cv2.VideoCapture(input_path)
+    pose_data = []
 
     op_wrapper = initialize_open_pose()
 
@@ -22,17 +23,19 @@ def perform_openpose_pose_estimation(input_path: str):
         op_wrapper.emplaceAndPop(op.VectorDatum([datum]))
 
         if datum.poseKeypoints is not None and len(datum.poseKeypoints) > 0:
-            print(datum.poseKeypoints)
-            pass
+            pose_data.append(datum.poseKeypoints)
+        else:
+            pose_data.append(None)
 
         idx += 1
 
     video_capture.release()
+    return pose_data
 
 
 def initialize_open_pose():
     params = dict()
-    params["model_folder"] = "./docker/openpose/models/"
+    params["model_folder"] = "/models/"
     # params["model_pose"] = "COCO"
     params["face"] = False
     params["hand"] = False

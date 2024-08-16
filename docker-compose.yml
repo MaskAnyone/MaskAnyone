@@ -114,6 +114,7 @@ services:
       - ./app.env
     volumes:
       - ./openpose:/app
+      - ./docker/openpose/models:/models
     restart: on-failure
     deploy:
       resources:
