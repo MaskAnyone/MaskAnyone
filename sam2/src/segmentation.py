@@ -4,42 +4,53 @@ import sys
 sys.path.append('/workspace/segment-anything-2')
 from sam2.build_sam import build_sam2_video_predictor
 
+predictor = None
+
 
 def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
-    configure_torch()
+    global predictor
+
+    if predictor is None:
+        configure_torch()
+        torch.cuda.empty_cache()
+
+        sam2_checkpoint = "/workspace/segment-anything-2/checkpoints/sam2_hiera_tiny.pt"
+        model_cfg = "sam2_hiera_t.yaml"
+        predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint)
+
+    inference_state = predictor.init_state(
+        video_path=frame_dir_path,
+        offload_video_to_cpu=True,
+        offload_state_to_cpu=True,
+        async_loading_frames=True,
+    )
+
+    predictor.reset_state(inference_state)
     torch.cuda.empty_cache()
 
-    sam2_checkpoint = "/workspace/segment-anything-2/checkpoints/sam2_hiera_tiny.pt"
-    model_cfg = "sam2_hiera_t.yaml"
-    predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint)
+    points_list, labels_list = extract_points_and_labels(pose_prompts)
 
-    try:
-        inference_state = predictor.init_state(video_path=frame_dir_path)
-        predictor.reset_state(inference_state)
+    obj_id = 1
+    for points, labels in zip(points_list, labels_list):
+        _, out_obj_ids, out_mask_logits = predictor.add_new_points(
+            inference_state=inference_state,
+            frame_idx=0,
+            obj_id=obj_id,
+            points=points,
+            labels=labels,
+        )
+        obj_id += 1
 
-        points_list, labels_list = extract_points_and_labels(pose_prompts)
+    video_segments = {}
+    for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state):
+        video_segments[out_frame_idx] = {
+            out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy()
+            for i, out_obj_id in enumerate(out_obj_ids)
+        }
 
-        obj_id = 1
-        for points, labels in zip(points_list, labels_list):
-            _, out_obj_ids, out_mask_logits = predictor.add_new_points(
-                inference_state=inference_state,
-                frame_idx=0,
-                obj_id=obj_id,
-                points=points,
-                labels=labels,
-            )
-            obj_id += 1
+    torch.cuda.empty_cache()
 
-        video_segments = {}
-        for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state):
-            video_segments[out_frame_idx] = {
-                out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy()
-                for i, out_obj_id in enumerate(out_obj_ids)
-            }
-
-        return video_segments
-    finally:
-        torch.cuda.empty_cache()
+    return video_segments
 
 
 def configure_torch():
