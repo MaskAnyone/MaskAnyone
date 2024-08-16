@@ -2,6 +2,7 @@ import cv2
 import os
 import requests
 import json
+import numpy as np
 
 from fastapi import APIRouter, Request, Depends, Response
 from auth.jwt_bearer import JWTBearer
@@ -33,8 +34,16 @@ def fetch_pose_prompts(video_id: str, token_payload: dict = Depends(JWTBearer())
     )
 
     poses = results[0].keypoints.xy.cpu().numpy().astype(int)
+    confs = results[0].keypoints.conf.cpu().numpy()
+
+    poses = np.array([[point if conf > 0.7 else (0, 0)
+                                for point, conf in zip(keypoints, confidences)]
+                               for keypoints, confidences in zip(poses, confs)])
+
+    # Remove empty poses (where all points are (0, 0))
+    poses = np.array([pose for pose in poses if not np.all(pose == (0, 0))])
+
     pose_prompts = [extract_pose_points(pose) for pose in poses]
-    print(pose_prompts)
 
     return {'pose_prompts': pose_prompts}
 
