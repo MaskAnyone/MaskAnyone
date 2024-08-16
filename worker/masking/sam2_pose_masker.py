@@ -209,7 +209,7 @@ class Sam2PoseMasker:
 
                 # Trigger the pose estimation on the sub-video
                 pose_data = self._openpose_client.estimate_pose_on_video(content)
-                smoothed_pose_data = smooth_pose(pose_data)
+                smoothed_pose_data = smooth_pose(pose_data, sample_rate)
                 pose_data_dict[(obj_id, start_frame)] = smoothed_pose_data
 
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
@@ -414,7 +414,7 @@ class Sam2PoseMasker:
         return bbox
 
     def _prepare_estimation_input_frame(self, frame, mask, bbox):
-        crop_alpha = 0.99
+        crop_alpha = 1.0
 
         # Crop the frame using the bounding box
         cropped_frame = frame[bbox[1]:bbox[3], bbox[0]:bbox[2]]
@@ -431,7 +431,7 @@ class Sam2PoseMasker:
         # Find contours and draw them on the reverse mask
         cropped_contours, _ = cv2.findContours(cropped_mask.astype(np.uint8), cv2.RETR_EXTERNAL,
                                                cv2.CHAIN_APPROX_SIMPLE)
-        cv2.drawContours(reverse_mask_8bit, cropped_contours, -1, 0, round(cropped_frame_width / 200))
+        cv2.drawContours(reverse_mask_8bit, cropped_contours, -1, 0, round(cropped_frame_width / 150))
 
         # Create a boolean mask
         reverse_mask_bool = reverse_mask_8bit > 0
@@ -442,7 +442,7 @@ class Sam2PoseMasker:
 
         return cropped_frame
 
-    def _calculate_full_object_bounding_boxes(self, masks, iou_threshold=0.4):
+    def _calculate_full_object_bounding_boxes(self, masks, iou_threshold=0.15):
         bounding_boxes = {}
         active_bboxes = {}
 
