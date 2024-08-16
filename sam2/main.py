@@ -6,6 +6,7 @@ import io
 import tempfile
 import shutil
 import subprocess
+import gc
 
 from fastapi import FastAPI, APIRouter, File, Form, UploadFile, HTTPException, Response
 from src.segmentation import perform_sam2_segmentation
@@ -64,6 +65,7 @@ async def segment_image(
         return Response(content=output_buffer.tobytes(), media_type="image/jpeg")
     finally:
         shutil.rmtree(temp_dir)
+        gc.collect()
 
 
 @router.post("/segment-video")
@@ -87,6 +89,8 @@ async def segment_video(
     buffer = io.BytesIO()
     np.savez_compressed(buffer, **flattened_masks)
     buffer.seek(0)
+
+    gc.collect()
 
     return Response(buffer.getvalue(), media_type="application/octet-stream")
 

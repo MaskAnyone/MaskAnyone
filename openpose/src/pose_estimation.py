@@ -39,6 +39,7 @@ def initialize_open_pose():
     # params["model_pose"] = "COCO"
     params["face"] = False
     params["hand"] = False
+    # params["net_resolution"] = "-1x512"
 
     op_wrapper = op.WrapperPython()
     op_wrapper.configure(params)

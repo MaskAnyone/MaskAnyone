@@ -122,7 +122,7 @@ BODY_25_PAIRS = [
 ]
 
 
-def render_body25_pose(image, keypoints, threshold=0.1):
+def render_body25_pose(image, keypoints, threshold=0.3):
     """
     Renders BODY_25 keypoints on the input image.
 
@@ -258,7 +258,6 @@ class Sam2PoseMasker:
                     if video_masking_data['overlayStrategies'][object_id - 1] == 'mp_face':
                         draw_face_landmarks_on_image(region_of_interest, pose_landmarker_result)
                     elif video_masking_data['overlayStrategies'][object_id - 1] == 'mp_pose':
-                        # smooth_poses(pose_landmarker_result.pose_landmarks)
                         sv_key_points = sv.KeyPoints.from_mediapipe(pose_landmarker_result, (x_max - x_min, y_max - y_min))
                         edge_annotator = sv.EdgeAnnotator(
                             color=sv.Color.GREEN,
