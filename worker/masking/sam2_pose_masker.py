@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import mediapipe
 import supervision as sv
+import os
 
 from typing import Callable
 from communication.sam2_client import Sam2Client
@@ -182,10 +183,114 @@ class Sam2PoseMasker:
         self._progress_callback = progress_callback
 
     def mask(self, video_masking_data: dict):
-        print("Starting SAM2 video masking with options", video_masking_data)
-
         content = self._read_video_content()
         masks = self._sam2_client.segment_video(video_masking_data['posePrompts'], content)
+        del content
+
+        video_capture, frame_width, frame_height, sample_rate = self._open_video()
+
+        bounding_boxes = self._calculate_full_object_bounding_boxes(masks)
+        estimation_input_bounding_boxes = self._calculate_estimation_input_bounding_boxes(bounding_boxes, frame_width, frame_height)
+
+        sub_video_paths = self._create_sub_videos(video_capture, estimation_input_bounding_boxes, masks, '/app')
+        video_capture.release()
+
+        pose_data_dict = {}
+        for sub_video_path in sub_video_paths:
+            if os.path.exists(sub_video_path):
+                basename = os.path.basename(sub_video_path)
+                parts = basename.split('_')
+                obj_id = int(parts[1])
+                start_frame = int(parts[3].split('.')[0])
+
+                # Read the sub-video content
+                with open(sub_video_path, 'rb') as video_file:
+                    content = video_file.read()
+
+                # Trigger the pose estimation on the sub-video
+                pose_data = self._openpose_client.estimate_pose_on_video(content)
+                pose_data_dict[(obj_id, start_frame)] = pose_data
+
+        video_capture, frame_width, frame_height, sample_rate = self._open_video()
+        video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)
+
+        idx = 0
+        while video_capture.isOpened():
+            ret, frame = video_capture.read()
+
+            if not ret:
+                break
+
+            print(idx)
+
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+            output_frame = frame.copy()
+            self._render_all_masks_on_image(output_frame, frame_width, idx, masks)
+
+            if DEBUG:
+                self._render_bounding_boxes(output_frame, bounding_boxes, idx, (255, 255, 255))
+                self._render_bounding_boxes(output_frame, estimation_input_bounding_boxes, idx, (0, 255, 0))
+
+            for (obj_id, start_frame), poses in pose_data_dict.items():
+                if start_frame <= idx < start_frame + len(poses):
+                    pose_idx = idx - start_frame
+                    current_poses = poses[pose_idx]
+                    if current_poses is not None:
+                        # Retrieve the bounding box for this object and frame
+                        bbox = estimation_input_bounding_boxes[obj_id][start_frame]
+                        xmin, ymin, xmax, ymax = bbox
+
+                        for pose in current_poses:
+                            # Adjust pose keypoints from cropped frame to original frame
+                            adjusted_pose = []
+                            for keypoint in pose:
+                                if keypoint is not None:
+                                    # Translate the keypoint back to the original frame coordinates
+                                    adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin, keypoint[2])
+                                    adjusted_pose.append(adjusted_keypoint)
+                                else:
+                                    adjusted_pose.append(None)
+
+                            # Render the adjusted pose on the original frame
+                            render_body25_pose(output_frame, adjusted_pose)
+
+            output_frame = cv2.cvtColor(output_frame, cv2.COLOR_RGB2BGR)
+            video_writer.write(output_frame)
+            idx += 1
+
+        video_capture.release()
+        video_writer.release()
+
+        return
+
+        # create the sub videos including reverse mask optimization
+        # feed each sub video to pose model
+        # calc pose data back to original size
+        # smooth pose data
+        # render pose on video
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         if OPENPOSE_SWITCH:
             pose_data = self._openpose_client.estimate_pose_on_video(content)
@@ -409,6 +514,54 @@ class Sam2PoseMasker:
 
         iou = intersection_area / union_area
         return iou
+
+    def _create_sub_videos(self, video_capture, estimation_input_bounding_boxes, masks, output_dir):
+        sub_video_paths = []
+
+        fps = video_capture.get(cv2.CAP_PROP_FPS)
+        total_frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
+
+        # Iterate through each object in estimation_input_bounding_boxes
+        for obj_id, bbox_dict in estimation_input_bounding_boxes.items():
+            sorted_frames = sorted(bbox_dict.keys())
+
+            for i, start_frame in enumerate(sorted_frames):
+                bbox = bbox_dict[start_frame]  # bbox in (xmin, ymin, xmax, ymax) format
+                width = bbox[2] - bbox[0]
+                height = bbox[3] - bbox[1]
+
+                # Determine the end frame for this sub-video
+                if i < len(sorted_frames) - 1:
+                    end_frame = sorted_frames[i + 1] - 1
+                else:
+                    end_frame = total_frames - 1
+
+                # Define the output video filename
+                output_filename = f"{output_dir}/object_{obj_id}_frame_{start_frame}.mp4"
+                sub_video_paths.append(output_filename)
+
+                out = cv2.VideoWriter(output_filename, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+
+                # Seek to the start_frame
+                video_capture.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+
+                for frame_num in range(start_frame, end_frame + 1):
+                    ret, frame = video_capture.read()
+                    if not ret:
+                        break
+
+                    mask = masks[frame_num][obj_id][0]
+                    cropped_frame = self._prepare_estimation_input_frame(frame, mask, bbox)
+
+                    # Write the cropped frame to the output video
+                    out.write(cropped_frame)
+
+                # Release the writer for this sub-video
+                out.release()
+
+        # Release the video capture object
+        video_capture.release()
+        return sub_video_paths
 
     def _render_bounding_boxes(self, output_frame, bounding_boxes, current_frame_idx, color):
         for object_id, bboxes in bounding_boxes.items():
