@@ -9,7 +9,7 @@ from communication.sam2_client import Sam2Client
 from communication.openpose_client import OpenposeClient
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
-from masking.smoothing import smooth_poses
+from masking.smoothing import smooth_pose
 
 
 colors = [
@@ -156,7 +156,7 @@ def render_body25_pose(image, keypoints, threshold=0.3):
     for i in range(len(keypoints)):
         if keypoints[i][2] > threshold:
             point = tuple(map(int, keypoints[i][:2]))
-            cv2.circle(image, point, 4, (0, 0, 255), -1)
+            cv2.circle(image, point, 4, (0, 0, 0), -1)
 
     return image
 
@@ -209,7 +209,8 @@ class Sam2PoseMasker:
 
                 # Trigger the pose estimation on the sub-video
                 pose_data = self._openpose_client.estimate_pose_on_video(content)
-                pose_data_dict[(obj_id, start_frame)] = pose_data
+                smoothed_pose_data = smooth_pose(pose_data)
+                pose_data_dict[(obj_id, start_frame)] = smoothed_pose_data
 
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
         video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)
@@ -220,8 +221,6 @@ class Sam2PoseMasker:
 
             if not ret:
                 break
-
-            print(idx)
 
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
