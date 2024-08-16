@@ -13,7 +13,7 @@ def butter_it(x, sampling_rate, order, lowpass_cutoff):
 
 def smooth_pose(pose_data, sampling_rate):
     # The butterworth filter will break if we have less than 12 data points
-    if len(pose_data) < 12:
+    if len(pose_data) < 12 or pose_data[0] is None or len(pose_data[0]) < 1:
         return pose_data
 
     # sampling_rate should match video framerate
