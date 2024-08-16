@@ -5,6 +5,7 @@ import supervision as sv
 
 from typing import Callable
 from communication.sam2_client import Sam2Client
+from communication.openpose_client import OpenposeClient
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
 from masking.smoothing import smooth_poses
@@ -114,6 +115,7 @@ def draw_face_landmarks_on_image(rgb_image, detection_result):
 
 class Sam2PoseMasker:
     _sam2_client: Sam2Client
+    _openpose_client: OpenposeClient
     _input_path: str
     _output_path: str
     _progress_callback: Callable[[int], None]
@@ -121,11 +123,13 @@ class Sam2PoseMasker:
     def __init__(
             self,
             sam2_client: Sam2Client,
+            openpose_client: OpenposeClient,
             input_path: str,
             output_path: str,
             progress_callback: Callable[[int], None]
     ):
         self._sam2_client = sam2_client
+        self._openpose_client = openpose_client
         self._input_path = input_path
         self._output_path = output_path
         self._progress_callback = progress_callback
@@ -135,6 +139,8 @@ class Sam2PoseMasker:
 
         content = self._read_video_content()
         masks = self._sam2_client.segment_video(video_masking_data['posePrompts'], content)
+
+        self._openpose_client.estimate_pose_on_video(content)
 
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
         video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)

@@ -16,9 +16,7 @@ RUN apt-get update && apt-get install -y \
     python3-opencv \
     wget
 
-RUN pip3 install numpy==1.24.4 torch fastapi uvicorn[standard]
-
-RUN pip3 install python-multipart
+RUN pip3 install numpy==1.24.4 torch fastapi uvicorn[standard] python-multipart
 
 RUN git clone https://github.com/facebookresearch/segment-anything-2.git \
     && cd segment-anything-2 \
