@@ -24,6 +24,7 @@ colors = [
 
 DEBUG = False
 OPENPOSE_SWITCH = True
+SMOOTHING = True
 
 
 def configure_landmarker():
@@ -123,7 +124,7 @@ BODY_25_PAIRS = [
 ]
 
 
-def render_body25_pose(image, keypoints, threshold=0.3):
+def render_body25_pose(image, keypoints, threshold=0.2):
     """
     Renders BODY_25 keypoints on the input image.
 
@@ -197,6 +198,7 @@ class Sam2PoseMasker:
         video_capture.release()
 
         pose_data_dict = self._compute_pose_data(sub_video_paths, total_frames)
+        self._translate_pose_data_to_original_frame(pose_data_dict, estimation_input_bounding_boxes, total_frames, sample_rate)
 
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
         video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)
@@ -221,21 +223,13 @@ class Sam2PoseMasker:
                 if poses[idx] is not None:
                     current_pose = poses[idx]
 
-                    # Find the most recent bounding box for this frame
-                    relevant_start_frame = max(frame for frame in estimation_input_bounding_boxes[obj_id].keys() if frame <= idx)
-                    bbox = estimation_input_bounding_boxes[obj_id][relevant_start_frame]
-
-                    xmin, ymin, xmax, ymax = bbox
-
                     # Adjust pose keypoints from cropped frame to original frame
                     adjusted_pose = []
                     for keypoint in current_pose:
                         if keypoint is not None:
-                            # Translate the keypoint back to the original frame coordinates
-                            adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin, keypoint[2])
-                            adjusted_pose.append(adjusted_keypoint)
+                            adjusted_pose.append(keypoint)
                         else:
-                            adjusted_pose.append(None)
+                            adjusted_pose.append((np.float64(0), np.float64(0), np.float64(0)))
 
                     # Render the adjusted pose on the original frame
                     render_body25_pose(output_frame, adjusted_pose)
@@ -417,7 +411,7 @@ class Sam2PoseMasker:
         # Find contours and draw them on the reverse mask
         cropped_contours, _ = cv2.findContours(cropped_mask.astype(np.uint8), cv2.RETR_EXTERNAL,
                                                cv2.CHAIN_APPROX_SIMPLE)
-        cv2.drawContours(reverse_mask_8bit, cropped_contours, -1, 0, round(cropped_frame_width / 150))
+        cv2.drawContours(reverse_mask_8bit, cropped_contours, -1, 0, round(cropped_frame_width / 100))
 
         # Create a boolean mask
         reverse_mask_bool = reverse_mask_8bit > 0
@@ -428,7 +422,7 @@ class Sam2PoseMasker:
 
         return cropped_frame
 
-    def _calculate_full_object_bounding_boxes(self, masks, iou_threshold=0.15):
+    def _calculate_full_object_bounding_boxes(self, masks, iou_threshold=0.2):
         bounding_boxes = {}
         active_bboxes = {}
 
@@ -633,7 +627,7 @@ class Sam2PoseMasker:
 
                 # Ensure pose_data is properly filled or None
                 extracted_poses = [
-                    poses[0] if pose_data and len(poses) > 0 else None
+                    poses[0] if poses is not None and len(poses) > 0 else None
                     for poses in (pose_data or [])
                 ]
 
@@ -657,3 +651,27 @@ class Sam2PoseMasker:
         with open(sub_video_path, 'rb') as video_file:
             content = video_file.read()
             return obj_id, start_frame, content
+
+    def _translate_pose_data_to_original_frame(self, pose_data_dict, estimation_input_bounding_boxes, frame_count, sample_rate):
+        for obj_id, pose_data in pose_data_dict.items():
+            for idx in range(frame_count):
+                relevant_start_frame = max(frame for frame in estimation_input_bounding_boxes[obj_id].keys() if frame <= idx)
+
+                bbox = estimation_input_bounding_boxes[obj_id][relevant_start_frame]
+                xmin, ymin, xmax, ymax = bbox
+
+                current_pose = pose_data[idx]
+
+                adjusted_pose = []
+                for keypoint in current_pose:
+                    if keypoint is not None:
+                        # Translate the keypoint back to the original frame coordinates
+                        adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin, keypoint[2])
+                        adjusted_pose.append(adjusted_keypoint)
+                    else:
+                        adjusted_pose.append(None)
+
+                pose_data_dict[obj_id][idx] = adjusted_pose
+
+            if SMOOTHING:
+                pose_data_dict[obj_id] = smooth_pose(pose_data, sample_rate)

@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.signal import butter, filtfilt
-from scipy.interpolate import interp1d
 
 
 def butter_it(x, sampling_rate, order, lowpass_cutoff):
@@ -11,26 +10,70 @@ def butter_it(x, sampling_rate, order, lowpass_cutoff):
     return np.asarray(filtered_x, dtype=np.float64)
 
 
+def interpolate_small_gaps(data, max_gap=3):
+    """Interpolate small gaps (gaps of max_gap or less) in the data."""
+    data = np.array(data, dtype=float)
+    nans = np.isnan(data)
+    indices = np.arange(len(data))
+
+    # Identify and interpolate small gaps
+    for start, stop in contiguous_regions(nans):
+        if stop - start <= max_gap:
+            data[start:stop] = np.interp(indices[start:stop], indices[~nans], data[~nans])
+
+    return data
+
+
+def fill_larger_gaps(data):
+    """Fill larger gaps in the data with the nearest non-NaN values."""
+    data = np.array(data, dtype=float)
+    nans = np.isnan(data)
+    data[nans] = np.interp(np.where(nans)[0], np.where(~nans)[0], data[~nans])
+    return data
+
+
+def contiguous_regions(condition):
+    """Find the indices of contiguous True regions in a boolean array."""
+    d = np.diff(condition)
+    idx, = d.nonzero()
+    idx += 1
+    if condition[0]:
+        idx = np.r_[0, idx]
+    if condition[-1]:
+        idx = np.r_[idx, condition.size]
+    idx.shape = (-1, 2)
+    return idx
+
+
 def smooth_pose(pose_data, sampling_rate):
     # The butterworth filter will break if we have too few data points
-    if len(pose_data) < 30 or pose_data[0] is None or len(pose_data[0]) < 1:
+    if pose_data is None or len(pose_data) < 50:
         return pose_data
+
+    # Check if pose_data is None everywhere (all frames are None)
+    if all(pose is None for pose in pose_data):
+        return pose_data
+
+    pose_keypoint_count = None
+    for pose in pose_data:
+        if pose is not None:
+            pose_keypoint_count = len(pose)
+            break
 
     # sampling_rate should match video framerate
     data_dict = {}
 
     # Populate data_dict with keypoint data
-    for frame_idx, frame_poses in enumerate(pose_data):
-        if frame_poses is None:
+    for frame_idx, frame_pose in enumerate(pose_data):
+        if frame_pose is None:
             # Fill dict with None values to be handled later
-            for keypoint_idx in range(len(pose_data[0][0])):  # Assuming pose_data[0][0] is a non-empty pose
+            for keypoint_idx in range(pose_keypoint_count):
                 data_dict.setdefault((keypoint_idx, 0), []).append(None)
                 data_dict.setdefault((keypoint_idx, 1), []).append(None)
                 data_dict.setdefault((keypoint_idx, 2), []).append(None)
             continue
 
-        pose = frame_poses[0]
-        for keypoint_idx, keypoint in enumerate(pose):
+        for keypoint_idx, keypoint in enumerate(frame_pose):
             if keypoint[0] < 1 and keypoint[1] < 1:
                 # Treat (0, 0) as missing data
                 data_dict.setdefault((keypoint_idx, 0), []).append(None)
@@ -50,43 +93,58 @@ def smooth_pose(pose_data, sampling_rate):
     for key in data_dict.keys():
         data = data_dict[key]
 
-        # Interpolate small gaps (<= 3 frames)
-        indices = np.arange(len(data))
-        valid = np.where(np.array(data) != None)[0]
+        # If there are only none values for a given keypoint we can't do anything
+        if all(point is None for point in data):
+            continue
 
-        if len(valid) > 0:
-            f = interp1d(valid, np.array(data)[valid], kind='linear', fill_value="extrapolate")
-            interpolated_data = f(indices)
-            # Replace None with the interpolated values in data_dict
-            data_dict[key] = [interpolated_data[i] if data[i] is None else data[i] for i in range(len(data))]
-        else:
-            # If no valid points exist, fill with a default value (e.g., 0)
-            data_dict[key] = [0 if val is None else val for val in data]
+        # Convert None to NaN for easier processing
+        data = [np.nan if v is None else v for v in data]
 
-        if len(valid) >= 12:  # Ensure there are enough points for the filter
-            data_dict[key] = butter_it(data_dict[key], sampling_rate, order, lowpass_cutoff)
-        else:
-            print("Warning: Skipping pose smoothing for property because valid point count <12")
+        # Step 1: Interpolate small gaps (3 frames or less)
+        data_interpolated = interpolate_small_gaps(data, max_gap=3)
 
-        # Apply Butterworth filter
-        data_dict[key] = butter_it(data_dict[key], sampling_rate, order, lowpass_cutoff)
+        # Step 2: Fill larger gaps with nearest values
+        data_filled = fill_larger_gaps(data_interpolated)
+
+        # Step 3: Apply smoothing
+        smoothed_data = butter_it(data_filled, sampling_rate, order, lowpass_cutoff)
+
+        # Step 4: Restore larger gaps (set them back to NaN)
+        data_final = []
+        for interpolated, smoothed in zip(data_interpolated, smoothed_data):
+            if np.isnan(interpolated):
+                data_final.append(None)
+            else:
+                data_final.append(smoothed)
+
+        # Replace the original data in the dictionary with the final smoothed data
+        data_dict[key] = data_final
 
     # Reconstruct the pose data from smoothed data_dict
     smoothed_pose_data = []
 
     for frame_idx in range(len(pose_data)):
+        smoothed_pose = []
+
         if pose_data[frame_idx] is None:
             smoothed_pose_data.append(None)
             continue
 
-        smoothed_pose = []
-        for keypoint_idx in range(len(pose_data[frame_idx][0])):
+        for keypoint_idx in range(len(pose_data[frame_idx])):
             smoothed_keypoint = [
                 data_dict[(keypoint_idx, 0)][frame_idx],
                 data_dict[(keypoint_idx, 1)][frame_idx],
                 data_dict[(keypoint_idx, 2)][frame_idx]
             ]
-            smoothed_pose.append(smoothed_keypoint)
-        smoothed_pose_data.append([smoothed_pose])
+
+            if all(prop is None for prop in smoothed_keypoint):
+                smoothed_pose.append(None)
+            else:
+                smoothed_pose.append(smoothed_keypoint)
+
+        if all(keypoint is None for keypoint in smoothed_pose):
+            smoothed_pose_data.append(None)
+        else:
+            smoothed_pose_data.append(smoothed_pose)
 
     return smoothed_pose_data
