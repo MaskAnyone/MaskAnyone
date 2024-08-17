@@ -12,8 +12,8 @@ def butter_it(x, sampling_rate, order, lowpass_cutoff):
 
 
 def smooth_pose(pose_data, sampling_rate):
-    # The butterworth filter will break if we have less than 12 data points
-    if len(pose_data) < 12 or pose_data[0] is None or len(pose_data[0]) < 1:
+    # The butterworth filter will break if we have too few data points
+    if len(pose_data) < 30 or pose_data[0] is None or len(pose_data[0]) < 1:
         return pose_data
 
     # sampling_rate should match video framerate
@@ -42,7 +42,10 @@ def smooth_pose(pose_data, sampling_rate):
                 data_dict.setdefault((keypoint_idx, 2), []).append(keypoint[2])
 
     order = 3  # Butterworth filter order
-    lowpass_cutoff = 15  # Hz 10 (heavy) to 15 (most movements don't happen in less than 100ms)
+
+    # Hz 10 (heavy) to 15 (most movements don't happen in less than 100ms)
+    # Lowpass cutoff must not exceed frame_rate/2
+    lowpass_cutoff = 12 if sampling_rate > 24 else 10
 
     for key in data_dict.keys():
         data = data_dict[key]

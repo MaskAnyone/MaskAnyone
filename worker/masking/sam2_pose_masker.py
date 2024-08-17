@@ -188,6 +188,7 @@ class Sam2PoseMasker:
         del content
 
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
+        total_frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
 
         bounding_boxes = self._calculate_full_object_bounding_boxes(masks)
         estimation_input_bounding_boxes = self._calculate_estimation_input_bounding_boxes(bounding_boxes, frame_width, frame_height)
@@ -195,22 +196,7 @@ class Sam2PoseMasker:
         sub_video_paths = self._create_sub_videos(video_capture, estimation_input_bounding_boxes, masks, '/app')
         video_capture.release()
 
-        pose_data_dict = {}
-        for sub_video_path in sub_video_paths:
-            if os.path.exists(sub_video_path):
-                basename = os.path.basename(sub_video_path)
-                parts = basename.split('_')
-                obj_id = int(parts[1])
-                start_frame = int(parts[3].split('.')[0])
-
-                # Read the sub-video content
-                with open(sub_video_path, 'rb') as video_file:
-                    content = video_file.read()
-
-                # Trigger the pose estimation on the sub-video
-                pose_data = self._openpose_client.estimate_pose_on_video(content)
-                smoothed_pose_data = smooth_pose(pose_data, sample_rate)
-                pose_data_dict[(obj_id, start_frame)] = smoothed_pose_data
+        pose_data_dict = self._compute_pose_data(sub_video_paths, total_frames)
 
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
         video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)
@@ -231,28 +217,26 @@ class Sam2PoseMasker:
                 self._render_bounding_boxes(output_frame, bounding_boxes, idx, (255, 255, 255))
                 self._render_bounding_boxes(output_frame, estimation_input_bounding_boxes, idx, (0, 255, 0))
 
-            for (obj_id, start_frame), poses in pose_data_dict.items():
-                if start_frame <= idx < start_frame + len(poses):
-                    pose_idx = idx - start_frame
-                    current_poses = poses[pose_idx]
-                    if current_poses is not None:
-                        # Retrieve the bounding box for this object and frame
-                        bbox = estimation_input_bounding_boxes[obj_id][start_frame]
-                        xmin, ymin, xmax, ymax = bbox
+            for obj_id, poses in pose_data_dict.items():
+                if poses[idx] is not None:
+                    current_poses = poses[idx]
+                    # Retrieve the bounding box for this object and frame
+                    bbox = estimation_input_bounding_boxes[obj_id][idx]
+                    xmin, ymin, xmax, ymax = bbox
 
-                        for pose in current_poses:
-                            # Adjust pose keypoints from cropped frame to original frame
-                            adjusted_pose = []
-                            for keypoint in pose:
-                                if keypoint is not None:
-                                    # Translate the keypoint back to the original frame coordinates
-                                    adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin, keypoint[2])
-                                    adjusted_pose.append(adjusted_keypoint)
-                                else:
-                                    adjusted_pose.append(None)
+                    for pose in current_poses:
+                        # Adjust pose keypoints from cropped frame to original frame
+                        adjusted_pose = []
+                        for keypoint in pose:
+                            if keypoint is not None:
+                                # Translate the keypoint back to the original frame coordinates
+                                adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin, keypoint[2])
+                                adjusted_pose.append(adjusted_keypoint)
+                            else:
+                                adjusted_pose.append(None)
 
-                            # Render the adjusted pose on the original frame
-                            render_body25_pose(output_frame, adjusted_pose)
+                        # Render the adjusted pose on the original frame
+                        render_body25_pose(output_frame, adjusted_pose)
 
             output_frame = cv2.cvtColor(output_frame, cv2.COLOR_RGB2BGR)
             video_writer.write(output_frame)
@@ -634,3 +618,40 @@ class Sam2PoseMasker:
 
         image[mask] = (alpha * overlay[mask] + (1 - alpha) * image[mask]).astype(np.uint8)
         cv2.drawContours(image, contours, -1, border_color, round(frame_width / 600), cv2.LINE_AA)
+
+    def _compute_pose_data(self, sub_video_paths, frame_count):
+        pose_data_dict = {}
+
+        for sub_video_path in sub_video_paths:
+            if os.path.exists(sub_video_path):
+                obj_id, start_frame, content = self._read_sub_video(sub_video_path)
+
+                # Trigger the pose estimation on the sub-video
+                pose_data = self._openpose_client.estimate_pose_on_video(content)
+
+                # Ensure pose_data is properly filled or None
+                extracted_poses = [
+                    poses[0] if pose_data and len(poses) > 0 else None
+                    for poses in (pose_data or [])
+                ]
+
+                # Ensure the list for this obj_id exists in pose_data_dict
+                if obj_id not in pose_data_dict:
+                    pose_data_dict[obj_id] = [None] * frame_count  # Initialize with None
+
+                # Insert the extracted poses into the appropriate place in the list
+                for i, pose in enumerate(extracted_poses):
+                    pose_data_dict[obj_id][start_frame + i] = pose
+
+        return pose_data_dict
+
+    def _read_sub_video(self, sub_video_path):
+        basename = os.path.basename(sub_video_path)
+        parts = basename.split('_')
+        obj_id = int(parts[1])
+        start_frame = int(parts[3].split('.')[0])
+
+        # Read the sub-video content
+        with open(sub_video_path, 'rb') as video_file:
+            content = video_file.read()
+            return obj_id, start_frame, content
