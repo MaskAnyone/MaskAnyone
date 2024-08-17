@@ -45,6 +45,51 @@ def contiguous_regions(condition):
     return idx
 
 
+def compute_final_data(data_interpolated, smoothed_data, frame_cut_detection_threshold=200):
+    """Process data to avoid smoothing artifacts at frame cuts."""
+    data_final = []
+    num_points = len(data_interpolated)
+
+    i = 0
+    while i < num_points:
+        """
+        if i < (num_points - 1):
+            should_override_points = False
+
+            # Try to figure out if we're dealing with a frame cut
+            if not np.isnan(data_interpolated[i]) and not np.isnan(data_interpolated[i + 1]):
+                distance = np.linalg.norm(np.array(data_interpolated[i]) - np.array(data_interpolated[i + 1]))
+                if distance > frame_cut_detection_threshold:
+                    should_override_points = True
+            else:
+                should_override_points = True
+
+            # If there is likely a frame cut, fall back to the raw data just to be sure
+            if should_override_points:
+                data_final.append(data_interpolated[i] if not np.isnan(data_interpolated[i]) else None)
+                data_final.append(data_interpolated[i + 1] if not np.isnan(data_interpolated[i + 1]) else None)
+
+                if i > 0:
+                    data_final[i - 1] = data_interpolated[i - 1] if not np.isnan(data_interpolated[i - 1]) else None
+
+                if i < (num_points - 2):
+                    data_final.append(data_interpolated[i + 2] if not np.isnan(data_interpolated[i + 2]) else None)
+                    i += 1
+
+                i += 1
+                continue
+        """
+
+        if np.isnan(data_interpolated[i]):
+            data_final.append(None)
+        else:
+            data_final.append(smoothed_data[i])
+
+        i += 1
+
+    return data_final
+
+
 def smooth_pose(pose_data, sampling_rate):
     # The butterworth filter will break if we have too few data points
     if pose_data is None or len(pose_data) < 50:
@@ -74,7 +119,7 @@ def smooth_pose(pose_data, sampling_rate):
             continue
 
         for keypoint_idx, keypoint in enumerate(frame_pose):
-            if keypoint[0] < 1 and keypoint[1] < 1:
+            if keypoint is None or keypoint[0] < 1 and keypoint[1] < 1:
                 # Treat (0, 0) as missing data
                 data_dict.setdefault((keypoint_idx, 0), []).append(None)
                 data_dict.setdefault((keypoint_idx, 1), []).append(None)
@@ -84,11 +129,11 @@ def smooth_pose(pose_data, sampling_rate):
                 data_dict.setdefault((keypoint_idx, 1), []).append(keypoint[1])
                 data_dict.setdefault((keypoint_idx, 2), []).append(keypoint[2])
 
-    order = 3  # Butterworth filter order
+    order = 1  # Butterworth filter order (reasonable values: 1-5)
 
     # Hz 10 (heavy) to 15 (most movements don't happen in less than 100ms)
     # Lowpass cutoff must not exceed frame_rate/2
-    lowpass_cutoff = 12 if sampling_rate > 24 else 10
+    lowpass_cutoff = min((sampling_rate // 2) - 1, 20)
 
     for key in data_dict.keys():
         data = data_dict[key]
@@ -100,8 +145,8 @@ def smooth_pose(pose_data, sampling_rate):
         # Convert None to NaN for easier processing
         data = [np.nan if v is None else v for v in data]
 
-        # Step 1: Interpolate small gaps (3 frames or less)
-        data_interpolated = interpolate_small_gaps(data, max_gap=3)
+        # Step 1: Interpolate small gaps (1 frames or less)
+        data_interpolated = interpolate_small_gaps(data, max_gap=1)
 
         # Step 2: Fill larger gaps with nearest values
         data_filled = fill_larger_gaps(data_interpolated)
@@ -110,12 +155,7 @@ def smooth_pose(pose_data, sampling_rate):
         smoothed_data = butter_it(data_filled, sampling_rate, order, lowpass_cutoff)
 
         # Step 4: Restore larger gaps (set them back to NaN)
-        data_final = []
-        for interpolated, smoothed in zip(data_interpolated, smoothed_data):
-            if np.isnan(interpolated):
-                data_final.append(None)
-            else:
-                data_final.append(smoothed)
+        data_final = compute_final_data(data_interpolated, smoothed_data)
 
         # Replace the original data in the dictionary with the final smoothed data
         data_dict[key] = data_final
@@ -137,7 +177,7 @@ def smooth_pose(pose_data, sampling_rate):
                 data_dict[(keypoint_idx, 2)][frame_idx]
             ]
 
-            if all(prop is None for prop in smoothed_keypoint):
+            if any(prop is None for prop in smoothed_keypoint):
                 smoothed_pose.append(None)
             else:
                 smoothed_pose.append(smoothed_keypoint)

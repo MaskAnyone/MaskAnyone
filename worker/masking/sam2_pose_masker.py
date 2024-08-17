@@ -124,7 +124,7 @@ BODY_25_PAIRS = [
 ]
 
 
-def render_body25_pose(image, keypoints, threshold=0.2):
+def render_body25_pose(image, keypoints, threshold=0.1):
     """
     Renders BODY_25 keypoints on the input image.
 
@@ -411,7 +411,7 @@ class Sam2PoseMasker:
         # Find contours and draw them on the reverse mask
         cropped_contours, _ = cv2.findContours(cropped_mask.astype(np.uint8), cv2.RETR_EXTERNAL,
                                                cv2.CHAIN_APPROX_SIMPLE)
-        cv2.drawContours(reverse_mask_8bit, cropped_contours, -1, 0, round(cropped_frame_width / 100))
+        cv2.drawContours(reverse_mask_8bit, cropped_contours, -1, 0, round(cropped_frame_width / 50))
 
         # Create a boolean mask
         reverse_mask_bool = reverse_mask_8bit > 0
@@ -653,6 +653,8 @@ class Sam2PoseMasker:
             return obj_id, start_frame, content
 
     def _translate_pose_data_to_original_frame(self, pose_data_dict, estimation_input_bounding_boxes, frame_count, sample_rate):
+        confidence_threshold = 0.1
+
         for obj_id, pose_data in pose_data_dict.items():
             for idx in range(frame_count):
                 relevant_start_frame = max(frame for frame in estimation_input_bounding_boxes[obj_id].keys() if frame <= idx)
@@ -664,7 +666,7 @@ class Sam2PoseMasker:
 
                 adjusted_pose = []
                 for keypoint in current_pose:
-                    if keypoint is not None:
+                    if keypoint is not None and keypoint[2] > confidence_threshold:
                         # Translate the keypoint back to the original frame coordinates
                         adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin, keypoint[2])
                         adjusted_pose.append(adjusted_keypoint)
