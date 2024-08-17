@@ -219,24 +219,26 @@ class Sam2PoseMasker:
 
             for obj_id, poses in pose_data_dict.items():
                 if poses[idx] is not None:
-                    current_poses = poses[idx]
-                    # Retrieve the bounding box for this object and frame
-                    bbox = estimation_input_bounding_boxes[obj_id][idx]
+                    current_pose = poses[idx]
+
+                    # Find the most recent bounding box for this frame
+                    relevant_start_frame = max(frame for frame in estimation_input_bounding_boxes[obj_id].keys() if frame <= idx)
+                    bbox = estimation_input_bounding_boxes[obj_id][relevant_start_frame]
+
                     xmin, ymin, xmax, ymax = bbox
 
-                    for pose in current_poses:
-                        # Adjust pose keypoints from cropped frame to original frame
-                        adjusted_pose = []
-                        for keypoint in pose:
-                            if keypoint is not None:
-                                # Translate the keypoint back to the original frame coordinates
-                                adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin, keypoint[2])
-                                adjusted_pose.append(adjusted_keypoint)
-                            else:
-                                adjusted_pose.append(None)
+                    # Adjust pose keypoints from cropped frame to original frame
+                    adjusted_pose = []
+                    for keypoint in current_pose:
+                        if keypoint is not None:
+                            # Translate the keypoint back to the original frame coordinates
+                            adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin, keypoint[2])
+                            adjusted_pose.append(adjusted_keypoint)
+                        else:
+                            adjusted_pose.append(None)
 
-                        # Render the adjusted pose on the original frame
-                        render_body25_pose(output_frame, adjusted_pose)
+                    # Render the adjusted pose on the original frame
+                    render_body25_pose(output_frame, adjusted_pose)
 
             output_frame = cv2.cvtColor(output_frame, cv2.COLOR_RGB2BGR)
             video_writer.write(output_frame)
