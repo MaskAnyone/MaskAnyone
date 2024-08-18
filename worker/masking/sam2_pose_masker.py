@@ -23,7 +23,6 @@ colors = [
 ]
 
 DEBUG = False
-OPENPOSE_SWITCH = True
 SMOOTHING = True
 
 
@@ -33,36 +32,11 @@ def configure_landmarker():
     options = mediapipe.tasks.vision.PoseLandmarkerOptions(
         base_options=mediapipe.tasks.BaseOptions(model_asset_path=model_path, delegate=mediapipe.tasks.BaseOptions.Delegate.CPU),
         running_mode=mediapipe.tasks.vision.RunningMode.VIDEO,
-        output_segmentation_masks=True,
         num_poses=1,
-        min_pose_detection_confidence=0.7,
-        min_pose_presence_confidence=0.7,
-        min_tracking_confidence=0.7
     )
 
     landmarker = mediapipe.tasks.vision.PoseLandmarker.create_from_options(options)
     return landmarker
-
-
-def draw_landmarks_on_image(rgb_image, detection_result):
-    pose_landmarks_list = detection_result.pose_landmarks
-
-    # Loop through the detected poses to visualize.
-    for idx in range(len(pose_landmarks_list)):
-        pose_landmarks = pose_landmarks_list[idx]
-
-        # Draw the pose landmarks.
-        pose_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
-        pose_landmarks_proto.landmark.extend([
-            landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in pose_landmarks
-        ])
-
-        solutions.drawing_utils.draw_landmarks(
-            rgb_image,
-            pose_landmarks_proto,
-            solutions.pose.POSE_CONNECTIONS,
-            solutions.drawing_styles.get_default_pose_landmarks_style()
-        )
 
 
 def configure_face_landmarker():
@@ -80,17 +54,12 @@ def configure_face_landmarker():
     return landmarker
 
 
-def draw_face_landmarks_on_image(rgb_image, detection_result):
-  face_landmarks_list = detection_result.face_landmarks
+def draw_face_landmarks_on_image(rgb_image, face_landmarks):
+    image_height, image_width, _ = rgb_image.shape
 
-  # Loop through the detected faces to visualize.
-  for idx in range(len(face_landmarks_list)):
-    face_landmarks = face_landmarks_list[idx]
-
-    # Draw the face landmarks.
     face_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
     face_landmarks_proto.landmark.extend([
-      landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in face_landmarks
+      landmark_pb2.NormalizedLandmark(x=landmark[0] / image_width, y=landmark[1] / image_height, z=0.5) for landmark in face_landmarks
     ])
 
     solutions.drawing_utils.draw_landmarks(
@@ -125,19 +94,15 @@ BODY_25_PAIRS = [
 
 
 def render_body25_pose(image, keypoints):
-    """
-    Renders BODY_25 keypoints on the input image.
-
-    Parameters:
-    - image: The input image as a NumPy array.
-    - keypoints: A list or NumPy array with the keypoints for BODY_25. The array shape should be (25, 3), where each keypoint is (x, y, confidence).
-    - threshold: Minimum confidence to consider a keypoint valid.
-
-    Returns:
-    - Image with BODY_25 keypoints rendered.
-    """
-    # Ensure keypoints are a numpy array
     keypoints = np.array(keypoints)
+
+    # Draw all keypoints
+    for i in range(len(keypoints)):
+        if keypoints[i][0] < 1 and keypoints[i][1] < 1:
+            continue
+
+        point = tuple(map(int, keypoints[i][:2]))
+        cv2.circle(image, point, 4, (0, 0, 0), -1)
 
     # Iterate over each pair and draw lines
     for pair in BODY_25_PAIRS:
@@ -151,6 +116,20 @@ def render_body25_pose(image, keypoints):
         pointB = tuple(map(int, keypoints[partB]))
         cv2.line(image, pointA, pointB, (0, 255, 0), 2)
 
+    return image
+
+
+MP_POSE_PAIRS = [
+    (0, 1), (1, 2), (2, 3), (3, 7), (0, 4), (4, 5), (5, 6), (6, 8),
+    (9, 10), (11, 12), (11, 13), (13, 15), (15, 19), (15, 17), (17, 19),
+    (12, 14), (14, 16), (16, 20), (16, 18), (18, 20), (11, 23), (12, 24),
+    (23, 25), (24, 26), (25, 27), (26, 28), (23, 24),
+    (28, 30), (28, 32), (30, 32), (27, 29), (27, 31), (29, 31)
+]
+
+def render_mediapipe_pose(image, keypoints):
+    keypoints = np.array(keypoints)
+
     # Draw all keypoints
     for i in range(len(keypoints)):
         if keypoints[i][0] < 1 and keypoints[i][1] < 1:
@@ -158,6 +137,18 @@ def render_body25_pose(image, keypoints):
 
         point = tuple(map(int, keypoints[i][:2]))
         cv2.circle(image, point, 4, (0, 0, 0), -1)
+
+    # Iterate over each pair and draw lines
+    for pair in MP_POSE_PAIRS:
+        partA = pair[0]
+        partB = pair[1]
+
+        if keypoints[partA][0] < 1 and keypoints[partA][1] < 1 or keypoints[partB][0] < 1 and keypoints[partB][1] < 1:
+            continue
+
+        pointA = tuple(map(int, keypoints[partA][:2]))
+        pointB = tuple(map(int, keypoints[partB][:2]))
+        cv2.line(image, pointA, pointB, (0, 255, 0), 2)
 
     return image
 
@@ -197,8 +188,8 @@ class Sam2PoseMasker:
         sub_video_paths = self._create_sub_videos(video_capture, estimation_input_bounding_boxes, masks, '/app')
         video_capture.release()
 
-        pose_data_dict = self._compute_pose_data(sub_video_paths, total_frames)
-        self._translate_pose_data_to_original_frame(pose_data_dict, estimation_input_bounding_boxes, total_frames, sample_rate)
+        pose_data_dict = self._compute_pose_data(video_masking_data, sub_video_paths, total_frames)
+        self._streamline_pose_data(video_masking_data, pose_data_dict, estimation_input_bounding_boxes, total_frames, sample_rate)
 
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
         video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)
@@ -232,130 +223,12 @@ class Sam2PoseMasker:
                             adjusted_pose.append((np.float64(0), np.float64(0)))
 
                     # Render the adjusted pose on the original frame
-                    render_body25_pose(output_frame, adjusted_pose)
-
-            output_frame = cv2.cvtColor(output_frame, cv2.COLOR_RGB2BGR)
-            video_writer.write(output_frame)
-            idx += 1
-
-        video_capture.release()
-        video_writer.release()
-
-        return
-
-        # create the sub videos including reverse mask optimization
-        # feed each sub video to pose model
-        # calc pose data back to original size
-        # smooth pose data
-        # render pose on video
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        if OPENPOSE_SWITCH:
-            pose_data = self._openpose_client.estimate_pose_on_video(content)
-
-        video_capture, frame_width, frame_height, sample_rate = self._open_video()
-        video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)
-
-        bounding_boxes = self._calculate_full_object_bounding_boxes(masks)
-        estimation_input_bounding_boxes = self._calculate_estimation_input_bounding_boxes(bounding_boxes, frame_width, frame_height)
-
-        landmarkers = {}
-        previous_bbox = {}
-
-        for object_id, bbox_dict in estimation_input_bounding_boxes.items():
-            previous_bbox[object_id] = None  # Initialize previous_bbox for each object
-
-        idx = 0
-        while video_capture.isOpened():
-            ret, frame = video_capture.read()
-
-            if not ret:
-                break
-
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame_timestamp_ms = video_capture.get(cv2.CAP_PROP_POS_MSEC)
-
-            output_frame = frame.copy()
-            self._render_all_masks_on_image(output_frame, frame_width, idx, masks)
-
-            if OPENPOSE_SWITCH:
-                poses = pose_data[idx]
-                if poses is not None:
-                    for pose in poses:
-                        render_body25_pose(output_frame, pose)
-
-            if DEBUG:
-                self._render_bounding_boxes(output_frame, bounding_boxes, idx, (255, 255, 255))
-                self._render_bounding_boxes(output_frame, estimation_input_bounding_boxes, idx, (0, 255, 0))
-
-            for object_id, bbox_dict in estimation_input_bounding_boxes.items():
-                if OPENPOSE_SWITCH:
-                    break
-
-                # Get the correct bounding box for the current frame index (idx)
-                bbox = self._select_bounding_box(bbox_dict, idx)
-
-                if bbox is not None:
-                    # Check if the bounding box has changed
-                    if object_id not in landmarkers or previous_bbox[object_id] != bbox:
-                        # Initialize a new landmarker since the bounding box has changed
-                        if video_masking_data['overlayStrategies'][object_id - 1] == 'mp_face':
-                            landmarkers[object_id] = configure_face_landmarker()
-                        elif video_masking_data['overlayStrategies'][object_id - 1] == 'mp_pose':
-                            landmarkers[object_id] = configure_landmarker()
-                        else:
-                            raise Exception(f'Got unknown overlayStrategy: {video_masking_data["overlayStrategies"][object_id - 1]}')
-
-                        previous_bbox[object_id] = bbox  # Update the previous bbox
-
-                    mask = masks[idx][object_id][0]
-                    cropped_frame = self._prepare_estimation_input_frame(frame, mask, bbox)
-
-                    mp_image = mediapipe.Image(image_format=mediapipe.ImageFormat.SRGB, data=cropped_frame)
-                    pose_landmarker_result = landmarkers[object_id].detect_for_video(mp_image, int(frame_timestamp_ms))
-
-                    # Get the region of interest and draw landmarks on it
-                    x_min, y_min, x_max, y_max = bbox
-                    region_of_interest = output_frame[y_min:y_max, x_min:x_max]
-
-                    if video_masking_data['overlayStrategies'][object_id - 1] == 'mp_face':
-                        draw_face_landmarks_on_image(region_of_interest, pose_landmarker_result)
-                    elif video_masking_data['overlayStrategies'][object_id - 1] == 'mp_pose':
-                        sv_key_points = sv.KeyPoints.from_mediapipe(pose_landmarker_result, (x_max - x_min, y_max - y_min))
-                        edge_annotator = sv.EdgeAnnotator(
-                            color=sv.Color.GREEN,
-                            thickness=4
-                        )
-                        region_of_interest = edge_annotator.annotate(
-                            scene=region_of_interest.copy(),
-                            key_points=sv_key_points
-                        )
-
-                        #draw_landmarks_on_image(region_of_interest, pose_landmarker_result)
-
-                    # Place the updated region back into the output frame
-                    output_frame[y_min:y_max, x_min:x_max] = region_of_interest
+                    if video_masking_data['overlayStrategies'][obj_id - 1] == 'openpose':
+                        render_body25_pose(output_frame, adjusted_pose)
+                    elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_pose':
+                        render_mediapipe_pose(output_frame, adjusted_pose)
+                    elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_face':
+                        draw_face_landmarks_on_image(output_frame, adjusted_pose)
 
             output_frame = cv2.cvtColor(output_frame, cv2.COLOR_RGB2BGR)
             video_writer.write(output_frame)
@@ -422,7 +295,7 @@ class Sam2PoseMasker:
 
         return cropped_frame
 
-    def _calculate_full_object_bounding_boxes(self, masks, iou_threshold=0.2):
+    def _calculate_full_object_bounding_boxes(self, masks, iou_threshold=0.25):
         bounding_boxes = {}
         active_bboxes = {}
 
@@ -615,31 +488,97 @@ class Sam2PoseMasker:
         image[mask] = (alpha * overlay[mask] + (1 - alpha) * image[mask]).astype(np.uint8)
         cv2.drawContours(image, contours, -1, border_color, round(frame_width / 600), cv2.LINE_AA)
 
-    def _compute_pose_data(self, sub_video_paths, frame_count):
+    def _compute_pose_data(self, video_masking_data, sub_video_paths, frame_count):
         pose_data_dict = {}
 
         for sub_video_path in sub_video_paths:
             if os.path.exists(sub_video_path):
                 obj_id, start_frame, content = self._read_sub_video(sub_video_path)
 
-                # Trigger the pose estimation on the sub-video
-                pose_data = self._openpose_client.estimate_pose_on_video(content)
-
-                # Ensure pose_data is properly filled or None
-                extracted_poses = [
-                    poses[0] if poses is not None and len(poses) > 0 else None
-                    for poses in (pose_data or [])
-                ]
-
-                # Ensure the list for this obj_id exists in pose_data_dict
-                if obj_id not in pose_data_dict:
-                    pose_data_dict[obj_id] = [None] * frame_count  # Initialize with None
-
-                # Insert the extracted poses into the appropriate place in the list
-                for i, pose in enumerate(extracted_poses):
-                    pose_data_dict[obj_id][start_frame + i] = pose
+                if video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_pose':
+                    self._compute_mp_pose_data(sub_video_path, obj_id, pose_data_dict, frame_count, start_frame)
+                elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_face':
+                    self._compute_mp_face_data(sub_video_path, obj_id, pose_data_dict, frame_count, start_frame)
+                elif video_masking_data['overlayStrategies'][obj_id - 1] == 'openpose':
+                    self._compute_openpose_pose_data(content, obj_id, pose_data_dict, frame_count, start_frame)
+                else:
+                    raise Exception(f'Unknown overlay strategy, got {video_masking_data["overlayStrategies"][obj_id - 1]}')
 
         return pose_data_dict
+
+    def _compute_openpose_pose_data(self, content, obj_id, pose_data_dict, frame_count, start_frame):
+        # Trigger the pose estimation on the sub-video
+        pose_data = self._openpose_client.estimate_pose_on_video(content)
+
+        # Ensure pose_data is properly filled or None
+        extracted_poses = [
+            poses[0] if poses is not None and len(poses) > 0 else None
+            for poses in (pose_data or [])
+        ]
+
+        # Ensure the list for this obj_id exists in pose_data_dict
+        if obj_id not in pose_data_dict:
+            pose_data_dict[obj_id] = [None] * frame_count  # Initialize with None
+
+        # Insert the extracted poses into the appropriate place in the list
+        for i, pose in enumerate(extracted_poses):
+            pose_data_dict[obj_id][start_frame + i] = pose
+
+    def _compute_mp_pose_data(self, sub_video_path, obj_id, pose_data_dict, frame_count, start_frame):
+        landmarker = configure_landmarker()
+        video_capture = cv2.VideoCapture(sub_video_path)
+
+        if obj_id not in pose_data_dict:
+            pose_data_dict[obj_id] = [None] * frame_count
+
+        i = 0
+        while video_capture.isOpened():
+            ret, frame = video_capture.read()
+
+            if not ret:
+                break
+
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame_timestamp_ms = video_capture.get(cv2.CAP_PROP_POS_MSEC)
+
+            mp_image = mediapipe.Image(image_format=mediapipe.ImageFormat.SRGB, data=frame)
+            pose_landmarker_result = landmarker.detect_for_video(mp_image, int(frame_timestamp_ms))
+
+            if len(pose_landmarker_result.pose_landmarks) > 0:
+                pose = pose_landmarker_result.pose_landmarks[0]
+                pose_data_dict[obj_id][start_frame + i] = pose
+
+            i += 1
+
+        video_capture.release()
+
+    def _compute_mp_face_data(self, sub_video_path, obj_id, pose_data_dict, frame_count, start_frame):
+        landmarker = configure_face_landmarker()
+        video_capture = cv2.VideoCapture(sub_video_path)
+
+        if obj_id not in pose_data_dict:
+            pose_data_dict[obj_id] = [None] * frame_count
+
+        i = 0
+        while video_capture.isOpened():
+            ret, frame = video_capture.read()
+
+            if not ret:
+                break
+
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame_timestamp_ms = video_capture.get(cv2.CAP_PROP_POS_MSEC)
+
+            mp_image = mediapipe.Image(image_format=mediapipe.ImageFormat.SRGB, data=frame)
+            face_landmarker_result = landmarker.detect_for_video(mp_image, int(frame_timestamp_ms))
+
+            if len(face_landmarker_result.face_landmarks) > 0:
+                face = face_landmarker_result.face_landmarks[0]
+                pose_data_dict[obj_id][start_frame + i] = face
+
+            i += 1
+
+        video_capture.release()
 
     def _read_sub_video(self, sub_video_path):
         basename = os.path.basename(sub_video_path)
@@ -652,28 +591,69 @@ class Sam2PoseMasker:
             content = video_file.read()
             return obj_id, start_frame, content
 
-    def _translate_pose_data_to_original_frame(self, pose_data_dict, estimation_input_bounding_boxes, frame_count, sample_rate):
+    def _streamline_pose_data(self, video_masking_data, pose_data_dict, estimation_input_bounding_boxes, frame_count, sample_rate):
         confidence_threshold = 0.2
 
         for obj_id, pose_data in pose_data_dict.items():
-            for idx in range(frame_count):
-                relevant_start_frame = max(frame for frame in estimation_input_bounding_boxes[obj_id].keys() if frame <= idx)
+            overlay_strategy = video_masking_data['overlayStrategies'][obj_id - 1]
 
-                bbox = estimation_input_bounding_boxes[obj_id][relevant_start_frame]
-                xmin, ymin, xmax, ymax = bbox
+            if overlay_strategy == 'openpose':
+                for idx in range(frame_count):
+                    relevant_start_frame = max(frame for frame in estimation_input_bounding_boxes[obj_id].keys() if frame <= idx)
 
-                current_pose = pose_data[idx]
+                    bbox = estimation_input_bounding_boxes[obj_id][relevant_start_frame]
+                    xmin, ymin, xmax, ymax = bbox
 
-                adjusted_pose = []
-                for keypoint in current_pose:
-                    if keypoint is not None and keypoint[2] > confidence_threshold:
-                        # Translate the keypoint back to the original frame coordinates
-                        adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin)
-                        adjusted_pose.append(adjusted_keypoint)
-                    else:
-                        adjusted_pose.append(None)
+                    current_pose = pose_data[idx]
 
-                pose_data_dict[obj_id][idx] = adjusted_pose
+                    adjusted_pose = []
+                    for keypoint in current_pose:
+                        if keypoint is not None and (keypoint[0] > 0 or keypoint[1] > 0) and keypoint[2] > confidence_threshold:
+                            # Translate the keypoint back to the original frame coordinates
+                            adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin)
+                            adjusted_pose.append(adjusted_keypoint)
+                        else:
+                            adjusted_pose.append(None)
 
-            if SMOOTHING:
+                    pose_data_dict[obj_id][idx] = adjusted_pose
+            elif overlay_strategy == 'mp_pose':
+                for idx in range(frame_count):
+                    relevant_start_frame = max(frame for frame in estimation_input_bounding_boxes[obj_id].keys() if frame <= idx)
+
+                    bbox = estimation_input_bounding_boxes[obj_id][relevant_start_frame]
+                    xmin, ymin, xmax, ymax = bbox
+
+                    current_pose = pose_data[idx]
+
+                    adjusted_pose = []
+                    for keypoint in current_pose:
+                        if keypoint is not None and (keypoint.x > 0 or keypoint.y > 0) and keypoint.visibility > confidence_threshold:
+                            # Translate the keypoint back to the original frame coordinates
+                            adjusted_keypoint = (keypoint.x * (xmax - xmin) + xmin, keypoint.y * (ymax - ymin) + ymin)
+                            adjusted_pose.append(adjusted_keypoint)
+                        else:
+                            adjusted_pose.append(None)
+
+                    pose_data_dict[obj_id][idx] = adjusted_pose
+            elif overlay_strategy == 'mp_face':
+                for idx in range(frame_count):
+                    relevant_start_frame = max(frame for frame in estimation_input_bounding_boxes[obj_id].keys() if frame <= idx)
+
+                    bbox = estimation_input_bounding_boxes[obj_id][relevant_start_frame]
+                    xmin, ymin, xmax, ymax = bbox
+
+                    current_face = pose_data[idx]
+
+                    adjusted_face = []
+                    for keypoint in current_face:
+                        if keypoint is not None and (keypoint.x > 0 or keypoint.y > 0):
+                            # Translate the keypoint back to the original frame coordinates
+                            adjusted_keypoint = (keypoint.x * (xmax - xmin) + xmin, keypoint.y * (ymax - ymin) + ymin)
+                            adjusted_face.append(adjusted_keypoint)
+                        else:
+                            adjusted_face.append(None)
+
+                    pose_data_dict[obj_id][idx] = adjusted_face
+
+            if SMOOTHING and (overlay_strategy == 'openpose' or overlay_strategy == 'mp_pose'):
                 pose_data_dict[obj_id] = smooth_pose(pose_data_dict[obj_id], sample_rate)

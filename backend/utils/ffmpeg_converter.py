@@ -29,7 +29,7 @@ class FFmpegConverter:
             "-i", input_video,
             "-i", audio_video,
             "-map", "0:v",
-            "-map", "1:a",
+            "-map", "1:a?",
             "-c:v", "libx264",
             "-crf", str(self.crf),
             "-preset", self.preset,
