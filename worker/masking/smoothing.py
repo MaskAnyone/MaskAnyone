@@ -52,34 +52,6 @@ def compute_final_data(data_interpolated, smoothed_data, frame_cut_detection_thr
 
     i = 0
     while i < num_points:
-        """
-        if i < (num_points - 1):
-            should_override_points = False
-
-            # Try to figure out if we're dealing with a frame cut
-            if not np.isnan(data_interpolated[i]) and not np.isnan(data_interpolated[i + 1]):
-                distance = np.linalg.norm(np.array(data_interpolated[i]) - np.array(data_interpolated[i + 1]))
-                if distance > frame_cut_detection_threshold:
-                    should_override_points = True
-            else:
-                should_override_points = True
-
-            # If there is likely a frame cut, fall back to the raw data just to be sure
-            if should_override_points:
-                data_final.append(data_interpolated[i] if not np.isnan(data_interpolated[i]) else None)
-                data_final.append(data_interpolated[i + 1] if not np.isnan(data_interpolated[i + 1]) else None)
-
-                if i > 0:
-                    data_final[i - 1] = data_interpolated[i - 1] if not np.isnan(data_interpolated[i - 1]) else None
-
-                if i < (num_points - 2):
-                    data_final.append(data_interpolated[i + 2] if not np.isnan(data_interpolated[i + 2]) else None)
-                    i += 1
-
-                i += 1
-                continue
-        """
-
         if np.isnan(data_interpolated[i]):
             data_final.append(None)
         else:
@@ -92,7 +64,7 @@ def compute_final_data(data_interpolated, smoothed_data, frame_cut_detection_thr
 
 def smooth_pose(pose_data, sampling_rate):
     # The butterworth filter will break if we have too few data points
-    if pose_data is None or len(pose_data) < 50:
+    if pose_data is None or len(pose_data) < 30:
         return pose_data
 
     # Check if pose_data is None everywhere (all frames are None)
@@ -106,40 +78,42 @@ def smooth_pose(pose_data, sampling_rate):
             break
 
     # sampling_rate should match video framerate
-    data_dict = {}
+    raw_data_dict = {}
 
     # Populate data_dict with keypoint data
     for frame_idx, frame_pose in enumerate(pose_data):
         if frame_pose is None:
             # Fill dict with None values to be handled later
             for keypoint_idx in range(pose_keypoint_count):
-                data_dict.setdefault((keypoint_idx, 0), []).append(None)
-                data_dict.setdefault((keypoint_idx, 1), []).append(None)
-                data_dict.setdefault((keypoint_idx, 2), []).append(None)
+                raw_data_dict.setdefault((keypoint_idx, 0), []).append(None)
+                raw_data_dict.setdefault((keypoint_idx, 1), []).append(None)
             continue
 
         for keypoint_idx, keypoint in enumerate(frame_pose):
             if keypoint is None or keypoint[0] < 1 and keypoint[1] < 1:
                 # Treat (0, 0) as missing data
-                data_dict.setdefault((keypoint_idx, 0), []).append(None)
-                data_dict.setdefault((keypoint_idx, 1), []).append(None)
-                data_dict.setdefault((keypoint_idx, 2), []).append(None)
+                raw_data_dict.setdefault((keypoint_idx, 0), []).append(None)
+                raw_data_dict.setdefault((keypoint_idx, 1), []).append(None)
             else:
-                data_dict.setdefault((keypoint_idx, 0), []).append(keypoint[0])
-                data_dict.setdefault((keypoint_idx, 1), []).append(keypoint[1])
-                data_dict.setdefault((keypoint_idx, 2), []).append(keypoint[2])
+                raw_data_dict.setdefault((keypoint_idx, 0), []).append(keypoint[0])
+                raw_data_dict.setdefault((keypoint_idx, 1), []).append(keypoint[1])
 
-    order = 1  # Butterworth filter order (reasonable values: 1-5)
+    order = 2  # Butterworth filter order (reasonable values: 1-5)
 
     # Hz 10 (heavy) to 15 (most movements don't happen in less than 100ms)
     # Lowpass cutoff must not exceed frame_rate/2
-    lowpass_cutoff = min((sampling_rate // 2) - 1, 20)
+    lowpass_cutoff = min((sampling_rate // 2) - 1, 12)
 
-    for key in data_dict.keys():
-        data = data_dict[key]
+    smoothed_data_dict = {}
+    interpolated_data_dict = {}
+
+    for key in raw_data_dict.keys():
+        data = raw_data_dict[key]
 
         # If there are only none values for a given keypoint we can't do anything
         if all(point is None for point in data):
+            smoothed_data_dict[key] = data
+            interpolated_data_dict[key] = [np.nan for _ in data]
             continue
 
         # Convert None to NaN for easier processing
@@ -157,25 +131,70 @@ def smooth_pose(pose_data, sampling_rate):
         # Step 4: Restore larger gaps (set them back to NaN)
         data_final = compute_final_data(data_interpolated, smoothed_data)
 
-        # Replace the original data in the dictionary with the final smoothed data
-        data_dict[key] = data_final
+        smoothed_data_dict[key] = data_final
+        interpolated_data_dict[key] = data_interpolated
 
     # Reconstruct the pose data from smoothed data_dict
     smoothed_pose_data = []
 
-    for frame_idx in range(len(pose_data)):
-        smoothed_pose = []
+    # Pose keypoint threshold to detect frame cuts
+    # Should optimally be relative to frame size, pose size and frame rate
+    # i.e. what is the max distance a fast movement might be between two frames?
+    threshold = 60 * (30 / sampling_rate)
 
+    # How many frames to flag before and after the frame cut
+    frame_cut_buffer_length = 6
+
+
+    flagged_frames = set()
+
+    # Step 1: Calculate distances and flag frames
+    for frame_idx in range(1, len(pose_data)):
+        if pose_data[frame_idx] is None or pose_data[frame_idx - 1] is None:
+            continue
+
+        for keypoint_idx in range(len(pose_data[frame_idx])):
+            interpolated_x_current = interpolated_data_dict[(keypoint_idx, 0)][frame_idx]
+            interpolated_y_current = interpolated_data_dict[(keypoint_idx, 1)][frame_idx]
+            interpolated_x_prev = interpolated_data_dict[(keypoint_idx, 0)][frame_idx - 1]
+            interpolated_y_prev = interpolated_data_dict[(keypoint_idx, 1)][frame_idx - 1]
+
+            if (np.isnan(interpolated_x_current) or
+                    np.isnan(interpolated_y_current) or
+                    np.isnan(interpolated_x_prev) or
+                    np.isnan(interpolated_y_prev)):
+                continue
+
+            distance = ((interpolated_x_current - interpolated_x_prev) ** 2 +
+                        (interpolated_y_current - interpolated_y_prev) ** 2) ** 0.5
+
+            if distance > threshold:
+                # Flag this frame and a few frames before and after
+                for i in range(max(0, frame_idx - frame_cut_buffer_length), min(len(pose_data), frame_idx + frame_cut_buffer_length + 1)):
+                    flagged_frames.add(i)
+
+    print('FlaggedFrames', flagged_frames)
+
+    # Step 2: Construct smoothed_pose_data considering flagged frames
+    for frame_idx in range(len(pose_data)):
         if pose_data[frame_idx] is None:
             smoothed_pose_data.append(None)
             continue
 
+        smoothed_pose = []
+
         for keypoint_idx in range(len(pose_data[frame_idx])):
-            smoothed_keypoint = [
-                data_dict[(keypoint_idx, 0)][frame_idx],
-                data_dict[(keypoint_idx, 1)][frame_idx],
-                data_dict[(keypoint_idx, 2)][frame_idx]
-            ]
+            if frame_idx in flagged_frames:
+                smoothed_x = interpolated_data_dict[(keypoint_idx, 0)][frame_idx]
+                smoothed_y = interpolated_data_dict[(keypoint_idx, 1)][frame_idx]
+
+                smoothed_x = None if np.isnan(smoothed_x) else smoothed_x
+                smoothed_y = None if np.isnan(smoothed_y) else smoothed_y
+            else:
+                smoothed_x = smoothed_data_dict[(keypoint_idx, 0)][frame_idx]
+                smoothed_y = smoothed_data_dict[(keypoint_idx, 1)][frame_idx]
+
+            smoothed_keypoint = [smoothed_x, smoothed_y]
 
             if any(prop is None for prop in smoothed_keypoint):
                 smoothed_pose.append(None)
