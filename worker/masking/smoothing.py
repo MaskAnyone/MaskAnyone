@@ -102,7 +102,7 @@ def smooth_pose(pose_data, sampling_rate):
 
     # Hz 10 (heavy) to 15 (most movements don't happen in less than 100ms)
     # Lowpass cutoff must not exceed frame_rate/2
-    lowpass_cutoff = min((sampling_rate // 2) - 1, 12)
+    lowpass_cutoff = min((sampling_rate // 2) - 1, 13)
 
     smoothed_data_dict = {}
     interpolated_data_dict = {}
@@ -143,7 +143,7 @@ def smooth_pose(pose_data, sampling_rate):
     threshold = 60 * (30 / sampling_rate)
 
     # How many frames to flag before and after the frame cut
-    frame_cut_buffer_length = 6
+    frame_cut_buffer_length = 7
 
 
     flagged_frames = set()
