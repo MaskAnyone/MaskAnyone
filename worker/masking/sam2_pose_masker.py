@@ -592,7 +592,7 @@ class Sam2PoseMasker:
             return obj_id, start_frame, content
 
     def _streamline_pose_data(self, video_masking_data, pose_data_dict, estimation_input_bounding_boxes, frame_count, sample_rate):
-        confidence_threshold = 0.2
+        confidence_threshold = 0.1
 
         for obj_id, pose_data in pose_data_dict.items():
             overlay_strategy = video_masking_data['overlayStrategies'][obj_id - 1]
