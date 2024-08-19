@@ -3,6 +3,7 @@ import numpy as np
 import mediapipe
 import supervision as sv
 import os
+import shutil
 
 from typing import Callable
 from communication.sam2_client import Sam2Client
@@ -185,11 +186,14 @@ class Sam2PoseMasker:
         bounding_boxes = self._calculate_full_object_bounding_boxes(masks)
         estimation_input_bounding_boxes = self._calculate_estimation_input_bounding_boxes(bounding_boxes, frame_width, frame_height)
 
-        sub_video_paths = self._create_sub_videos(video_capture, estimation_input_bounding_boxes, masks, '/app')
+        subvideo_output_dir = '/app/subvideos'
+        sub_video_paths = self._create_sub_videos(video_capture, estimation_input_bounding_boxes, masks, subvideo_output_dir)
         video_capture.release()
 
         pose_data_dict = self._compute_pose_data(video_masking_data, sub_video_paths, total_frames)
         self._streamline_pose_data(video_masking_data, pose_data_dict, estimation_input_bounding_boxes, total_frames, sample_rate)
+
+        shutil.rmtree(subvideo_output_dir)
 
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
         video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)
@@ -367,7 +371,7 @@ class Sam2PoseMasker:
         iou = intersection_area / union_area
         return iou
 
-    def _create_sub_videos(self, video_capture, estimation_input_bounding_boxes, masks, output_dir):
+    def _create_sub_videos(self, video_capture, estimation_input_bounding_boxes, masks, subvideo_output_dir):
         sub_video_paths = []
 
         fps = video_capture.get(cv2.CAP_PROP_FPS)
@@ -389,7 +393,9 @@ class Sam2PoseMasker:
                     end_frame = total_frames - 1
 
                 # Define the output video filename
-                output_filename = f"{output_dir}/object_{obj_id}_frame_{start_frame}.mp4"
+                os.makedirs(subvideo_output_dir, exist_ok=True)
+
+                output_filename = f"{subvideo_output_dir}/object_{obj_id}_frame_{start_frame}.mp4"
                 sub_video_paths.append(output_filename)
 
                 out = cv2.VideoWriter(output_filename, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
@@ -656,4 +662,8 @@ class Sam2PoseMasker:
                     pose_data_dict[obj_id][idx] = adjusted_face
 
             if SMOOTHING and (overlay_strategy == 'openpose' or overlay_strategy == 'mp_pose'):
-                pose_data_dict[obj_id] = smooth_pose(pose_data_dict[obj_id], sample_rate)
+                pose_data_dict[obj_id] = smooth_pose(
+                    pose_data_dict[obj_id],
+                    sample_rate,
+                    10 if overlay_strategy == 'openpose' else 14
+                )
