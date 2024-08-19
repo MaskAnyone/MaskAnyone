@@ -612,6 +612,10 @@ class Sam2PoseMasker:
 
                     current_pose = pose_data[idx]
 
+                    if current_pose is None:
+                        pose_data_dict[obj_id][idx] = None
+                        continue
+
                     adjusted_pose = []
                     for keypoint in current_pose:
                         if keypoint is not None and (keypoint[0] > 0 or keypoint[1] > 0) and keypoint[2] > confidence_threshold:
@@ -630,6 +634,10 @@ class Sam2PoseMasker:
                     xmin, ymin, xmax, ymax = bbox
 
                     current_pose = pose_data[idx]
+
+                    if current_pose is None:
+                        pose_data_dict[obj_id][idx] = None
+                        continue
 
                     adjusted_pose = []
                     for keypoint in current_pose:
