@@ -23,7 +23,9 @@ RUN mkdir /worker_models \
     && wget https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/latest/pose_landmarker_heavy.task \
         -O /worker_models/pose_landmarker_heavy.task \
     && wget https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task \
-        -O /worker_models/face_landmarker.task
+        -O /worker_models/face_landmarker.task \
+    && wget https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task \
+        -O /worker_models/hand_landmarker.task
 
 RUN apt-get update \
     && apt-get -y install \
