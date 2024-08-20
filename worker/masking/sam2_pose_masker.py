@@ -93,9 +93,35 @@ BODY_25_PAIRS = [
     (11, 22), (22, 23), (11, 24)
 ]
 
+FACE_PAIRS = [
+    (0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 8), (8, 9), (9, 10),
+    (10, 11), (11, 12), (12, 13), (13, 14), (14, 15), (15, 16),  # Jawline
+    (17, 18), (18, 19), (19, 20), (20, 21),  # Right eyebrow
+    (22, 23), (23, 24), (24, 25), (25, 26),  # Left eyebrow
+    (27, 28), (28, 29), (29, 30),  # Nose bridge
+    (31, 32), (32, 33), (33, 34), (34, 35),  # Nose bottom
+    (36, 37), (37, 38), (38, 39), (39, 40), (40, 41), (41, 36),  # Right eye
+    (42, 43), (43, 44), (44, 45), (45, 46), (46, 47), (47, 42),  # Left eye
+    (48, 49), (49, 50), (50, 51), (51, 52), (52, 53), (53, 54), (54, 55), (55, 56),
+    (56, 57), (57, 58), (58, 59), (59, 48),  # Outer lip
+    (60, 61), (61, 62), (62, 63), (63, 64), (64, 65), (65, 66), (66, 67), (67, 60)  # Inner lip
+]
+
+HAND_PAIRS = [
+    (0, 1), (1, 2), (2, 3), (3, 4),  # Thumb
+    (0, 5), (5, 6), (6, 7), (7, 8),  # Index finger
+    (0, 9), (9, 10), (10, 11), (11, 12),  # Middle finger
+    (0, 13), (13, 14), (14, 15), (15, 16),  # Ring finger
+    (0, 17), (17, 18), (18, 19), (19, 20)  # Pinky
+]
+
+
 
 def render_body25_pose(image, full_pose):
     keypoints = np.array(full_pose['pose_keypoints'])
+    face_keypoints = full_pose['face_keypoints']
+    left_hand_keypoints = full_pose['left_hand_keypoints']
+    right_hand_keypoints = full_pose['right_hand_keypoints']
 
     # Draw all keypoints
     for i in range(len(keypoints)):
@@ -103,7 +129,7 @@ def render_body25_pose(image, full_pose):
             continue
 
         point = tuple(map(int, keypoints[i][:2]))
-        cv2.circle(image, point, 4, (0, 0, 0), -1)
+        cv2.circle(image, point, 4, (0, 255, 0), -1)
 
     # Iterate over each pair and draw lines
     for pair in BODY_25_PAIRS:
@@ -122,7 +148,22 @@ def render_body25_pose(image, full_pose):
             continue
 
         point = tuple(map(int, face_keypoint))
-        cv2.circle(image, point, 2, (255, 255, 255), -1)
+        cv2.circle(image, point, 2, (0, 255, 255), -1)
+
+    # Iterate over each pair and draw lines
+    for pair in FACE_PAIRS:
+        partA = pair[0]
+        partB = pair[1]
+
+        if face_keypoints[partA] is None or face_keypoints[partB] is None:
+            continue
+
+        if face_keypoints[partA][0] < 1 and face_keypoints[partA][1] < 1 or face_keypoints[partB][0] < 1 and face_keypoints[partB][1] < 1:
+            continue
+
+        pointA = tuple(map(int, face_keypoints[partA]))
+        pointB = tuple(map(int, face_keypoints[partB]))
+        cv2.line(image, pointA, pointB, (0, 255, 255), 2)
 
     for hand_keypoint in full_pose['left_hand_keypoints']:
         if hand_keypoint is None:
@@ -131,12 +172,40 @@ def render_body25_pose(image, full_pose):
         point = tuple(map(int, hand_keypoint))
         cv2.circle(image, point, 2, (255, 0, 0), -1)
 
+    for pair in HAND_PAIRS:
+        partA = pair[0]
+        partB = pair[1]
+
+        if left_hand_keypoints[partA] is None or left_hand_keypoints[partB] is None:
+            continue
+
+        if left_hand_keypoints[partA][0] < 1 and left_hand_keypoints[partA][1] < 1 or left_hand_keypoints[partB][0] < 1 and left_hand_keypoints[partB][1] < 1:
+            continue
+
+        pointA = tuple(map(int, left_hand_keypoints[partA]))
+        pointB = tuple(map(int, left_hand_keypoints[partB]))
+        cv2.line(image, pointA, pointB, (255, 0, 0), 2)
+
     for hand_keypoint in full_pose['right_hand_keypoints']:
         if hand_keypoint is None:
             continue
 
         point = tuple(map(int, hand_keypoint))
         cv2.circle(image, point, 2, (0, 0, 255), -1)
+
+    for pair in HAND_PAIRS:
+        partA = pair[0]
+        partB = pair[1]
+
+        if right_hand_keypoints[partA] is None or right_hand_keypoints[partB] is None:
+            continue
+
+        if right_hand_keypoints[partA][0] < 1 and right_hand_keypoints[partA][1] < 1 or right_hand_keypoints[partB][0] < 1 and right_hand_keypoints[partB][1] < 1:
+            continue
+
+        pointA = tuple(map(int, right_hand_keypoints[partA]))
+        pointB = tuple(map(int, right_hand_keypoints[partB]))
+        cv2.line(image, pointA, pointB, (0, 0, 255), 2)
 
     return image
 
@@ -506,10 +575,13 @@ class Sam2PoseMasker:
         for object_id in range(1, len(masks[frame_idx]) + 1):
             mask = masks[frame_idx][object_id][0]
             color = colors[(object_id - 1) % len(colors)]
-            self._render_mask_on_image(image, frame_width, mask, color)
+            #self._render_mask_on_image(image, frame_width, mask, color)
+
+            self._render_mask_on_image(image, frame_width, mask, (0, 0, 0))
+            #self._render_mask_on_image_contours(image, frame_width, mask)
 
     def _render_mask_on_image(self, image, frame_width, mask, color):
-        alpha = 0.5
+        alpha = 1.0
 
         overlay = np.zeros_like(image)
         overlay[:, :, 0] = color[0]
@@ -521,6 +593,33 @@ class Sam2PoseMasker:
 
         image[mask] = (alpha * overlay[mask] + (1 - alpha) * image[mask]).astype(np.uint8)
         cv2.drawContours(image, contours, -1, border_color, round(frame_width / 600), cv2.LINE_AA)
+
+    def _render_mask_on_image_contours(self, image, frame_width, mask):
+        level_settings = {
+            "blur_kernel_size": 17,
+            "laplacian_kernel_size": 5,
+            "laplacian_scale": 1.2,
+            "laplacian_delta": 10,
+        }
+
+        blurred_image = cv2.GaussianBlur(
+            image.copy(),
+            (level_settings["blur_kernel_size"], level_settings["blur_kernel_size"]),
+            0,
+        )
+
+        gray_image = cv2.cvtColor(blurred_image, cv2.COLOR_RGB2GRAY)
+        edge_image = cv2.Laplacian(
+            gray_image,
+            -1,
+            ksize=level_settings["laplacian_kernel_size"],
+            scale=level_settings["laplacian_scale"],
+            delta=level_settings["laplacian_delta"],
+            borderType=cv2.BORDER_DEFAULT,
+        )
+        final_contours_image = cv2.cvtColor(edge_image, cv2.COLOR_GRAY2RGB)
+
+        image[mask] = final_contours_image[mask]
 
     def _compute_pose_data(self, video_masking_data, sub_video_paths, frame_count):
         pose_data_dict = {}
@@ -724,11 +823,26 @@ class Sam2PoseMasker:
 
                     pose_data_dict[obj_id][idx] = adjusted_face
 
-            # @todo
-            if overlay_strategy == 'mp_pose':
-                if SMOOTHING and (overlay_strategy == 'openpose' or overlay_strategy == 'mp_pose'):
+            if SMOOTHING and (overlay_strategy == 'openpose' or overlay_strategy == 'mp_pose'):
+                if overlay_strategy == 'mp_pose':
                     pose_data_dict[obj_id] = smooth_pose(
                         pose_data_dict[obj_id],
                         sample_rate,
                         10 if overlay_strategy == 'openpose' else 14
                     )
+                elif overlay_strategy == 'openpose':
+                    pass
+                    """
+                    pose_data_dict[obj_id]['body_keypoints'] = smooth_pose(
+                        pose_data_dict[obj_id]['body_keypoints'],
+                        sample_rate,
+                        10
+                    )
+                    
+                    pose_data_dict[obj_id]['face_keypoints'] = smooth_pose(
+                        pose_data_dict[obj_id]['face_keypoints'],
+                        sample_rate,
+                        12
+                    )
+                    """
+
