@@ -23,7 +23,12 @@ def perform_openpose_pose_estimation(input_path: str):
         op_wrapper.emplaceAndPop(op.VectorDatum([datum]))
 
         if datum.poseKeypoints is not None and len(datum.poseKeypoints) > 0:
-            pose_data.append(datum.poseKeypoints)
+            pose_data.append({
+                'pose_keypoints': datum.poseKeypoints[0],
+                'face_keypoints': datum.faceKeypoints[0] if datum.faceKeypoints is not None and len(datum.faceKeypoints) > 0 else None,
+                'left_hand_keypoints': datum.handKeypoints[0][0] if datum.handKeypoints is not None and len(datum.handKeypoints) > 0 else None,
+                'right_hand_keypoints': datum.handKeypoints[1][0] if datum.handKeypoints is not None and len(datum.handKeypoints) > 1 else None,
+            })
         else:
             pose_data.append(None)
 
@@ -37,9 +42,10 @@ def initialize_open_pose():
     params = dict()
     params["model_folder"] = "/models/"
     # params["model_pose"] = "COCO"
-    params["face"] = False
-    params["hand"] = False
+    params["face"] = True
+    params["hand"] = True
     # params["net_resolution"] = "-1x512"
+    params["net_resolution"] = "-1x480"
 
     op_wrapper = op.WrapperPython()
     op_wrapper.configure(params)

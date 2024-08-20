@@ -94,8 +94,8 @@ BODY_25_PAIRS = [
 ]
 
 
-def render_body25_pose(image, keypoints):
-    keypoints = np.array(keypoints)
+def render_body25_pose(image, full_pose):
+    keypoints = np.array(full_pose['pose_keypoints'])
 
     # Draw all keypoints
     for i in range(len(keypoints)):
@@ -116,6 +116,27 @@ def render_body25_pose(image, keypoints):
         pointA = tuple(map(int, keypoints[partA]))
         pointB = tuple(map(int, keypoints[partB]))
         cv2.line(image, pointA, pointB, (0, 255, 0), 2)
+
+    for face_keypoint in full_pose['face_keypoints']:
+        if face_keypoint is None:
+            continue
+
+        point = tuple(map(int, face_keypoint))
+        cv2.circle(image, point, 2, (255, 255, 255), -1)
+
+    for hand_keypoint in full_pose['left_hand_keypoints']:
+        if hand_keypoint is None:
+            continue
+
+        point = tuple(map(int, hand_keypoint))
+        cv2.circle(image, point, 2, (255, 0, 0), -1)
+
+    for hand_keypoint in full_pose['right_hand_keypoints']:
+        if hand_keypoint is None:
+            continue
+
+        point = tuple(map(int, hand_keypoint))
+        cv2.circle(image, point, 2, (0, 0, 255), -1)
 
     return image
 
@@ -218,21 +239,28 @@ class Sam2PoseMasker:
                 if poses[idx] is not None:
                     current_pose = poses[idx]
 
-                    # Adjust pose keypoints from cropped frame to original frame
-                    adjusted_pose = []
-                    for keypoint in current_pose:
-                        if keypoint is not None:
-                            adjusted_pose.append(keypoint)
-                        else:
-                            adjusted_pose.append((np.float64(0), np.float64(0)))
-
                     # Render the adjusted pose on the original frame
                     if video_masking_data['overlayStrategies'][obj_id - 1] == 'openpose':
-                        render_body25_pose(output_frame, adjusted_pose)
+                        adjusted_pose = []
+                        for keypoint in current_pose['pose_keypoints']:
+                            if keypoint is not None:
+                                adjusted_pose.append(keypoint)
+                            else:
+                                adjusted_pose.append((np.float64(0), np.float64(0)))
+
+                        current_pose['pose_keypoints'] = adjusted_pose
+                        render_body25_pose(output_frame, current_pose)
                     elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_pose':
+                        adjusted_pose = []
+                        for keypoint in current_pose:
+                            if keypoint is not None:
+                                adjusted_pose.append(keypoint)
+                            else:
+                                adjusted_pose.append((np.float64(0), np.float64(0)))
+
                         render_mediapipe_pose(output_frame, adjusted_pose)
                     elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_face':
-                        draw_face_landmarks_on_image(output_frame, adjusted_pose)
+                        draw_face_landmarks_on_image(output_frame, current_pose)
 
             output_frame = cv2.cvtColor(output_frame, cv2.COLOR_RGB2BGR)
             video_writer.write(output_frame)
@@ -516,18 +544,12 @@ class Sam2PoseMasker:
         # Trigger the pose estimation on the sub-video
         pose_data = self._openpose_client.estimate_pose_on_video(content)
 
-        # Ensure pose_data is properly filled or None
-        extracted_poses = [
-            poses[0] if poses is not None and len(poses) > 0 else None
-            for poses in (pose_data or [])
-        ]
-
         # Ensure the list for this obj_id exists in pose_data_dict
         if obj_id not in pose_data_dict:
             pose_data_dict[obj_id] = [None] * frame_count  # Initialize with None
 
         # Insert the extracted poses into the appropriate place in the list
-        for i, pose in enumerate(extracted_poses):
+        for i, pose in enumerate(pose_data):
             pose_data_dict[obj_id][start_frame + i] = pose
 
     def _compute_mp_pose_data(self, sub_video_path, obj_id, pose_data_dict, frame_count, start_frame):
@@ -598,7 +620,7 @@ class Sam2PoseMasker:
             return obj_id, start_frame, content
 
     def _streamline_pose_data(self, video_masking_data, pose_data_dict, estimation_input_bounding_boxes, frame_count, sample_rate):
-        confidence_threshold = 0.1
+        confidence_threshold = 0.05
 
         for obj_id, pose_data in pose_data_dict.items():
             overlay_strategy = video_masking_data['overlayStrategies'][obj_id - 1]
@@ -612,18 +634,51 @@ class Sam2PoseMasker:
 
                     current_pose = pose_data[idx]
 
-                    if current_pose is None:
+                    if current_pose is None or current_pose['pose_keypoints'] is None:
                         pose_data_dict[obj_id][idx] = None
                         continue
 
-                    adjusted_pose = []
-                    for keypoint in current_pose:
+                    adjusted_pose = {
+                        'pose_keypoints': [],
+                        'face_keypoints': [],
+                        'left_hand_keypoints': [],
+                        'right_hand_keypoints': []
+                    }
+
+                    for keypoint in current_pose['pose_keypoints']:
                         if keypoint is not None and (keypoint[0] > 0 or keypoint[1] > 0) and keypoint[2] > confidence_threshold:
                             # Translate the keypoint back to the original frame coordinates
                             adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin)
-                            adjusted_pose.append(adjusted_keypoint)
+                            adjusted_pose['pose_keypoints'].append(adjusted_keypoint)
                         else:
-                            adjusted_pose.append(None)
+                            adjusted_pose['pose_keypoints'].append(None)
+
+                    if current_pose['face_keypoints'] is not None:
+                        for keypoint in current_pose['face_keypoints']:
+                            if keypoint is not None and (keypoint[0] > 0 or keypoint[1] > 0) and keypoint[2] > confidence_threshold:
+                                # Translate the keypoint back to the original frame coordinates
+                                adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin)
+                                adjusted_pose['face_keypoints'].append(adjusted_keypoint)
+                            else:
+                                adjusted_pose['face_keypoints'].append(None)
+
+                    if current_pose['left_hand_keypoints'] is not None:
+                        for keypoint in current_pose['left_hand_keypoints']:
+                            if keypoint is not None and (keypoint[0] > 0 or keypoint[1] > 0) and keypoint[2] > confidence_threshold:
+                                # Translate the keypoint back to the original frame coordinates
+                                adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin)
+                                adjusted_pose['left_hand_keypoints'].append(adjusted_keypoint)
+                            else:
+                                adjusted_pose['left_hand_keypoints'].append(None)
+
+                    if current_pose['right_hand_keypoints'] is not None:
+                        for keypoint in current_pose['right_hand_keypoints']:
+                            if keypoint is not None and (keypoint[0] > 0 or keypoint[1] > 0) and keypoint[2] > confidence_threshold:
+                                # Translate the keypoint back to the original frame coordinates
+                                adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin)
+                                adjusted_pose['right_hand_keypoints'].append(adjusted_keypoint)
+                            else:
+                                adjusted_pose['right_hand_keypoints'].append(None)
 
                     pose_data_dict[obj_id][idx] = adjusted_pose
             elif overlay_strategy == 'mp_pose':
@@ -669,9 +724,11 @@ class Sam2PoseMasker:
 
                     pose_data_dict[obj_id][idx] = adjusted_face
 
-            if SMOOTHING and (overlay_strategy == 'openpose' or overlay_strategy == 'mp_pose'):
-                pose_data_dict[obj_id] = smooth_pose(
-                    pose_data_dict[obj_id],
-                    sample_rate,
-                    10 if overlay_strategy == 'openpose' else 14
-                )
+            # @todo
+            if overlay_strategy == 'mp_pose':
+                if SMOOTHING and (overlay_strategy == 'openpose' or overlay_strategy == 'mp_pose'):
+                    pose_data_dict[obj_id] = smooth_pose(
+                        pose_data_dict[obj_id],
+                        sample_rate,
+                        10 if overlay_strategy == 'openpose' else 14
+                    )
