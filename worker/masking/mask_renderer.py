@@ -51,6 +51,25 @@ CONTOURS_LEVELS = {
     },
 }
 
+COLORS = [
+    (255, 0, 0),     # Red
+    (0, 255, 0),     # Green
+    (0, 0, 255),     # Blue
+    (255, 255, 0),   # Yellow
+    (255, 0, 255),   # Magenta
+    (0, 255, 255),   # Cyan
+    (128, 0, 0),     # Maroon
+    (128, 128, 0),   # Olive
+    (0, 128, 0),     # Dark Green
+    (128, 0, 128),   # Purple
+    (0, 128, 128),   # Teal
+    (0, 0, 128),     # Navy
+    (192, 192, 192), # Silver
+    (128, 128, 128), # Gray
+    (255, 165, 0),   # Orange
+]
+
+
 class MaskRenderer:
     _strategy: str
     _options: dict
@@ -59,9 +78,11 @@ class MaskRenderer:
         self._strategy = strategy
         self._options = options
 
-    def apply_to_image(self, rgb_image, boolean_segmentation_mask):
+    def apply_to_image(self, rgb_image, boolean_segmentation_mask, object_id=None):
         if self._strategy == 'solid_fill':
             self._apply_solid_fill_to_image(rgb_image, boolean_segmentation_mask)
+        elif self._strategy == 'transparent_fill':
+            self._apply_transparent_fill_to_image(rgb_image, boolean_segmentation_mask, object_id)
         elif self._strategy == 'blurring':
             self._apply_blur_to_image(rgb_image, boolean_segmentation_mask)
         elif self._strategy == 'pixelation':
@@ -71,6 +92,9 @@ class MaskRenderer:
         else:
             raise Exception(f'Unknown video masking strategy, got {self._strategy}')
 
+        if 'object_borders' in self._options:
+            self._apply_object_borders(rgb_image, boolean_segmentation_mask)
+
     def _apply_solid_fill_to_image(self, rgb_image, boolean_segmentation_mask):
         if self._options['averageColor']:
             average_color = np.mean(rgb_image, axis=(0, 1)).astype(int)
@@ -79,6 +103,18 @@ class MaskRenderer:
             fill_color = self._hex_to_rgb(self._options['color'])[::-1]
 
         rgb_image[boolean_segmentation_mask] = fill_color
+
+    def _apply_transparent_fill_to_image(self, rgb_image, boolean_segmentation_mask, object_id):
+        color = COLORS[(object_id - 1) % len(COLORS)]
+        alpha = self._options['level'] / 6.0
+
+        overlay = np.zeros_like(rgb_image)
+        overlay[:, :, 0] = color[0]
+        overlay[:, :, 1] = color[1]
+        overlay[:, :, 2] = color[2]
+
+        rgb_image[boolean_segmentation_mask] = (alpha * overlay[boolean_segmentation_mask]
+                                                + (1 - alpha) * rgb_image[boolean_segmentation_mask]).astype(np.uint8)
 
     def _apply_blur_to_image(self, rgb_image, boolean_segmentation_mask):
         kernel_size = BLURRING_LEVELS[self._options['level']]
@@ -117,6 +153,14 @@ class MaskRenderer:
         final_contours_image = cv2.cvtColor(edge_image, cv2.COLOR_GRAY2RGB)
 
         rgb_image[boolean_segmentation_mask] = final_contours_image[boolean_segmentation_mask]
+
+    def _apply_object_borders(self, rgb_image, boolean_segmentation_mask):
+        border_color = (0, 0, 0)
+        height, width = rgb_image.shape[:2]
+        contours_width = round((height + width) / 1000)
+
+        contours, _ = cv2.findContours(boolean_segmentation_mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cv2.drawContours(rgb_image, contours, -1, border_color, contours_width, cv2.LINE_AA)
 
     def _hex_to_rgb(self, hex_color):
         hex_color = hex_color.lstrip('#')

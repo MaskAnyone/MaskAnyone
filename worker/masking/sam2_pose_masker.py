@@ -11,7 +11,7 @@ from communication.openpose_client import OpenposeClient
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
 from masking.smoothing import smooth_pose
-
+from masking.mask_renderer import MaskRenderer
 
 colors = [
     (0, 0, 255),   # Red
@@ -314,6 +314,8 @@ class Sam2PoseMasker:
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
         video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)
 
+        mask_renderer = MaskRenderer('transparent_fill', {'level': 2, 'object_borders': True})
+
         idx = 0
         while video_capture.isOpened():
             ret, frame = video_capture.read()
@@ -324,7 +326,7 @@ class Sam2PoseMasker:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
             output_frame = frame.copy()
-            self._render_all_masks_on_image(output_frame, frame_width, idx, masks)
+            self._render_all_masks_on_image(output_frame, mask_renderer, idx, masks)
 
             if DEBUG:
                 self._render_bounding_boxes(output_frame, bounding_boxes, idx, (255, 255, 255))
@@ -599,55 +601,10 @@ class Sam2PoseMasker:
 
         return [np.int64(x_min), np.int64(y_min), np.int64(x_max), np.int64(y_max)]
 
-    def _render_all_masks_on_image(self, image, frame_width, frame_idx, masks):
+    def _render_all_masks_on_image(self, image, mask_renderer, frame_idx, masks):
         for object_id in range(1, len(masks[frame_idx]) + 1):
             mask = masks[frame_idx][object_id][0]
-            color = colors[(object_id - 1) % len(colors)]
-            #self._render_mask_on_image(image, frame_width, mask, color)
-
-            self._render_mask_on_image(image, frame_width, mask, (0, 0, 0))
-            #self._render_mask_on_image_contours(image, frame_width, mask)
-
-    def _render_mask_on_image(self, image, frame_width, mask, color):
-        alpha = 1.0
-
-        overlay = np.zeros_like(image)
-        overlay[:, :, 0] = color[0]
-        overlay[:, :, 1] = color[1]
-        overlay[:, :, 2] = color[2]
-
-        border_color = (0, 0, 0)
-        contours, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-        image[mask] = (alpha * overlay[mask] + (1 - alpha) * image[mask]).astype(np.uint8)
-        cv2.drawContours(image, contours, -1, border_color, round(frame_width / 600), cv2.LINE_AA)
-
-    def _render_mask_on_image_contours(self, image, frame_width, mask):
-        level_settings = {
-            "blur_kernel_size": 17,
-            "laplacian_kernel_size": 5,
-            "laplacian_scale": 1.2,
-            "laplacian_delta": 10,
-        }
-
-        blurred_image = cv2.GaussianBlur(
-            image.copy(),
-            (level_settings["blur_kernel_size"], level_settings["blur_kernel_size"]),
-            0,
-        )
-
-        gray_image = cv2.cvtColor(blurred_image, cv2.COLOR_RGB2GRAY)
-        edge_image = cv2.Laplacian(
-            gray_image,
-            -1,
-            ksize=level_settings["laplacian_kernel_size"],
-            scale=level_settings["laplacian_scale"],
-            delta=level_settings["laplacian_delta"],
-            borderType=cv2.BORDER_DEFAULT,
-        )
-        final_contours_image = cv2.cvtColor(edge_image, cv2.COLOR_GRAY2RGB)
-
-        image[mask] = final_contours_image[mask]
+            mask_renderer.apply_to_image(image, mask, object_id)
 
     def _compute_pose_data(self, video_masking_data, sub_video_paths, frame_count):
         pose_data_dict = {}
