@@ -1,68 +1,15 @@
 import mediapipe
 import cv2
 import json
-import numpy as np
 
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
 from typing import Callable
+from masking.mask_renderer import MaskRenderer
 
 from util.timeseries import (
     serialize_pose_landmarker_result,
 )
-
-BLURRING_LEVELS = {
-    1: (15, 15),
-    2: (20, 20),
-    3: (25, 25),
-    4: (35, 35),
-    5: (51, 51)
-}
-
-PIXELATION_LEVELS = {
-    1: 150,
-    2: 100,
-    3: 70,
-    4: 50,
-    5: 30
-}
-
-CONTOURS_LEVELS = {
-    1: {
-        "blur_kernel_size": 3,
-        "laplacian_kernel_size": 3,
-        "laplacian_scale": 1.9,
-        "laplacian_delta": 20,
-    },
-    2: {
-        "blur_kernel_size": 5,
-        "laplacian_kernel_size": 5,
-        "laplacian_scale": 1,
-        "laplacian_delta": -20,
-    },
-    3: {
-        "blur_kernel_size": 7,
-        "laplacian_kernel_size": 5,
-        "laplacian_scale": 1,
-        "laplacian_delta": -10,
-    },
-    4: {
-        "blur_kernel_size": 11,
-        "laplacian_kernel_size": 5,
-        "laplacian_scale": 1,
-        "laplacian_delta": 0,
-    },
-    5: {
-        "blur_kernel_size": 17,
-        "laplacian_kernel_size": 5,
-        "laplacian_scale": 1.2,
-        "laplacian_delta": 10,
-    },
-}
-
-# @todo check this
-# https://github.com/google/mediapipe/issues/5120
-# I0000 00:00:1709055327.274616       1 task_runner.cc:85] GPU suport is not available: INTERNAL: ; RET_CHECK failure (mediapipe/gpu/gl_context_egl.cc:77) display != EGL_NO_DISPLAYeglGetDisplay() returned error 0x300c
 
 MODEL_PATH = '/worker_models/pose_landmarker_heavy.task'
 
@@ -110,6 +57,8 @@ class MediaPipePoseMasker:
         current_frame = 0
         kinematics_data = []
 
+        mask_renderer = MaskRenderer(video_masking_data['strategy'], video_masking_data['options'])
+
         while self._video_capture.isOpened():
             ret, frame = self._video_capture.read()
 
@@ -130,7 +79,8 @@ class MediaPipePoseMasker:
 
             if pose_landmarker_result.segmentation_masks:
                 for segmentation_mask in pose_landmarker_result.segmentation_masks:
-                    self._apply_segmentation_mask(output_image, segmentation_mask, video_masking_data)
+                    mask = segmentation_mask.numpy_view()
+                    mask_renderer.apply_to_image(output_image, mask > 0.3)
 
                 if video_masking_data['options']['skeleton']:
                     self._draw_landmarks_on_image(output_image, pose_landmarker_result)
@@ -147,64 +97,6 @@ class MediaPipePoseMasker:
 
         self._video_capture.release()
         self._video_writer.release()
-
-    def _apply_segmentation_mask(self, rgb_image, segmentation_mask, video_masking_data: dict) -> None:
-        #mask = segmentation_mask.numpy_view()
-        #seg_mask = numpy.repeat(mask[:, :, numpy.newaxis], 3, axis=2)
-        #rgb_image[seg_mask > 0.3] = 0
-
-        mask = segmentation_mask.numpy_view()
-        seg_mask = mask > 0.3
-
-        if video_masking_data['strategy'] == 'solid_fill':
-            if video_masking_data['options']['averageColor']:
-                average_color = np.mean(rgb_image, axis=(0, 1)).astype(int)
-                fill_color = average_color
-            else:
-                fill_color = self._hex_to_rgb(video_masking_data['options']['color'])[::-1]
-
-            rgb_image[seg_mask] = fill_color
-            # Access individual channels via rgb_image[seg_mask, 0] = ...
-        elif video_masking_data['strategy'] == 'blurring':
-            mask = segmentation_mask.numpy_view()
-            seg_mask = mask > 0.3
-
-            kernel_size = BLURRING_LEVELS[video_masking_data['options']['level']]
-            blurred_image = cv2.GaussianBlur(rgb_image, kernel_size, 0)
-            rgb_image[seg_mask] = blurred_image[seg_mask]
-        elif video_masking_data['strategy'] == 'pixelation':
-            height, width = rgb_image.shape[:2]
-            aspect_ratio = width / height
-
-            small_height = PIXELATION_LEVELS[video_masking_data['options']['level']]
-            small_width = int(small_height * aspect_ratio)
-
-            small_image = cv2.resize(rgb_image, (small_width, small_height), interpolation=cv2.INTER_LINEAR)
-            pixelated_image = cv2.resize(small_image, (width, height), interpolation=cv2.INTER_NEAREST)
-            rgb_image[seg_mask] = pixelated_image[seg_mask]
-        elif video_masking_data['strategy'] == 'contours':
-            level_settings = CONTOURS_LEVELS[video_masking_data['options']['level']]
-
-            blurred_image = cv2.GaussianBlur(
-                rgb_image,
-                (level_settings["blur_kernel_size"], level_settings["blur_kernel_size"]),
-                0,
-            )
-
-            gray_image = cv2.cvtColor(blurred_image, cv2.COLOR_RGB2GRAY)
-            edge_image = cv2.Laplacian(
-                gray_image,
-                -1,
-                ksize=level_settings["laplacian_kernel_size"],
-                scale=level_settings["laplacian_scale"],
-                delta=level_settings["laplacian_delta"],
-                borderType=cv2.BORDER_DEFAULT,
-            )
-            final_contours_image = cv2.cvtColor(edge_image, cv2.COLOR_GRAY2RGB)
-
-            rgb_image[seg_mask] = final_contours_image[seg_mask]
-        else:
-            raise Exception(f'Unknown video masking strategy, got {video_masking_data["strategy"]}')
 
     def _draw_landmarks_on_image(self, rgb_image, detection_result) -> None:
         pose_landmarks_list = detection_result.pose_landmarks
@@ -225,14 +117,3 @@ class MediaPipePoseMasker:
                 solutions.pose.POSE_CONNECTIONS,
                 solutions.drawing_styles.get_default_pose_landmarks_style()
             )
-
-    def _hex_to_rgb(self, hex_color):
-        hex_color = hex_color.lstrip('#')
-
-        hex_int = int(hex_color, 16)
-
-        r = (hex_int >> 16) & 255
-        g = (hex_int >> 8) & 255
-        b = hex_int & 255
-
-        return r, g, b

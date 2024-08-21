@@ -45,10 +45,10 @@ def initialize_open_pose():
     params["face"] = True
     params["hand"] = True
     # params["net_resolution"] = "-1x512"
-    params["net_resolution"] = "-1x480"
-    params["hand_scale_number"] = 6
+    #params["net_resolution"] = "-1x480"
+    #params["hand_scale_number"] = 6
     params["number_people_max"] = 1
-    params["hand_detector"] = 3
+    #params["hand_detector"] = 3
 
     op_wrapper = op.WrapperPython()
     op_wrapper.configure(params)
