@@ -314,7 +314,7 @@ class Sam2PoseMasker:
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
         video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)
 
-        mask_renderer = MaskRenderer('transparent_fill', {'level': 2, 'object_borders': True})
+        mask_renderer = MaskRenderer('transparent_fill', {'level': 3, 'object_borders': True})
 
         idx = 0
         while video_capture.isOpened():
@@ -621,6 +621,8 @@ class Sam2PoseMasker:
                     self._compute_mp_hand_data(sub_video_path, obj_id, pose_data_dict, frame_count, start_frame)
                 elif video_masking_data['overlayStrategies'][obj_id - 1] == 'openpose':
                     self._compute_openpose_pose_data(content, obj_id, pose_data_dict, frame_count, start_frame)
+                elif video_masking_data['overlayStrategies'][obj_id - 1] == 'none':
+                    pass # Nothing to be done if there is no pose overlay strategy
                 else:
                     raise Exception(f'Unknown overlay strategy, got {video_masking_data["overlayStrategies"][obj_id - 1]}')
 

@@ -172,6 +172,7 @@ const VideoMaskingEditorPage = () => {
                             onChange={e => updateOverlayStrategy(e.target.value as string, index)}
                             size='small'
                         >
+                            <MenuItem value={'none'}>No Overlay</MenuItem>
                             <MenuItem value={'mp_pose'}>MediaPipe Pose</MenuItem>
                             <MenuItem value={'mp_face'}>MediaPipe Face</MenuItem>
                             <MenuItem value={'mp_hand'}>MediaPipe Hands</MenuItem>
