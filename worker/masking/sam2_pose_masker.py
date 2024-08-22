@@ -344,116 +344,39 @@ class Sam2PoseMasker:
             if os.path.exists(sub_video_path):
                 obj_id, start_frame, content = self._read_sub_video(sub_video_path)
 
+                if video_masking_data['overlayStrategies'][obj_id - 1] == 'none':
+                    continue
+
+                if obj_id not in pose_data_dict:
+                    pose_data_dict[obj_id] = [None] * frame_count
+
                 if video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_pose':
-                    self._compute_mp_pose_data(sub_video_path, obj_id, pose_data_dict, frame_count, start_frame)
+                    data = self._compute_mp_pose_data(sub_video_path)
                 elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_face':
-                    self._compute_mp_face_data(sub_video_path, obj_id, pose_data_dict, frame_count, start_frame)
+                    data = self._compute_mp_face_data(sub_video_path)
                 elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_hand':
-                    self._compute_mp_hand_data(sub_video_path, obj_id, pose_data_dict, frame_count, start_frame)
+                    data = self._compute_mp_hand_data(sub_video_path)
                 elif video_masking_data['overlayStrategies'][obj_id - 1] == 'openpose':
-                    self._compute_openpose_pose_data(content, obj_id, pose_data_dict, frame_count, start_frame)
-                elif video_masking_data['overlayStrategies'][obj_id - 1] == 'none':
-                    pass # Nothing to be done if there is no pose overlay strategy
+                    data = self._compute_openpose_pose_data(content)
                 else:
                     raise Exception(f'Unknown overlay strategy, got {video_masking_data["overlayStrategies"][obj_id - 1]}')
 
+                pose_data_dict[obj_id][start_frame:start_frame + len(data)] = data
+
         return pose_data_dict
 
-    def _compute_openpose_pose_data(self, content, obj_id, pose_data_dict, frame_count, start_frame):
-        # Trigger the pose estimation on the sub-video
+    def _compute_openpose_pose_data(self, content):
         pose_data = self._openpose_client.estimate_pose_on_video(content)
+        return [pose_data[key] for key in sorted(pose_data.keys())]
 
-        # Ensure the list for this obj_id exists in pose_data_dict
-        if obj_id not in pose_data_dict:
-            pose_data_dict[obj_id] = [None] * frame_count  # Initialize with None
+    def _compute_mp_pose_data(self, sub_video_path):
+        return self._media_pipe_landmarker.compute_pose_data(sub_video_path)
 
-        # Insert the extracted poses into the appropriate place in the list
-        for i, pose in enumerate(pose_data):
-            pose_data_dict[obj_id][start_frame + i] = pose
+    def _compute_mp_face_data(self, sub_video_path):
+        return self._media_pipe_landmarker.compute_face_data(sub_video_path)
 
-    def _compute_mp_pose_data(self, sub_video_path, obj_id, pose_data_dict, frame_count, start_frame):
-        landmarker = self._media_pipe_landmarker.configure_pose_landmarker()
-        video_capture = cv2.VideoCapture(sub_video_path)
-
-        if obj_id not in pose_data_dict:
-            pose_data_dict[obj_id] = [None] * frame_count
-
-        i = 0
-        while video_capture.isOpened():
-            ret, frame = video_capture.read()
-
-            if not ret:
-                break
-
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame_timestamp_ms = video_capture.get(cv2.CAP_PROP_POS_MSEC)
-
-            mp_image = mediapipe.Image(image_format=mediapipe.ImageFormat.SRGB, data=frame)
-            pose_landmarker_result = landmarker.detect_for_video(mp_image, int(frame_timestamp_ms))
-
-            if len(pose_landmarker_result.pose_landmarks) > 0:
-                pose = pose_landmarker_result.pose_landmarks[0]
-                pose_data_dict[obj_id][start_frame + i] = pose
-
-            i += 1
-
-        video_capture.release()
-
-    def _compute_mp_face_data(self, sub_video_path, obj_id, pose_data_dict, frame_count, start_frame):
-        landmarker = self._media_pipe_landmarker.configure_face_landmarker()
-        video_capture = cv2.VideoCapture(sub_video_path)
-
-        if obj_id not in pose_data_dict:
-            pose_data_dict[obj_id] = [None] * frame_count
-
-        i = 0
-        while video_capture.isOpened():
-            ret, frame = video_capture.read()
-
-            if not ret:
-                break
-
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame_timestamp_ms = video_capture.get(cv2.CAP_PROP_POS_MSEC)
-
-            mp_image = mediapipe.Image(image_format=mediapipe.ImageFormat.SRGB, data=frame)
-            face_landmarker_result = landmarker.detect_for_video(mp_image, int(frame_timestamp_ms))
-
-            if len(face_landmarker_result.face_landmarks) > 0:
-                face = face_landmarker_result.face_landmarks[0]
-                pose_data_dict[obj_id][start_frame + i] = face
-
-            i += 1
-
-        video_capture.release()
-
-    def _compute_mp_hand_data(self, sub_video_path, obj_id, pose_data_dict, frame_count, start_frame):
-        landmarker = self._media_pipe_landmarker.configure_hand_landmarker()
-        video_capture = cv2.VideoCapture(sub_video_path)
-
-        if obj_id not in pose_data_dict:
-            pose_data_dict[obj_id] = [None] * frame_count
-
-        i = 0
-        while video_capture.isOpened():
-            ret, frame = video_capture.read()
-
-            if not ret:
-                break
-
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame_timestamp_ms = video_capture.get(cv2.CAP_PROP_POS_MSEC)
-
-            mp_image = mediapipe.Image(image_format=mediapipe.ImageFormat.SRGB, data=frame)
-            hand_landmarker_result = landmarker.detect_for_video(mp_image, int(frame_timestamp_ms))
-
-            if len(hand_landmarker_result.hand_landmarks) > 0:
-                hand = hand_landmarker_result.hand_landmarks[0]
-                pose_data_dict[obj_id][start_frame + i] = hand
-
-            i += 1
-
-        video_capture.release()
+    def _compute_mp_hand_data(self, sub_video_path):
+        return self._media_pipe_landmarker.compute_hand_data(sub_video_path)
 
     def _read_sub_video(self, sub_video_path):
         basename = os.path.basename(sub_video_path)
