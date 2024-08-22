@@ -367,12 +367,10 @@ class Sam2PoseMasker:
         return pose_data_dict
 
     def _compute_openpose_pose_data(self, content):
-        pose_data = self._openpose_client.estimate_pose_on_video(content, { 'face': True, 'hands': True })
-        return [pose_data[key] for key in sorted(pose_data.keys())]
+        return self._openpose_client.estimate_pose_on_video(content, { 'face': True, 'hand': True })
 
     def _compute_mask_anyone_holistic_data(self, content):
-        pose_data = self._openpose_client.estimate_pose_on_video(content, { 'face': True })
-        return [pose_data[key] for key in sorted(pose_data.keys())]
+        return self._openpose_client.estimate_pose_on_video(content, { 'face': True })
 
     def _compute_mp_pose_data(self, sub_video_path):
         return self._media_pipe_landmarker.compute_pose_data(sub_video_path)

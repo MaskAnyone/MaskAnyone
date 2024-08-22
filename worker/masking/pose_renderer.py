@@ -134,7 +134,7 @@ class PoseRenderer:
 
         # Draw all keypoints
         for i in range(len(pose_keypoints)):
-            if pose_keypoints[i][0] < 1 and pose_keypoints[i][1] < 1:
+            if pose_keypoints[i] is None or pose_keypoints[i][0] < 1 and pose_keypoints[i][1] < 1:
                 continue
 
             point = tuple(map(int, pose_keypoints[i][:2]))
@@ -144,6 +144,9 @@ class PoseRenderer:
         for pair in BODY_25_PAIRS:
             partA = pair[0]
             partB = pair[1]
+
+            if pose_keypoints[partA] is None or pose_keypoints[partB] is None:
+                continue
 
             if pose_keypoints[partA][0] < 1 and pose_keypoints[partA][1] < 1 or pose_keypoints[partB][0] < 1 and pose_keypoints[partB][
                 1] < 1:

@@ -26,8 +26,8 @@ def perform_openpose_pose_estimation(input_path: str, options: dict):
             pose_data.append({
                 'pose_keypoints': datum.poseKeypoints[0],
                 'face_keypoints': datum.faceKeypoints[0] if datum.faceKeypoints is not None and len(datum.faceKeypoints) > 0 else None,
-                'left_hand_keypoints': datum.handKeypoints[0][0] if datum.handKeypoints is not None and len(datum.handKeypoints) > 0 else None,
-                'right_hand_keypoints': datum.handKeypoints[1][0] if datum.handKeypoints is not None and len(datum.handKeypoints) > 1 else None,
+                'left_hand_keypoints': datum.handKeypoints[0][0] if datum.handKeypoints is not None and len(datum.handKeypoints) > 0 and datum.handKeypoints[0] is not None and len(datum.handKeypoints[0]) > 0 else None,
+                'right_hand_keypoints': datum.handKeypoints[1][0] if datum.handKeypoints is not None and len(datum.handKeypoints) > 1 and datum.handKeypoints[1] is not None and len(datum.handKeypoints[1]) > 0 else None,
             })
         else:
             pose_data.append(None)
