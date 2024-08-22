@@ -5,11 +5,11 @@ sys.path.append('/workspace/openpose/build/python')
 from openpose import pyopenpose as op
 
 
-def perform_openpose_pose_estimation(input_path: str):
+def perform_openpose_pose_estimation(input_path: str, options: dict):
     video_capture = cv2.VideoCapture(input_path)
     pose_data = []
 
-    op_wrapper = initialize_open_pose()
+    op_wrapper = initialize_open_pose(options)
 
     idx = 0
     while video_capture.isOpened():
@@ -38,17 +38,22 @@ def perform_openpose_pose_estimation(input_path: str):
     return pose_data
 
 
-def initialize_open_pose():
+def initialize_open_pose(options: dict):
     params = dict()
     params["model_folder"] = "/models/"
+    params["number_people_max"] = 1
+
     # params["model_pose"] = "COCO"
-    params["face"] = True
-    params["hand"] = True
     # params["net_resolution"] = "-1x512"
     #params["net_resolution"] = "-1x480"
     #params["hand_scale_number"] = 6
-    params["number_people_max"] = 1
     #params["hand_detector"] = 3
+
+    if 'face' in options:
+        params["face"] = bool(options['face'])
+
+    if 'hand' in options:
+        params["hand"] = bool(options['hand'])
 
     op_wrapper = op.WrapperPython()
     op_wrapper.configure(params)

@@ -47,6 +47,8 @@ class PosePostprocessor:
                     obj_id,
                     pose_data
                 )
+            elif overlay_strategy == 'mask_anyone_holistic':
+                pass
 
             if SMOOTHING and (overlay_strategy == 'openpose' or overlay_strategy == 'mp_pose'):
                 if overlay_strategy == 'mp_pose':

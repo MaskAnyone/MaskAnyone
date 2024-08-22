@@ -357,6 +357,8 @@ class Sam2PoseMasker:
                     data = self._compute_mp_hand_data(sub_video_path)
                 elif video_masking_data['overlayStrategies'][obj_id - 1] == 'openpose':
                     data = self._compute_openpose_pose_data(content)
+                elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mask_anyone_holistic':
+                    data = self._compute_mask_anyone_holistic_data(content)
                 else:
                     raise Exception(f'Unknown overlay strategy, got {video_masking_data["overlayStrategies"][obj_id - 1]}')
 
@@ -365,7 +367,11 @@ class Sam2PoseMasker:
         return pose_data_dict
 
     def _compute_openpose_pose_data(self, content):
-        pose_data = self._openpose_client.estimate_pose_on_video(content)
+        pose_data = self._openpose_client.estimate_pose_on_video(content, { 'face': True, 'hands': True })
+        return [pose_data[key] for key in sorted(pose_data.keys())]
+
+    def _compute_mask_anyone_holistic_data(self, content):
+        pose_data = self._openpose_client.estimate_pose_on_video(content, { 'face': True })
         return [pose_data[key] for key in sorted(pose_data.keys())]
 
     def _compute_mp_pose_data(self, sub_video_path):
