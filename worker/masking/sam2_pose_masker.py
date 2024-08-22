@@ -11,50 +11,11 @@ from communication.openpose_client import OpenposeClient
 from masking.smoothing import smooth_pose
 from masking.mask_renderer import MaskRenderer
 from masking.pose_renderer import PoseRenderer
+from masking.media_pipe_landmarker import MediaPipeLandmarker
 
 
 DEBUG = True
 SMOOTHING = True
-
-
-def configure_landmarker():
-    model_path = '/worker_models/pose_landmarker_heavy.task'
-
-    options = mediapipe.tasks.vision.PoseLandmarkerOptions(
-        base_options=mediapipe.tasks.BaseOptions(model_asset_path=model_path, delegate=mediapipe.tasks.BaseOptions.Delegate.CPU),
-        running_mode=mediapipe.tasks.vision.RunningMode.VIDEO,
-        num_poses=1,
-    )
-
-    landmarker = mediapipe.tasks.vision.PoseLandmarker.create_from_options(options)
-    return landmarker
-
-
-def configure_face_landmarker():
-    model_path = '/worker_models/face_landmarker.task'
-
-    options = mediapipe.tasks.vision.FaceLandmarkerOptions(
-        base_options=mediapipe.tasks.BaseOptions(model_asset_path=model_path, delegate=mediapipe.tasks.BaseOptions.Delegate.CPU),
-        running_mode=mediapipe.tasks.vision.RunningMode.VIDEO,
-        output_face_blendshapes=True,
-        output_facial_transformation_matrixes=True,
-        num_faces=1
-    )
-
-    landmarker = mediapipe.tasks.vision.FaceLandmarker.create_from_options(options)
-    return landmarker
-
-def configure_hand_landmarker():
-    model_path = '/worker_models/hand_landmarker.task'
-
-    options = mediapipe.tasks.vision.HandLandmarkerOptions(
-        base_options=mediapipe.tasks.BaseOptions(model_asset_path=model_path, delegate=mediapipe.tasks.BaseOptions.Delegate.CPU),
-        running_mode=mediapipe.tasks.vision.RunningMode.VIDEO,
-        num_hands=1
-    )
-
-    landmarker = mediapipe.tasks.vision.HandLandmarker.create_from_options(options)
-    return landmarker
 
 
 class Sam2PoseMasker:
@@ -63,6 +24,7 @@ class Sam2PoseMasker:
     _input_path: str
     _output_path: str
     _progress_callback: Callable[[int], None]
+    _media_pipe_landmarker: MediaPipeLandmarker
 
     def __init__(
             self,
@@ -77,6 +39,7 @@ class Sam2PoseMasker:
         self._input_path = input_path
         self._output_path = output_path
         self._progress_callback = progress_callback
+        self._media_pipe_landmarker = MediaPipeLandmarker()
 
     def mask(self, video_masking_data: dict):
         content = self._read_video_content()
@@ -409,7 +372,7 @@ class Sam2PoseMasker:
             pose_data_dict[obj_id][start_frame + i] = pose
 
     def _compute_mp_pose_data(self, sub_video_path, obj_id, pose_data_dict, frame_count, start_frame):
-        landmarker = configure_landmarker()
+        landmarker = self._media_pipe_landmarker.configure_pose_landmarker()
         video_capture = cv2.VideoCapture(sub_video_path)
 
         if obj_id not in pose_data_dict:
@@ -437,7 +400,7 @@ class Sam2PoseMasker:
         video_capture.release()
 
     def _compute_mp_face_data(self, sub_video_path, obj_id, pose_data_dict, frame_count, start_frame):
-        landmarker = configure_face_landmarker()
+        landmarker = self._media_pipe_landmarker.configure_face_landmarker()
         video_capture = cv2.VideoCapture(sub_video_path)
 
         if obj_id not in pose_data_dict:
@@ -465,7 +428,7 @@ class Sam2PoseMasker:
         video_capture.release()
 
     def _compute_mp_hand_data(self, sub_video_path, obj_id, pose_data_dict, frame_count, start_frame):
-        landmarker = configure_hand_landmarker()
+        landmarker = self._media_pipe_landmarker.configure_hand_landmarker()
         video_capture = cv2.VideoCapture(sub_video_path)
 
         if obj_id not in pose_data_dict:
@@ -635,7 +598,7 @@ class Sam2PoseMasker:
                     pose_data_dict[obj_id] = smooth_pose(
                         pose_data_dict[obj_id],
                         sample_rate,
-                        10 if overlay_strategy == 'openpose' else 14
+                        10 if overlay_strategy == 'openpose' else 15
                     )
                 elif overlay_strategy == 'openpose':
                     pass
