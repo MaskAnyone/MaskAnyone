@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import mediapipe
 import supervision as sv
 import os
 import shutil
@@ -8,14 +7,12 @@ import shutil
 from typing import Callable
 from communication.sam2_client import Sam2Client
 from communication.openpose_client import OpenposeClient
-from masking.smoothing import smooth_pose
 from masking.mask_renderer import MaskRenderer
 from masking.pose_renderer import PoseRenderer
 from masking.media_pipe_landmarker import MediaPipeLandmarker
-
+from masking.pose_postprocessor import PosePostprocessor
 
 DEBUG = True
-SMOOTHING = True
 
 
 class Sam2PoseMasker:
@@ -25,6 +22,7 @@ class Sam2PoseMasker:
     _output_path: str
     _progress_callback: Callable[[int], None]
     _media_pipe_landmarker: MediaPipeLandmarker
+    _pose_postprocessor: PosePostprocessor
 
     def __init__(
             self,
@@ -40,6 +38,7 @@ class Sam2PoseMasker:
         self._output_path = output_path
         self._progress_callback = progress_callback
         self._media_pipe_landmarker = MediaPipeLandmarker()
+        self._pose_postprocessor = PosePostprocessor()
 
     def mask(self, video_masking_data: dict):
         content = self._read_video_content()
@@ -57,7 +56,7 @@ class Sam2PoseMasker:
         video_capture.release()
 
         pose_data_dict = self._compute_pose_data(video_masking_data, sub_video_paths, total_frames)
-        self._streamline_pose_data(video_masking_data, pose_data_dict, estimation_input_bounding_boxes, total_frames, sample_rate)
+        self._pose_postprocessor.postprocess(pose_data_dict, video_masking_data['overlayStrategies'], total_frames, sample_rate, estimation_input_bounding_boxes)
 
         shutil.rmtree(subvideo_output_dir)
 
@@ -388,154 +387,3 @@ class Sam2PoseMasker:
         with open(sub_video_path, 'rb') as video_file:
             content = video_file.read()
             return obj_id, start_frame, content
-
-    def _streamline_pose_data(self, video_masking_data, pose_data_dict, estimation_input_bounding_boxes, frame_count, sample_rate):
-        confidence_threshold = 0.05
-
-        for obj_id, pose_data in pose_data_dict.items():
-            overlay_strategy = video_masking_data['overlayStrategies'][obj_id - 1]
-
-            if overlay_strategy == 'openpose':
-                for idx in range(frame_count):
-                    relevant_start_frame = max(frame for frame in estimation_input_bounding_boxes[obj_id].keys() if frame <= idx)
-
-                    bbox = estimation_input_bounding_boxes[obj_id][relevant_start_frame]
-                    xmin, ymin, xmax, ymax = bbox
-
-                    current_pose = pose_data[idx]
-
-                    if current_pose is None or current_pose['pose_keypoints'] is None:
-                        pose_data_dict[obj_id][idx] = None
-                        continue
-
-                    adjusted_pose = {
-                        'pose_keypoints': [],
-                        'face_keypoints': [],
-                        'left_hand_keypoints': [],
-                        'right_hand_keypoints': []
-                    }
-
-                    for keypoint in current_pose['pose_keypoints']:
-                        if keypoint is not None and (keypoint[0] > 0 or keypoint[1] > 0) and keypoint[2] > confidence_threshold:
-                            # Translate the keypoint back to the original frame coordinates
-                            adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin)
-                            adjusted_pose['pose_keypoints'].append(adjusted_keypoint)
-                        else:
-                            adjusted_pose['pose_keypoints'].append(None)
-
-                    if current_pose['face_keypoints'] is not None:
-                        for keypoint in current_pose['face_keypoints']:
-                            if keypoint is not None and (keypoint[0] > 0 or keypoint[1] > 0) and keypoint[2] > confidence_threshold:
-                                # Translate the keypoint back to the original frame coordinates
-                                adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin)
-                                adjusted_pose['face_keypoints'].append(adjusted_keypoint)
-                            else:
-                                adjusted_pose['face_keypoints'].append(None)
-
-                    if current_pose['left_hand_keypoints'] is not None:
-                        for keypoint in current_pose['left_hand_keypoints']:
-                            if keypoint is not None and (keypoint[0] > 0 or keypoint[1] > 0) and keypoint[2] > confidence_threshold:
-                                # Translate the keypoint back to the original frame coordinates
-                                adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin)
-                                adjusted_pose['left_hand_keypoints'].append(adjusted_keypoint)
-                            else:
-                                adjusted_pose['left_hand_keypoints'].append(None)
-
-                    if current_pose['right_hand_keypoints'] is not None:
-                        for keypoint in current_pose['right_hand_keypoints']:
-                            if keypoint is not None and (keypoint[0] > 0 or keypoint[1] > 0) and keypoint[2] > confidence_threshold:
-                                # Translate the keypoint back to the original frame coordinates
-                                adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin)
-                                adjusted_pose['right_hand_keypoints'].append(adjusted_keypoint)
-                            else:
-                                adjusted_pose['right_hand_keypoints'].append(None)
-
-                    pose_data_dict[obj_id][idx] = adjusted_pose
-            elif overlay_strategy == 'mp_pose':
-                for idx in range(frame_count):
-                    relevant_start_frame = max(frame for frame in estimation_input_bounding_boxes[obj_id].keys() if frame <= idx)
-
-                    bbox = estimation_input_bounding_boxes[obj_id][relevant_start_frame]
-                    xmin, ymin, xmax, ymax = bbox
-
-                    current_pose = pose_data[idx]
-
-                    if current_pose is None:
-                        pose_data_dict[obj_id][idx] = None
-                        continue
-
-                    adjusted_pose = []
-                    for keypoint in current_pose:
-                        if keypoint is not None and (keypoint.x > 0 or keypoint.y > 0) and keypoint.visibility > confidence_threshold:
-                            # Translate the keypoint back to the original frame coordinates
-                            adjusted_keypoint = (keypoint.x * (xmax - xmin) + xmin, keypoint.y * (ymax - ymin) + ymin)
-                            adjusted_pose.append(adjusted_keypoint)
-                        else:
-                            adjusted_pose.append(None)
-
-                    pose_data_dict[obj_id][idx] = adjusted_pose
-            elif overlay_strategy == 'mp_face':
-                for idx in range(frame_count):
-                    relevant_start_frame = max(frame for frame in estimation_input_bounding_boxes[obj_id].keys() if frame <= idx)
-
-                    bbox = estimation_input_bounding_boxes[obj_id][relevant_start_frame]
-                    xmin, ymin, xmax, ymax = bbox
-
-                    current_face = pose_data[idx]
-
-                    adjusted_face = []
-                    for keypoint in current_face:
-                        if keypoint is not None and (keypoint.x > 0 or keypoint.y > 0):
-                            # Translate the keypoint back to the original frame coordinates
-                            adjusted_keypoint = (keypoint.x * (xmax - xmin) + xmin, keypoint.y * (ymax - ymin) + ymin)
-                            adjusted_face.append(adjusted_keypoint)
-                        else:
-                            adjusted_face.append(None)
-
-                    pose_data_dict[obj_id][idx] = adjusted_face
-            elif overlay_strategy == 'mp_hand':
-                for idx in range(frame_count):
-                    relevant_start_frame = max(frame for frame in estimation_input_bounding_boxes[obj_id].keys() if frame <= idx)
-
-                    bbox = estimation_input_bounding_boxes[obj_id][relevant_start_frame]
-                    xmin, ymin, xmax, ymax = bbox
-
-                    current_hand = pose_data[idx]
-
-                    if current_hand is None:
-                        continue
-
-                    adjusted_hand = []
-                    for keypoint in current_hand:
-                        if keypoint is not None and (keypoint.x > 0 or keypoint.y > 0):
-                            # Translate the keypoint back to the original frame coordinates
-                            adjusted_keypoint = (keypoint.x * (xmax - xmin) + xmin, keypoint.y * (ymax - ymin) + ymin)
-                            adjusted_hand.append(adjusted_keypoint)
-                        else:
-                            adjusted_hand.append(None)
-
-                    pose_data_dict[obj_id][idx] = adjusted_hand
-
-            if SMOOTHING and (overlay_strategy == 'openpose' or overlay_strategy == 'mp_pose'):
-                if overlay_strategy == 'mp_pose':
-                    pose_data_dict[obj_id] = smooth_pose(
-                        pose_data_dict[obj_id],
-                        sample_rate,
-                        10 if overlay_strategy == 'openpose' else 15
-                    )
-                elif overlay_strategy == 'openpose':
-                    pass
-                    """
-                    pose_data_dict[obj_id]['body_keypoints'] = smooth_pose(
-                        pose_data_dict[obj_id]['body_keypoints'],
-                        sample_rate,
-                        10
-                    )
-                    
-                    pose_data_dict[obj_id]['face_keypoints'] = smooth_pose(
-                        pose_data_dict[obj_id]['face_keypoints'],
-                        sample_rate,
-                        12
-                    )
-                    """
-
