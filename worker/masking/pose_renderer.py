@@ -59,6 +59,8 @@ class PoseRenderer:
             self._render_mp_pose_overlay(rgb_image, keypoint_data)
         elif self._type == 'openpose':
             self._render_openpose_overlay(rgb_image, keypoint_data)
+        elif self._type == 'mask_anyone_holistic':
+            self._render_mask_anyone_holistic_overlay(rgb_image, keypoint_data)
 
     def _render_mp_pose_overlay(self, rgb_image, keypoint_data):
         for i in range(len(keypoint_data)):
@@ -222,3 +224,84 @@ class PoseRenderer:
             pointA = tuple(map(int, right_hand_keypoints[partA]))
             pointB = tuple(map(int, right_hand_keypoints[partB]))
             cv2.line(rgb_image, pointA, pointB, (0, 0, 255), 2)
+
+    def _render_mask_anyone_holistic_overlay(self, rgb_image, keypoint_data):
+        pose_keypoints = keypoint_data['pose_keypoints']
+        face_keypoints = keypoint_data['face_keypoints']
+        left_hand_keypoints = keypoint_data['left_hand_keypoints']
+        right_hand_keypoints = keypoint_data['right_hand_keypoints']
+
+        # Draw all keypoints
+        for i in range(len(pose_keypoints)):
+            if pose_keypoints[i] is None or pose_keypoints[i][0] < 1 and pose_keypoints[i][1] < 1:
+                continue
+
+            point = tuple(map(int, pose_keypoints[i][:2]))
+            cv2.circle(rgb_image, point, 4, (0, 255, 0), -1)
+
+        # Iterate over each pair and draw lines
+        for pair in BODY_25_PAIRS:
+            partA = pair[0]
+            partB = pair[1]
+
+            if pose_keypoints[partA] is None or pose_keypoints[partB] is None:
+                continue
+
+            if pose_keypoints[partA][0] < 1 and pose_keypoints[partA][1] < 1 or pose_keypoints[partB][0] < 1 and pose_keypoints[partB][
+                1] < 1:
+                continue
+
+            pointA = tuple(map(int, pose_keypoints[partA]))
+            pointB = tuple(map(int, pose_keypoints[partB]))
+            cv2.line(rgb_image, pointA, pointB, (0, 255, 0), 2)
+
+        for face_keypoint in face_keypoints:
+            if face_keypoint is None:
+                continue
+
+            point = tuple(map(int, face_keypoint))
+            cv2.circle(rgb_image, point, 2, (0, 255, 255), -1)
+
+        # Iterate over each pair and draw lines
+        for pair in FACE_PAIRS:
+            partA = pair[0]
+            partB = pair[1]
+
+            if face_keypoints[partA] is None or face_keypoints[partB] is None:
+                continue
+
+            if face_keypoints[partA][0] < 1 and face_keypoints[partA][1] < 1 or face_keypoints[partB][0] < 1 and \
+                    face_keypoints[partB][1] < 1:
+                continue
+
+            pointA = tuple(map(int, face_keypoints[partA]))
+            pointB = tuple(map(int, face_keypoints[partB]))
+            cv2.line(rgb_image, pointA, pointB, (0, 255, 255), 2)
+
+        image_height, image_width, _ = rgb_image.shape
+
+        if left_hand_keypoints is not None:
+            hand_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
+            hand_landmarks_proto.landmark.extend([
+                landmark_pb2.NormalizedLandmark(x=landmark[0] / image_width, y=landmark[1] / image_height, z=0.5) for
+                landmark in left_hand_keypoints
+            ])
+            solutions.drawing_utils.draw_landmarks(
+                rgb_image,
+                hand_landmarks_proto,
+                solutions.hands.HAND_CONNECTIONS,
+                solutions.drawing_styles.get_default_hand_landmarks_style(),
+                solutions.drawing_styles.get_default_hand_connections_style())
+
+        if right_hand_keypoints is not None:
+            hand_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
+            hand_landmarks_proto.landmark.extend([
+                landmark_pb2.NormalizedLandmark(x=landmark[0] / image_width, y=landmark[1] / image_height, z=0.5) for
+                landmark in right_hand_keypoints
+            ])
+            solutions.drawing_utils.draw_landmarks(
+                rgb_image,
+                hand_landmarks_proto,
+                solutions.hands.HAND_CONNECTIONS,
+                solutions.drawing_styles.get_default_hand_landmarks_style(),
+                solutions.drawing_styles.get_default_hand_connections_style())

@@ -358,7 +358,7 @@ class Sam2PoseMasker:
                 elif video_masking_data['overlayStrategies'][obj_id - 1] == 'openpose':
                     data = self._compute_openpose_pose_data(content)
                 elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mask_anyone_holistic':
-                    data = self._compute_mask_anyone_holistic_data(content)
+                    data = self._compute_mask_anyone_holistic_data(content, sub_video_path)
                 else:
                     raise Exception(f'Unknown overlay strategy, got {video_masking_data["overlayStrategies"][obj_id - 1]}')
 
@@ -369,8 +369,123 @@ class Sam2PoseMasker:
     def _compute_openpose_pose_data(self, content):
         return self._openpose_client.estimate_pose_on_video(content, { 'face': True, 'hand': True })
 
-    def _compute_mask_anyone_holistic_data(self, content):
-        return self._openpose_client.estimate_pose_on_video(content, { 'face': True })
+    def _compute_mask_anyone_holistic_data(self, content, sub_video_path):
+        openpose_data = self._openpose_client.estimate_pose_on_video(content, { 'face': True })
+
+        left_min_x, left_min_y = float('inf'), float('inf')
+        left_max_x, left_max_y = float('-inf'), float('-inf')
+
+        right_min_x, right_min_y = float('inf'), float('inf')
+        right_max_x, right_max_y = float('-inf'), float('-inf')
+
+        # Iterate through each keypoint data
+        for keypoint_data in openpose_data:
+            pose_keypoints = keypoint_data['pose_keypoints']
+
+            # Skip if pose_keypoints is None
+            if pose_keypoints is None:
+                continue
+
+            # Extract left and right wrist keypoints
+            left_wrist_keypoint = pose_keypoints[7]
+            right_wrist_keypoint = pose_keypoints[4]
+
+            if left_wrist_keypoint[0] > 0 or left_wrist_keypoint[1] > 0:
+                # Update bounding box coordinates for the left wrist
+                left_x, left_y = left_wrist_keypoint[0], left_wrist_keypoint[1]
+                left_min_x = min(left_min_x, left_x)
+                left_min_y = min(left_min_y, left_y)
+                left_max_x = max(left_max_x, left_x)
+                left_max_y = max(left_max_y, left_y)
+
+            if right_wrist_keypoint[0] > 0 or right_wrist_keypoint[1] > 0:
+                # Update bounding box coordinates for the right wrist
+                right_x, right_y = right_wrist_keypoint[0], right_wrist_keypoint[1]
+                right_min_x = min(right_min_x, right_x)
+                right_min_y = min(right_min_y, right_y)
+                right_max_x = max(right_max_x, right_x)
+                right_max_y = max(right_max_y, right_y)
+
+        left_bounding_box_valid = (left_min_x != float('inf'))
+        right_bounding_box_valid = (right_min_x != float('inf'))
+
+        video_capture = cv2.VideoCapture(sub_video_path)
+        frame_width = video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)
+        frame_height = video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        fps = video_capture.get(cv2.CAP_PROP_FPS)
+        safety_margin = round(0.1 * (frame_width + frame_height))
+
+        # Prepare output video writers
+        out_left = out_right = None
+
+        if left_bounding_box_valid:
+            left_output_path = sub_video_path.replace('.mp4', '.left.mp4')
+            left_min_x = round(max(0, left_min_x - safety_margin))
+            left_min_y = round(max(0, left_min_y - safety_margin))
+            left_max_x = round(min(frame_width, left_max_x + safety_margin))
+            left_max_y = round(min(frame_height, left_max_y + safety_margin))
+            left_width = round(left_max_x - left_min_x)
+            left_height = round(left_max_y - left_min_y)
+            out_left = cv2.VideoWriter(left_output_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (left_width, left_height))
+
+        if right_bounding_box_valid:
+            right_output_path = sub_video_path.replace('.mp4', '.right.mp4')
+            right_min_x = round(max(0, right_min_x - safety_margin))
+            right_min_y = round(max(0, right_min_y - safety_margin))
+            right_max_x = round(min(frame_width, right_max_x + safety_margin))
+            right_max_y = round(min(frame_height, right_max_y + safety_margin))
+            right_width = round(right_max_x - right_min_x)
+            right_height = round(right_max_y - right_min_y)
+            out_right = cv2.VideoWriter(right_output_path, cv2.VideoWriter_fourcc(*'mp4v'), fps,(right_width, right_height))
+
+        while video_capture.isOpened():
+            ret, frame = video_capture.read()
+            if not ret:
+                break
+
+            if left_bounding_box_valid:
+                cropped_frame_left = frame[left_min_y:left_max_y, left_min_x:left_max_x]
+                out_left.write(cropped_frame_left)
+
+            if right_bounding_box_valid:
+                cropped_frame_right = frame[right_min_y:right_max_y, right_min_x:right_max_x]
+                out_right.write(cropped_frame_right)
+
+        if out_left:
+            out_left.release()
+        if out_right:
+            out_right.release()
+        video_capture.release()
+
+        if left_bounding_box_valid:
+            left_hands = self._media_pipe_landmarker.compute_hand_data(left_output_path, 1)
+            left_hands = [((keypoint.x * (left_max_x - left_min_x) + left_min_x, keypoint.y * (left_max_y - left_min_y) + left_min_y) for keypoint in hand if keypoint is not None and (keypoint.x > 0 or keypoint.y > 0)) for hand in left_hands if hand is not None]
+        else:
+            left_hands = [None] * len(openpose_data)
+
+        if right_bounding_box_valid:
+            right_hands = self._media_pipe_landmarker.compute_hand_data(right_output_path, 1)
+            right_hands = [((keypoint.x * (right_max_x - right_min_x) + right_min_x, keypoint.y * (right_max_y - right_min_y) + right_min_y) for keypoint in hand if keypoint is not None and (keypoint.x > 0 or keypoint.y > 0)) for hand in right_hands if hand is not None]
+        else:
+            right_hands = [None] * len(openpose_data)
+
+        for i in range(len(openpose_data)):
+            pose_keypoints = openpose_data[i]['pose_keypoints']
+
+            if pose_keypoints is None:
+                openpose_data[i]['left_hand_keypoints'] = None
+                openpose_data[i]['right_hand_keypoints'] = None
+                continue
+
+            # Extract left and right wrist keypoints
+            left_wrist_keypoint = pose_keypoints[7]
+            right_wrist_keypoint = pose_keypoints[4]
+
+            openpose_data[i]['left_hand_keypoints'] = left_hands[i] if left_bounding_box_valid and left_hands[i] is not None else None
+            openpose_data[i]['right_hand_keypoints'] = right_hands[i] if right_bounding_box_valid and right_hands[i] is not None else None
+
+        return openpose_data
+
 
     def _compute_mp_pose_data(self, sub_video_path):
         return self._media_pipe_landmarker.compute_pose_data(sub_video_path)

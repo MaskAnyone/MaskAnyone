@@ -48,7 +48,13 @@ class PosePostprocessor:
                     pose_data
                 )
             elif overlay_strategy == 'mask_anyone_holistic':
-                pass
+                self._postprocess_mask_anyone_holistic(
+                    pose_data_dict,
+                    frame_count,
+                    estimation_input_bounding_boxes,
+                    obj_id,
+                    pose_data
+                )
 
             if SMOOTHING and (overlay_strategy == 'openpose' or overlay_strategy == 'mp_pose'):
                 if overlay_strategy == 'mp_pose':
@@ -205,3 +211,63 @@ class PosePostprocessor:
                     adjusted_hand.append(None)
 
             pose_data_dict[obj_id][idx] = adjusted_hand
+
+    def _postprocess_mask_anyone_holistic(self, pose_data_dict, frame_count, estimation_input_bounding_boxes, obj_id, pose_data):
+        for idx in range(frame_count):
+            relevant_start_frame = max(
+                frame for frame in estimation_input_bounding_boxes[obj_id].keys() if frame <= idx)
+
+            bbox = estimation_input_bounding_boxes[obj_id][relevant_start_frame]
+            xmin, ymin, xmax, ymax = bbox
+
+            current_pose = pose_data[idx]
+
+            if current_pose is None or current_pose['pose_keypoints'] is None:
+                pose_data_dict[obj_id][idx] = None
+                continue
+
+            adjusted_pose = {
+                'pose_keypoints': [],
+                'face_keypoints': [],
+                'left_hand_keypoints': None,
+                'right_hand_keypoints': None
+            }
+
+            for keypoint in current_pose['pose_keypoints']:
+                if keypoint is not None and (keypoint[0] > 0 or keypoint[1] > 0) and keypoint[
+                    2] > self._confidence:
+                    # Translate the keypoint back to the original frame coordinates
+                    adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin)
+                    adjusted_pose['pose_keypoints'].append(adjusted_keypoint)
+                else:
+                    adjusted_pose['pose_keypoints'].append(None)
+
+            if current_pose['face_keypoints'] is not None:
+                for keypoint in current_pose['face_keypoints']:
+                    if keypoint is not None and (keypoint[0] > 0 or keypoint[1] > 0) and keypoint[
+                        2] > self._confidence:
+                        # Translate the keypoint back to the original frame coordinates
+                        adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin)
+                        adjusted_pose['face_keypoints'].append(adjusted_keypoint)
+                    else:
+                        adjusted_pose['face_keypoints'].append(None)
+
+            if current_pose['left_hand_keypoints'] is not None:
+                adjusted_pose['left_hand_keypoints'] = []
+                for keypoint in current_pose['left_hand_keypoints']:
+                    if keypoint is not None and (keypoint.x > 0 or keypoint.y > 0):
+                        adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin)
+                        adjusted_pose['left_hand_keypoints'].append(adjusted_keypoint)
+                    else:
+                        adjusted_pose['left_hand_keypoints'].append(None)
+
+            if current_pose['right_hand_keypoints'] is not None:
+                adjusted_pose['right_hand_keypoints'] = []
+                for keypoint in current_pose['right_hand_keypoints']:
+                    if keypoint is not None and (keypoint.x > 0 or keypoint.y > 0):
+                        adjusted_keypoint = (keypoint[0] + xmin, keypoint[1] + ymin)
+                        adjusted_pose['right_hand_keypoints'].append(adjusted_keypoint)
+                    else:
+                        adjusted_pose['right_hand_keypoints'].append(None)
+
+            pose_data_dict[obj_id][idx] = adjusted_pose

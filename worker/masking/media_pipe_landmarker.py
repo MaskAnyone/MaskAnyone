@@ -64,8 +64,8 @@ class MediaPipeLandmarker:
         video_capture.release()
         return data
 
-    def compute_hand_data(self, sub_video_path: str):
-        landmarker = self._configure_hand_landmarker()
+    def compute_hand_data(self, sub_video_path: str, hand_count=1):
+        landmarker = self._configure_hand_landmarker(hand_count)
         video_capture = cv2.VideoCapture(sub_video_path)
 
         data = []
@@ -83,7 +83,10 @@ class MediaPipeLandmarker:
             hand_landmarker_result = landmarker.detect_for_video(mp_image, int(frame_timestamp_ms))
 
             if len(hand_landmarker_result.hand_landmarks) > 0:
-                data.append(hand_landmarker_result.hand_landmarks[0])
+                if hand_count == 1:
+                    data.append(hand_landmarker_result.hand_landmarks[0])
+                else:
+                    data.append(hand_landmarker_result.hand_landmarks)
             else:
                 data.append(None)
 
@@ -118,14 +121,14 @@ class MediaPipeLandmarker:
         landmarker = mediapipe.tasks.vision.FaceLandmarker.create_from_options(options)
         return landmarker
 
-    def _configure_hand_landmarker(self):
+    def _configure_hand_landmarker(self, hand_count=1):
         options = mediapipe.tasks.vision.HandLandmarkerOptions(
             base_options=mediapipe.tasks.BaseOptions(
                 model_asset_path=self._hand_landmarker_model_path,
                 delegate=mediapipe.tasks.BaseOptions.Delegate.CPU
             ),
             running_mode=mediapipe.tasks.vision.RunningMode.VIDEO,
-            num_hands=1
+            num_hands=hand_count
         )
 
         landmarker = mediapipe.tasks.vision.HandLandmarker.create_from_options(options)
