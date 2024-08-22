@@ -8,10 +8,9 @@ import shutil
 from typing import Callable
 from communication.sam2_client import Sam2Client
 from communication.openpose_client import OpenposeClient
-from mediapipe import solutions
-from mediapipe.framework.formats import landmark_pb2
 from masking.smoothing import smooth_pose
 from masking.mask_renderer import MaskRenderer
+from masking.pose_renderer import PoseRenderer
 
 
 DEBUG = True
@@ -56,52 +55,6 @@ def configure_hand_landmarker():
 
     landmarker = mediapipe.tasks.vision.HandLandmarker.create_from_options(options)
     return landmarker
-
-
-def draw_face_landmarks_on_image(rgb_image, face_landmarks):
-    image_height, image_width, _ = rgb_image.shape
-
-    face_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
-    face_landmarks_proto.landmark.extend([
-      landmark_pb2.NormalizedLandmark(x=landmark[0] / image_width, y=landmark[1] / image_height, z=0.5) for landmark in face_landmarks
-    ])
-
-    solutions.drawing_utils.draw_landmarks(
-        image=rgb_image,
-        landmark_list=face_landmarks_proto,
-        connections=mediapipe.solutions.face_mesh.FACEMESH_TESSELATION,
-        landmark_drawing_spec=None,
-        connection_drawing_spec=mediapipe.solutions.drawing_styles
-        .get_default_face_mesh_tesselation_style())
-    solutions.drawing_utils.draw_landmarks(
-        image=rgb_image,
-        landmark_list=face_landmarks_proto,
-        connections=mediapipe.solutions.face_mesh.FACEMESH_CONTOURS,
-        landmark_drawing_spec=None,
-        connection_drawing_spec=mediapipe.solutions.drawing_styles
-        .get_default_face_mesh_contours_style())
-    solutions.drawing_utils.draw_landmarks(
-        image=rgb_image,
-        landmark_list=face_landmarks_proto,
-        connections=mediapipe.solutions.face_mesh.FACEMESH_IRISES,
-          landmark_drawing_spec=None,
-          connection_drawing_spec=mediapipe.solutions.drawing_styles
-          .get_default_face_mesh_iris_connections_style())
-
-def draw_hand_landmarks_on_image(rgb_image, hand_landmarks):
-    image_height, image_width, _ = rgb_image.shape
-
-    hand_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
-    hand_landmarks_proto.landmark.extend([
-        landmark_pb2.NormalizedLandmark(x=landmark[0] / image_width, y=landmark[1] / image_height, z=0.5) for landmark in hand_landmarks
-    ])
-    solutions.drawing_utils.draw_landmarks(
-        rgb_image,
-        hand_landmarks_proto,
-        solutions.hands.HAND_CONNECTIONS,
-        solutions.drawing_styles.get_default_hand_landmarks_style(),
-        solutions.drawing_styles.get_default_hand_connections_style())
-
 
 BODY_25_PAIRS = [
     (0, 1), (1, 2), (2, 3), (3, 4), (1, 5), (5, 6), (6, 7), (1, 8),
@@ -307,6 +260,11 @@ class Sam2PoseMasker:
 
         mask_renderer = MaskRenderer('transparent_fill', {'level': 3, 'object_borders': True})
 
+        pose_renderers = {
+            obj_id: PoseRenderer(video_masking_data['overlayStrategies'][obj_id - 1])
+            for obj_id in pose_data_dict.keys()
+        }
+
         idx = 0
         while video_capture.isOpened():
             ret, frame = video_capture.read()
@@ -326,6 +284,10 @@ class Sam2PoseMasker:
             for obj_id, poses in pose_data_dict.items():
                 if poses[idx] is not None:
                     current_pose = poses[idx]
+                    overlay_strategy = video_masking_data['overlayStrategies'][obj_id - 1]
+
+                    if overlay_strategy == 'mp_face' or overlay_strategy == 'mp_hand':
+                        pose_renderers[obj_id].render_keypoint_overlay(output_frame, current_pose)
 
                     # Render the adjusted pose on the original frame
                     if video_masking_data['overlayStrategies'][obj_id - 1] == 'openpose':
@@ -347,10 +309,6 @@ class Sam2PoseMasker:
                                 adjusted_pose.append((np.float64(0), np.float64(0)))
 
                         render_mediapipe_pose(output_frame, adjusted_pose)
-                    elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_face':
-                        draw_face_landmarks_on_image(output_frame, current_pose)
-                    elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_hand':
-                        draw_hand_landmarks_on_image(output_frame, current_pose)
 
             output_frame = cv2.cvtColor(output_frame, cv2.COLOR_RGB2BGR)
             video_writer.write(output_frame)
