@@ -57,10 +57,8 @@ class PoseRenderer:
             self._render_mp_face_overlay(rgb_image, keypoint_data)
         elif self._type == 'mp_pose':
             self._render_mp_pose_overlay(rgb_image, keypoint_data)
-        elif self._type == 'openpose':
+        elif self._type == 'openpose' or self._type == 'openpose_holistic':
             self._render_openpose_overlay(rgb_image, keypoint_data)
-        elif self._type == 'mask_anyone_holistic':
-            self._render_mask_anyone_holistic_overlay(rgb_image, keypoint_data)
 
     def _render_mp_pose_overlay(self, rgb_image, keypoint_data):
         for i in range(len(keypoint_data)):
@@ -158,72 +156,75 @@ class PoseRenderer:
             pointB = tuple(map(int, pose_keypoints[partB]))
             cv2.line(rgb_image, pointA, pointB, (0, 255, 0), 2)
 
-        for face_keypoint in face_keypoints:
-            if face_keypoint is None:
-                continue
+        if face_keypoints is not None:
+            for face_keypoint in face_keypoints:
+                if face_keypoint is None:
+                    continue
 
-            point = tuple(map(int, face_keypoint))
-            cv2.circle(rgb_image, point, 2, (0, 255, 255), -1)
+                point = tuple(map(int, face_keypoint))
+                cv2.circle(rgb_image, point, 2, (0, 255, 255), -1)
 
-        # Iterate over each pair and draw lines
-        for pair in FACE_PAIRS:
-            partA = pair[0]
-            partB = pair[1]
+            # Iterate over each pair and draw lines
+            for pair in FACE_PAIRS:
+                partA = pair[0]
+                partB = pair[1]
 
-            if face_keypoints[partA] is None or face_keypoints[partB] is None:
-                continue
+                if face_keypoints[partA] is None or face_keypoints[partB] is None:
+                    continue
 
-            if face_keypoints[partA][0] < 1 and face_keypoints[partA][1] < 1 or face_keypoints[partB][0] < 1 and \
-                    face_keypoints[partB][1] < 1:
-                continue
+                if face_keypoints[partA][0] < 1 and face_keypoints[partA][1] < 1 or face_keypoints[partB][0] < 1 and \
+                        face_keypoints[partB][1] < 1:
+                    continue
 
-            pointA = tuple(map(int, face_keypoints[partA]))
-            pointB = tuple(map(int, face_keypoints[partB]))
-            cv2.line(rgb_image, pointA, pointB, (0, 255, 255), 2)
+                pointA = tuple(map(int, face_keypoints[partA]))
+                pointB = tuple(map(int, face_keypoints[partB]))
+                cv2.line(rgb_image, pointA, pointB, (0, 255, 255), 2)
 
-        for hand_keypoint in left_hand_keypoints:
-            if hand_keypoint is None:
-                continue
+        if left_hand_keypoints is not None:
+            for hand_keypoint in left_hand_keypoints:
+                if hand_keypoint is None:
+                    continue
 
-            point = tuple(map(int, hand_keypoint))
-            cv2.circle(rgb_image, point, 2, (255, 0, 0), -1)
+                point = tuple(map(int, hand_keypoint))
+                cv2.circle(rgb_image, point, 2, (255, 0, 0), -1)
 
-        for pair in HAND_PAIRS:
-            partA = pair[0]
-            partB = pair[1]
+            for pair in HAND_PAIRS:
+                partA = pair[0]
+                partB = pair[1]
 
-            if left_hand_keypoints[partA] is None or left_hand_keypoints[partB] is None:
-                continue
+                if left_hand_keypoints[partA] is None or left_hand_keypoints[partB] is None:
+                    continue
 
-            if left_hand_keypoints[partA][0] < 1 and left_hand_keypoints[partA][1] < 1 or left_hand_keypoints[partB][
-                0] < 1 and left_hand_keypoints[partB][1] < 1:
-                continue
+                if left_hand_keypoints[partA][0] < 1 and left_hand_keypoints[partA][1] < 1 or left_hand_keypoints[partB][
+                    0] < 1 and left_hand_keypoints[partB][1] < 1:
+                    continue
 
-            pointA = tuple(map(int, left_hand_keypoints[partA]))
-            pointB = tuple(map(int, left_hand_keypoints[partB]))
-            cv2.line(rgb_image, pointA, pointB, (255, 0, 0), 2)
+                pointA = tuple(map(int, left_hand_keypoints[partA]))
+                pointB = tuple(map(int, left_hand_keypoints[partB]))
+                cv2.line(rgb_image, pointA, pointB, (255, 0, 0), 2)
 
-        for hand_keypoint in right_hand_keypoints:
-            if hand_keypoint is None:
-                continue
+        if right_hand_keypoints is not None:
+            for hand_keypoint in right_hand_keypoints:
+                if hand_keypoint is None:
+                    continue
 
-            point = tuple(map(int, hand_keypoint))
-            cv2.circle(rgb_image, point, 2, (0, 0, 255), -1)
+                point = tuple(map(int, hand_keypoint))
+                cv2.circle(rgb_image, point, 2, (0, 0, 255), -1)
 
-        for pair in HAND_PAIRS:
-            partA = pair[0]
-            partB = pair[1]
+            for pair in HAND_PAIRS:
+                partA = pair[0]
+                partB = pair[1]
 
-            if right_hand_keypoints[partA] is None or right_hand_keypoints[partB] is None:
-                continue
+                if right_hand_keypoints[partA] is None or right_hand_keypoints[partB] is None:
+                    continue
 
-            if right_hand_keypoints[partA][0] < 1 and right_hand_keypoints[partA][1] < 1 or right_hand_keypoints[partB][
-                0] < 1 and right_hand_keypoints[partB][1] < 1:
-                continue
+                if right_hand_keypoints[partA][0] < 1 and right_hand_keypoints[partA][1] < 1 or right_hand_keypoints[partB][
+                    0] < 1 and right_hand_keypoints[partB][1] < 1:
+                    continue
 
-            pointA = tuple(map(int, right_hand_keypoints[partA]))
-            pointB = tuple(map(int, right_hand_keypoints[partB]))
-            cv2.line(rgb_image, pointA, pointB, (0, 0, 255), 2)
+                pointA = tuple(map(int, right_hand_keypoints[partA]))
+                pointB = tuple(map(int, right_hand_keypoints[partB]))
+                cv2.line(rgb_image, pointA, pointB, (0, 0, 255), 2)
 
     def _render_mask_anyone_holistic_overlay(self, rgb_image, keypoint_data):
         pose_keypoints = keypoint_data['pose_keypoints']

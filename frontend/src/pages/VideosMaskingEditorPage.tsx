@@ -177,7 +177,7 @@ const VideoMaskingEditorPage = () => {
                             <MenuItem value={'mp_face'}>MediaPipe Face</MenuItem>
                             <MenuItem value={'mp_hand'}>MediaPipe Hands</MenuItem>
                             <MenuItem value={'openpose'}>Openpose</MenuItem>
-                            <MenuItem value={'mask_anyone_holistic'}>MaskAnyone Holistic</MenuItem>
+                            <MenuItem value={'openpose_holistic'}>Openpose Holistic</MenuItem>
                         </Select>
                     </Box>
                 ))}
