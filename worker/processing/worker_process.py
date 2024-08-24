@@ -12,6 +12,8 @@ from masking.media_pipe_pose_masker import MediaPipePoseMasker
 from masking.sam2_pose_masker import Sam2PoseMasker
 from masking.ffmpeg_converter import FFmpegConverter
 
+SLEEP_INTERVAL = 5
+
 class WorkerProcess:
     _backend_client: BackendClient
     _sam2_client: Sam2Client
@@ -39,7 +41,7 @@ class WorkerProcess:
             job = self._fetch_job()
 
             if job is None:
-                time.sleep(10)
+                time.sleep(SLEEP_INTERVAL)
                 continue
 
             print("Found job with id " + job["id"], flush=True)
