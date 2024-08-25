@@ -69,6 +69,12 @@ def prepare_openpose_params(options: dict, video_height: int) -> dict:
 
 
 def estimate_max_input_height(options):
+    # These settings seem to work well for a GPU with 13GiB of available VRAM.
+    # Use lower settings on more constrained GPUs.
+    # The default is 368 and going below this value might lead to unsatisfactory results.
+    # For GPUs with less than 6GiB of available VRAM, using face, hand or BODY_135 is not recommended.
+    # See https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/5c5d96523ef917bd30301245fdc8343937cae48d/include/openpose/flags.hpp#L75
+
     max_input_height = 624
 
     if 'model_pose' in options and options["model_pose"] == 'BODY_25B':

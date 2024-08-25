@@ -306,28 +306,18 @@ class Sam2PoseMasker:
         width = x_max - x_min
         height = y_max - y_min
 
-        # Add margin (up to 10% of width or height)
-        margin_width = int(0.1 * width)
-        margin_height = int(0.1 * height)
+        # Add safety margin (up to 5% of width or height)
+        margin_width = int(0.05 * width)
+        margin_height = int(0.05 * height)
 
         x_min = max(0, x_min - margin_width)
         y_min = max(0, y_min - margin_height)
         x_max = min(frame_width, x_max + margin_width)
         y_max = min(frame_height, y_max + margin_height)
 
-        # Calculate new width and height
-        width = x_max - x_min
-        height = y_max - y_min
-
-        # Make the bounding box square
-        if width > height:
-            diff = width - height
-            y_min = max(0, y_min - diff // 2)
-            y_max = min(frame_height, y_max + (diff - diff // 2))
-        else:
-            diff = height - width
-            x_min = max(0, x_min - diff // 2)
-            x_max = min(frame_width, x_max + (diff - diff // 2))
+        # Previously we would have squared the bounding box here. However, since we would black out this
+        # additional area MediaPipe pads it anyway it shouldn't make a difference. Openpose, however,
+        # takes flexible input ratios and thus benefits from smaller frame sizes in many cases
 
         return [np.int64(x_min), np.int64(y_min), np.int64(x_max), np.int64(y_max)]
 
