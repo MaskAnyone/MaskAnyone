@@ -134,8 +134,11 @@ def smooth_pose(pose_data, sampling_rate, order=3, lowpass_cutoff=12):
         # Step 2: Fill larger gaps with nearest values
         data_filled = fill_larger_gaps(data_interpolated)
 
-        # Step 3: Apply smoothing
-        smoothed_data = butter_it(data_filled, sampling_rate, order, lowpass_cutoff)
+        if order > 0 and lowpass_cutoff > 0:
+            # Step 3: Apply smoothing
+            smoothed_data = butter_it(data_filled, sampling_rate, order, lowpass_cutoff)
+        else:
+            smoothed_data = data_filled
 
         # Step 4: Restore larger gaps (set them back to NaN)
         data_final = compute_final_data(data_interpolated, smoothed_data)

@@ -25,8 +25,8 @@ class PosePostprocessor:
                 )
 
                 if SMOOTHING:
-                    pose_keypoint_list = [pose_data['pose_keypoints'] for pose_data in pose_data_dict[obj_id]]
-                    face_keypoint_list = [pose_data['face_keypoints'] for pose_data in pose_data_dict[obj_id]]
+                    pose_keypoint_list = [pose_data['pose_keypoints'] if pose_data is not None else None for pose_data in pose_data_dict[obj_id]]
+                    face_keypoint_list = [pose_data['face_keypoints'] if pose_data is not None else None for pose_data in pose_data_dict[obj_id]]
 
                     smoothed_pose_keypoint_list = smooth_pose(
                         pose_keypoint_list,
@@ -43,6 +43,9 @@ class PosePostprocessor:
                     )
 
                     for idx in range(frame_count):
+                        if pose_data_dict[obj_id][idx] is None:
+                            continue
+
                         pose_data_dict[obj_id][idx]['pose_keypoints'] = smoothed_pose_keypoint_list[idx]
                         pose_data_dict[obj_id][idx]['face_keypoints'] = smoothed_face_keypoint_list[idx]
 
@@ -54,6 +57,15 @@ class PosePostprocessor:
                     obj_id,
                     pose_data
                 )
+
+                if SMOOTHING:
+                    # Don't smooth, just interpolate
+                    pose_data_dict[obj_id] = smooth_pose(
+                        pose_data_dict[obj_id],
+                        sample_rate,
+                        -1,
+                        -1
+                    )
             elif overlay_strategy == 'mp_face':
                 self._postprocess_mp_face(
                     pose_data_dict,

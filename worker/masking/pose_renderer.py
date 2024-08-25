@@ -137,7 +137,7 @@ class PoseRenderer:
 
     def _render_mp_pose_overlay(self, rgb_image, keypoint_data):
         for i in range(len(keypoint_data)):
-            if keypoint_data[i][0] < 1 and keypoint_data[i][1] < 1:
+            if keypoint_data[i] is None or keypoint_data[i][0] < 1 and keypoint_data[i][1] < 1:
                 continue
 
             point = tuple(map(int, keypoint_data[i][:2]))
@@ -147,8 +147,9 @@ class PoseRenderer:
             partA = pair[0]
             partB = pair[1]
 
-            if (keypoint_data[partA][0] < 1 and keypoint_data[partA][1] < 1
-                    or keypoint_data[partB][0] < 1 and keypoint_data[partB][1] < 1):
+            if keypoint_data[partA] is None or keypoint_data[partB] is None or \
+                    keypoint_data[partA][0] < 1 and keypoint_data[partA][1] < 1 or \
+                    keypoint_data[partB][0] < 1 and keypoint_data[partB][1] < 1:
                 continue
 
             pointA = tuple(map(int, keypoint_data[partA][:2]))

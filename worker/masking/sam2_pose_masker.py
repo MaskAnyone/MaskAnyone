@@ -12,7 +12,8 @@ from masking.pose_renderer import PoseRenderer
 from masking.media_pipe_landmarker import MediaPipeLandmarker
 from masking.pose_postprocessor import PosePostprocessor
 
-DEBUG = True
+DEBUG = False
+APPLY_CLAHE = True
 
 
 class Sam2PoseMasker:
@@ -63,7 +64,7 @@ class Sam2PoseMasker:
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
         video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)
 
-        mask_renderer = MaskRenderer('transparent_fill', {'level': 3, 'object_borders': True})
+        mask_renderer = MaskRenderer('contours', {'level': 4, 'object_borders': True, 'averageColor': True})
 
         pose_renderers = {
             obj_id: PoseRenderer(video_masking_data['overlayStrategies'][obj_id - 1])
@@ -260,6 +261,8 @@ class Sam2PoseMasker:
                 # Seek to the start_frame
                 video_capture.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
+                clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+
                 for frame_num in range(start_frame, end_frame + 1):
                     ret, frame = video_capture.read()
                     if not ret:
@@ -267,6 +270,13 @@ class Sam2PoseMasker:
 
                     mask = masks[frame_num][obj_id][0]
                     cropped_frame = self._prepare_estimation_input_frame(frame, mask, bbox)
+
+                    if APPLY_CLAHE:
+                        lab_frame = cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2LAB)
+                        l_channel, a_channel, b_channel = cv2.split(lab_frame)
+                        l_channel = clahe.apply(l_channel)
+                        merged_frame = cv2.merge((l_channel, a_channel, b_channel))
+                        cropped_frame = cv2.cvtColor(merged_frame, cv2.COLOR_LAB2BGR)
 
                     # Write the cropped frame to the output video
                     out.write(cropped_frame)
