@@ -9,12 +9,10 @@ def perform_openpose_pose_estimation(input_path: str, options: dict):
     video_capture = cv2.VideoCapture(input_path)
     video_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    optimal_openpose_input_height = video_height - (video_height % 16) # Must be divisible by 16
-    openpose_input_height = min(optimal_openpose_input_height, 544) # Limit max amount of VRAM used
+    params = prepare_openpose_params(options, video_height)
+    op_wrapper = initialize_open_pose(params)
 
     pose_data = []
-
-    op_wrapper = initialize_open_pose(options, openpose_input_height)
 
     idx = 0
     while video_capture.isOpened():
@@ -43,23 +41,51 @@ def perform_openpose_pose_estimation(input_path: str, options: dict):
     return pose_data
 
 
-def initialize_open_pose(options: dict, input_height):
+def prepare_openpose_params(options: dict, video_height: int) -> dict:
     params = dict()
     params["model_folder"] = "/models/"
     params["number_people_max"] = 1
 
-    # "COCO", "BODY_25B", "BODY_135"
-    params["model_pose"] = "BODY_135"
+    optimal_openpose_input_height = video_height - (video_height % 16)
+    max_input_height = estimate_max_input_height(options)
+
+    input_height = min(optimal_openpose_input_height, max_input_height)
     params["net_resolution"] = f"-1x{int(input_height)}"
+
+    if 'model_pose' in options:
+        # "COCO", "BODY_25B", "BODY_135"
+        params["model_pose"] = options['model_pose']
+
     #params["hand_scale_number"] = 6
     #params["hand_detector"] = 3
 
-    #if 'face' in options:
-    #    params["face"] = bool(options['face'])
+    if 'face' in options:
+        params["face"] = bool(options['face'])
 
-    #if 'hand' in options:
-    #    params["hand"] = bool(options['hand'])
+    if 'hand' in options:
+        params["hand"] = bool(options['hand'])
 
+    return params
+
+
+def estimate_max_input_height(options):
+    max_input_height = 624
+
+    if 'model_pose' in options and options["model_pose"] == 'BODY_25B':
+        max_input_height -= 16
+    elif 'model_pose' in options and options["model_pose"] == 'BODY_135':
+        max_input_height -= 128
+
+    if 'face' in options and options['face']:
+        max_input_height -= 64
+
+    if 'hand' in options and options['hand']:
+        max_input_height -= 64
+
+    return max_input_height
+
+
+def initialize_open_pose(params: dict):
     op_wrapper = op.WrapperPython()
     op_wrapper.configure(params)
     op_wrapper.start()

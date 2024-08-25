@@ -15,7 +15,7 @@ class PosePostprocessor:
         for obj_id, pose_data in pose_data_dict.items():
             overlay_strategy = overlay_strategies[obj_id - 1]
 
-            if overlay_strategy == 'openpose' or overlay_strategy == 'openpose_holistic':
+            if overlay_strategy.startswith('openpose'):
                 self._postprocess_openpose(
                     pose_data_dict,
                     frame_count,

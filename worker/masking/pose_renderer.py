@@ -14,25 +14,26 @@ MP_POSE_PAIRS = [
 BODY_25_PAIRS = [
     (1, 8), (1, 2), (1, 5), (2, 3), (3, 4), (5, 6), (6, 7), (8, 9),
     (9, 10), (10, 11), (8, 12), (12, 13), (13, 14), (1, 0), (0, 15),
-    (15, 17), (0, 16), (16, 18), (2, 17), (5, 18), (14, 19), (19, 20),
+    (15, 17), (0, 16), (16, 18), (14, 19), (19, 20),
     (14, 21), (11, 22), (22, 23), (11, 24)
+    # (2, 17), (5, 18)
 ]
 
 #https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/41d8c087459fae844e477dda50a6f732e70f2cb8/src/openpose/pose/poseParameters.cpp#L149
 
 BODY_25B_PAIRS = [
-    (0, 1), (0, 2), (1, 3), (2, 4), (0, 5), (0, 6), (5, 7), (6, 8),
+    (0, 1), (0, 2), (1, 3), (2, 4), (5, 7), (6, 8),
     (7, 9), (8, 10), (5, 11), (6, 12), (11, 13), (12, 14), (13, 15), (14, 16),
     (15, 19), (19, 20), (15, 21), (16, 22), (22, 23), (16, 24), (5, 17), (6, 17),
-    # (5, 18), (6, 18)
+    # (5, 18), (6, 18), (0, 5), (0, 6)
     # (3, 5), (4, 6), (3, 4), (5, 9), (6, 10), (9, 10), (9, 11), (10, 12), (11, 12), (15, 16)
-    (11, 12)
+    (11, 12), (17, 18), (5, 6)
 ]
 
 H135 = 25
 F135 = H135 + 40
 
-BODY_135_PAIRS = BODY_25B_PAIRS + [
+BODY_135_HAND_PAIRS = [
     # Left Hand
     (9, H135 + 0), (H135 + 0, H135 + 1), (H135 + 1, H135 + 2), (H135 + 2, H135 + 3),
     (9, H135 + 4), (H135 + 4, H135 + 5), (H135 + 5, H135 + 6), (H135 + 6, H135 + 7),
@@ -46,7 +47,9 @@ BODY_135_PAIRS = BODY_25B_PAIRS + [
     (10, H135 + 28), (H135 + 28, H135 + 29), (H135 + 29, H135 + 30), (H135 + 30, H135 + 31),
     (10, H135 + 32), (H135 + 32, H135 + 33), (H135 + 33, H135 + 34), (H135 + 34, H135 + 35),
     (10, H135 + 36), (H135 + 36, H135 + 37), (H135 + 37, H135 + 38), (H135 + 38, H135 + 39),
+]
 
+BODY_135_PAIRS = BODY_25B_PAIRS + BODY_135_HAND_PAIRS + [
     # Face - COCO-Face
     (0, F135 + 30), (2, F135 + 39), (1, F135 + 42),
 
@@ -73,15 +76,18 @@ BODY_135_PAIRS = BODY_25B_PAIRS + [
     (F135 + 45, F135 + 46), (F135 + 46, F135 + 47),
 
     # Nose-Mouth + Outer Mouth
-    (F135 + 33, F135 + 51), (F135 + 48, F135 + 49), (F135 + 49, F135 + 50), (F135 + 50, F135 + 51),
+    (F135 + 48, F135 + 49), (F135 + 49, F135 + 50), (F135 + 50, F135 + 51),
     (F135 + 51, F135 + 52), (F135 + 52, F135 + 53), (F135 + 53, F135 + 54),
     (F135 + 54, F135 + 55), (F135 + 55, F135 + 56), (F135 + 56, F135 + 57),
     (F135 + 57, F135 + 58), (F135 + 58, F135 + 59),
+    # (F135 + 33, F135 + 51),
+    (F135 + 59, F135 + 48),
 
     # Outer-Inner + Inner Mouth
     (F135 + 48, F135 + 60), (F135 + 54, F135 + 64), (F135 + 60, F135 + 61), (F135 + 61, F135 + 62),
     (F135 + 62, F135 + 63), (F135 + 63, F135 + 64), (F135 + 64, F135 + 65),
     (F135 + 65, F135 + 66), (F135 + 66, F135 + 67),
+    (F135 + 67, F135 + 60),
 
     # Eyes-Pupils
     (F135 + 36, F135 + 68), (F135 + 39, F135 + 68), (F135 + 42, F135 + 69), (F135 + 45, F135 + 69)
@@ -126,8 +132,8 @@ class PoseRenderer:
             self._render_mp_face_overlay(rgb_image, keypoint_data)
         elif self._type == 'mp_pose':
             self._render_mp_pose_overlay(rgb_image, keypoint_data)
-        elif self._type == 'openpose' or self._type == 'openpose_holistic':
-            self._render_openpose_overlay(rgb_image, keypoint_data)
+        elif self._type.startswith('openpose'):
+            self._render_openpose_overlay(self._type, rgb_image, keypoint_data)
 
     def _render_mp_pose_overlay(self, rgb_image, keypoint_data):
         for i in range(len(keypoint_data)):
@@ -195,7 +201,7 @@ class PoseRenderer:
             solutions.drawing_styles.get_default_hand_landmarks_style(),
             solutions.drawing_styles.get_default_hand_connections_style())
 
-    def _render_openpose_overlay(self, rgb_image, keypoint_data):
+    def _render_openpose_overlay(self, type: str, rgb_image, keypoint_data):
         pose_keypoints = keypoint_data['pose_keypoints']
         face_keypoints = keypoint_data['face_keypoints']
         left_hand_keypoints = keypoint_data['left_hand_keypoints']
@@ -222,8 +228,14 @@ class PoseRenderer:
             point = tuple(map(int, pose_keypoints[i][:2]))
             cv2.circle(rgb_image, point, size, color, -1)
 
+        body_pairs = BODY_25_PAIRS
+        if type == 'openpose_body25b':
+            body_pairs = BODY_25B_PAIRS
+        elif type == 'openpose_body_135':
+            body_pairs = BODY_135_PAIRS
+
         # Iterate over each pair and draw lines
-        for pair in BODY_135_PAIRS:
+        for pair in body_pairs:
             partA = pair[0]
             partB = pair[1]
 

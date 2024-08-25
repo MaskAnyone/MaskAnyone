@@ -355,10 +355,8 @@ class Sam2PoseMasker:
                     data = self._compute_mp_face_data(sub_video_path)
                 elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_hand':
                     data = self._compute_mp_hand_data(sub_video_path)
-                elif video_masking_data['overlayStrategies'][obj_id - 1] == 'openpose':
-                    data = self._compute_openpose_pose_data(content)
-                elif video_masking_data['overlayStrategies'][obj_id - 1] == 'openpose_holistic':
-                    data = self._compute_openpose_holistic_pose_data(content)
+                elif video_masking_data['overlayStrategies'][obj_id - 1].startswith('openpose'):
+                    data = self._compute_openpose_pose_data(video_masking_data['overlayStrategies'][obj_id - 1], content)
                 else:
                     raise Exception(f'Unknown overlay strategy, got {video_masking_data["overlayStrategies"][obj_id - 1]}')
 
@@ -366,11 +364,21 @@ class Sam2PoseMasker:
 
         return pose_data_dict
 
-    def _compute_openpose_pose_data(self, content):
-        return self._openpose_client.estimate_pose_on_video(content, { 'face': False, 'hand': False })
+    def _compute_openpose_pose_data(self, overlay_strategy, content):
+        options = {
+            'model_pose': 'BODY_25',
+            'face': False,
+            'hand': False
+        }
 
-    def _compute_openpose_holistic_pose_data(self, content):
-        return self._openpose_client.estimate_pose_on_video(content, { 'face': True, 'hand': True })
+        if overlay_strategy == 'openpose_body25b':
+            options['model_pose'] = 'BODY_25B'
+        elif overlay_strategy == 'openpose_face':
+            options['face'] = True
+        elif overlay_strategy == 'openpose_body_135':
+            options['model_pose'] = 'BODY_135'
+
+        return self._openpose_client.estimate_pose_on_video(content, options)
 
     def _compute_mp_pose_data(self, sub_video_path):
         return self._media_pipe_landmarker.compute_pose_data(sub_video_path)
