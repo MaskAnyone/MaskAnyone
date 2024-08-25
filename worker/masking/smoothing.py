@@ -62,7 +62,7 @@ def compute_final_data(data_interpolated, smoothed_data, frame_cut_detection_thr
     return data_final
 
 
-def smooth_pose(pose_data, sampling_rate, lowpass_cutoff=12):
+def smooth_pose(pose_data, sampling_rate, order=2, lowpass_cutoff=12):
     # The butterworth filter will break if we have too few data points
     if pose_data is None or len(pose_data) < 30:
         return pose_data
@@ -98,7 +98,7 @@ def smooth_pose(pose_data, sampling_rate, lowpass_cutoff=12):
                 raw_data_dict.setdefault((keypoint_idx, 0), []).append(keypoint[0])
                 raw_data_dict.setdefault((keypoint_idx, 1), []).append(keypoint[1])
 
-    order = 2  # Butterworth filter order (reasonable values: 1-5)
+    # Butterworth filter order (reasonable values: 1-5)
 
     # Hz 10 (heavy) to 15 (most movements don't happen in less than 100ms)
     # Lowpass cutoff must not exceed frame_rate/2

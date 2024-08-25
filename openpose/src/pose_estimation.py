@@ -45,6 +45,7 @@ def prepare_openpose_params(options: dict, video_height: int) -> dict:
     params = dict()
     params["model_folder"] = "/models/"
     params["number_people_max"] = 1
+    params["render_pose"] = 0
 
     optimal_openpose_input_height = video_height - (video_height % 16)
     max_input_height = estimate_max_input_height(options)
