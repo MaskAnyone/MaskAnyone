@@ -10,8 +10,9 @@ def butter_it(x, sampling_rate, order, lowpass_cutoff):
     return np.asarray(filtered_x, dtype=np.float64)
 
 
-def interpolate_small_gaps(data, max_gap=3):
-    """Interpolate small gaps (gaps of max_gap or less) in the data."""
+def interpolate_small_gaps(data, max_gap, max_distance):
+    """Interpolate small gaps (gaps of max_gap or less) in the data,
+    but skip interpolation if the gap between known values is too large."""
     data = np.array(data, dtype=float)
     nans = np.isnan(data)
     indices = np.arange(len(data))
@@ -19,7 +20,12 @@ def interpolate_small_gaps(data, max_gap=3):
     # Identify and interpolate small gaps
     for start, stop in contiguous_regions(nans):
         if stop - start <= max_gap:
-            data[start:stop] = np.interp(indices[start:stop], indices[~nans], data[~nans])
+            # Check the distance between the values before and after the gap
+            prev_value = data[start - 1] if start - 1 >= 0 else np.nan
+            next_value = data[stop] if stop < len(data) else np.nan
+
+            if np.abs(next_value - prev_value) <= max_distance:
+                data[start:stop] = np.interp(indices[start:stop], indices[~nans], data[~nans])
 
     return data
 
@@ -62,7 +68,7 @@ def compute_final_data(data_interpolated, smoothed_data, frame_cut_detection_thr
     return data_final
 
 
-def smooth_pose(pose_data, sampling_rate, order=2, lowpass_cutoff=12):
+def smooth_pose(pose_data, sampling_rate, order=3, lowpass_cutoff=12):
     # The butterworth filter will break if we have too few data points
     if pose_data is None or len(pose_data) < 30:
         return pose_data
@@ -107,6 +113,9 @@ def smooth_pose(pose_data, sampling_rate, order=2, lowpass_cutoff=12):
     smoothed_data_dict = {}
     interpolated_data_dict = {}
 
+    max_interpolation_distance = 25 * (30 / sampling_rate)
+    max_interpolation_gap = sampling_rate // 3
+
     for key in raw_data_dict.keys():
         data = raw_data_dict[key]
 
@@ -119,8 +128,8 @@ def smooth_pose(pose_data, sampling_rate, order=2, lowpass_cutoff=12):
         # Convert None to NaN for easier processing
         data = [np.nan if v is None else v for v in data]
 
-        # Step 1: Interpolate small gaps (1 frames or less)
-        data_interpolated = interpolate_small_gaps(data, max_gap=1)
+        # Step 1: Interpolate small gaps
+        data_interpolated = interpolate_small_gaps(data, max_gap=max_interpolation_gap, max_distance=max_interpolation_distance)
 
         # Step 2: Fill larger gaps with nearest values
         data_filled = fill_larger_gaps(data_interpolated)
@@ -137,14 +146,13 @@ def smooth_pose(pose_data, sampling_rate, order=2, lowpass_cutoff=12):
     # Reconstruct the pose data from smoothed data_dict
     smoothed_pose_data = []
 
+    # How many frames to flag before and after the frame cut
+    frame_cut_buffer_length = 7
+
     # Pose keypoint threshold to detect frame cuts
     # Should optimally be relative to frame size, pose size and frame rate
     # i.e. what is the max distance a fast movement might be between two frames?
     threshold = 60 * (30 / sampling_rate)
-
-    # How many frames to flag before and after the frame cut
-    frame_cut_buffer_length = 7
-
 
     flagged_frames = set()
 

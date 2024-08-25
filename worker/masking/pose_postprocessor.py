@@ -31,15 +31,15 @@ class PosePostprocessor:
                     smoothed_pose_keypoint_list = smooth_pose(
                         pose_keypoint_list,
                         sample_rate,
-                        2,
-                        2
+                        3,
+                        10
                     )
 
                     smoothed_face_keypoint_list = smooth_pose(
                         face_keypoint_list,
                         sample_rate,
                         2,
-                        2
+                        14
                     )
 
                     for idx in range(frame_count):
