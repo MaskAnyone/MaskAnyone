@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from "react";
 import {useParams} from "react-router";
-import {Box, InputLabel, MenuItem, Select} from "@mui/material";
+import {Box, Button, InputLabel, MenuItem, Select} from "@mui/material";
 import {useDispatch, useSelector} from "react-redux";
 import Selector from "../state/selector";
 import Api from "../api";
@@ -158,9 +158,9 @@ const VideoMaskingEditorPage = () => {
 
     return (
         <Box component="div">
-            <Box component='div'>
-                <button onClick={maskVideo}>test</button>
-                <button onClick={segmentPrompt}>segment</button>
+            <Box component='div' sx={{ marginBottom: 0.5 }}>
+                <Button onClick={maskVideo} variant={'contained'} color={'primary'}>Mask</Button>
+                <Button onClick={segmentPrompt} variant={'contained'} color={'secondary'} sx={{ marginLeft: 1, marginRight: 1 }}>Segment</Button>
 
                 {posePrompts.map((_, index) => (
                     <Box component='div' sx={{ display: 'inline-block' }}>

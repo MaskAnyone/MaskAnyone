@@ -17,7 +17,7 @@ const onStartPollingJobListUpdates = function* () {
     pollingRunning = true;
 
     while (pollingRunning) {
-        yield delay(10000);
+        yield delay(5000);
         yield put(Command.Job.fetchJobList({}));
 
         if (!pollingRunning) {

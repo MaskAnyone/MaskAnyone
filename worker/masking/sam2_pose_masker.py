@@ -13,7 +13,7 @@ from masking.media_pipe_landmarker import MediaPipeLandmarker
 from masking.pose_postprocessor import PosePostprocessor
 
 DEBUG = False
-APPLY_CLAHE = True
+APPLY_CLAHE = False
 
 
 class Sam2PoseMasker:

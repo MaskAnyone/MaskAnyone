@@ -129,7 +129,7 @@ class WorkerProcess:
 
     def _report_masker_progress(self, job, progress: int) -> None:
         current_time = time.time()
-        if current_time - self._last_api_call_time >= 5:
+        if current_time - self._last_api_call_time >= 3:
             self._last_api_call_time = current_time
             self._backend_client.update_progress(job["id"], progress)
 
