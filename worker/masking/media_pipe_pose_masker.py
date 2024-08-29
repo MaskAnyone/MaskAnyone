@@ -1,6 +1,8 @@
 import mediapipe
 import cv2
 import json
+import time
+import resource
 
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
@@ -50,6 +52,7 @@ class MediaPipePoseMasker:
 
     def mask(self, video_masking_data: dict):
         print("Starting video masking with options", video_masking_data)
+        start_time = time.time()
 
         landmarker = mediapipe.tasks.vision.PoseLandmarker.create_from_options(options)
 
@@ -93,7 +96,11 @@ class MediaPipePoseMasker:
         self._kinematics_timeseries_file.write(json.dumps(kinematics_data))
         self._kinematics_timeseries_file.close()
 
-        print('Video written', flush=True)
+        end_time = time.time()
+        print(f'Video written, took {end_time - start_time} seconds.', flush=True)
+
+        peak_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        print(f"Peak memory usage: {peak_memory / 1024:.2f} MB", flush=True)
 
         self._video_capture.release()
         self._video_writer.release()
