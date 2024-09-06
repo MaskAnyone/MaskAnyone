@@ -111,15 +111,19 @@ def extract_pose_points(pose):
     merged_head_point = average_points(points_0_to_4)
 
     points_5_and_6 = [pose[j] for j in range(5, 7)]
+    merged_upper_body_point = average_points(points_5_and_6)
+
     points_11_and_12 = [pose[j] for j in range(11, 13)]
-    merged_body_point = average_points(points_5_and_6 + points_11_and_12)
+    merged_lower_body_point = average_points(points_11_and_12)
 
     new_pose = []
 
     if is_valid(merged_head_point):
         new_pose.append(merged_head_point + [1])
-    if is_valid(merged_body_point):
-        new_pose.append(merged_body_point + [1])
+    if is_valid(merged_upper_body_point):
+        new_pose.append(merged_upper_body_point + [1])
+    if is_valid(merged_lower_body_point):
+        new_pose.append(merged_lower_body_point + [1])
 
     # Check if we have less than 2 points and add points from indices 7-10 and 13-end if valid
     for j in list(range(7, 11)) + list(range(13, len(pose))):
