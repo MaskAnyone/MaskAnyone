@@ -36,7 +36,7 @@ def fetch_pose_prompts(video_id: str, token_payload: dict = Depends(JWTBearer())
     poses = results[0].keypoints.xy.cpu().numpy().astype(int)
     confs = results[0].keypoints.conf.cpu().numpy()
 
-    poses = np.array([[point if conf > 0.7 else (0, 0)
+    poses = np.array([[point if conf > 0.8 else (0, 0)
                                 for point, conf in zip(keypoints, confidences)]
                                for keypoints, confidences in zip(poses, confs)])
 
@@ -105,34 +105,26 @@ def average_points(points):
 
 
 def extract_pose_points(pose):
-    # Collect valid points from indices 0 to 4
+    #return [point.tolist() + [1] for point in pose]
+
     points_0_to_4 = [pose[j] for j in range(5)]
-    avg_point_0_to_4 = average_points(points_0_to_4)
+    merged_head_point = average_points(points_0_to_4)
 
-    # Collect valid points from indices 5 and 6
     points_5_and_6 = [pose[j] for j in range(5, 7)]
-    avg_point_5_and_6 = average_points(points_5_and_6)
-
-    # Collect valid points from indices 11 and 12
     points_11_and_12 = [pose[j] for j in range(11, 13)]
-    avg_point_11_and_12 = average_points(points_11_and_12)
+    merged_body_point = average_points(points_5_and_6 + points_11_and_12)
 
-    # Create a new list of points
     new_pose = []
 
-    # Add the averaged points to the new list if they are valid
-    if is_valid(avg_point_0_to_4):
-        new_pose.append(avg_point_0_to_4 + [1])
-    if is_valid(avg_point_5_and_6):
-        new_pose.append(avg_point_5_and_6 + [1])
-    if is_valid(avg_point_11_and_12):
-        new_pose.append(avg_point_11_and_12 + [1])
+    if is_valid(merged_head_point):
+        new_pose.append(merged_head_point + [1])
+    if is_valid(merged_body_point):
+        new_pose.append(merged_body_point + [1])
 
-    # Add other points (indices 7 to 10 and 13 to end) if they are valid
-    for j in range(7, 11):
-        if is_valid(pose[j]):
-            new_pose.append(pose[j].tolist() + [1])
-    for j in range(13, len(pose)):
+    # Check if we have less than 2 points and add points from indices 7-10 and 13-end if valid
+    for j in list(range(7, 11)) + list(range(13, len(pose))):
+        if len(new_pose) >= 2:
+            break
         if is_valid(pose[j]):
             new_pose.append(pose[j].tolist() + [1])
 
