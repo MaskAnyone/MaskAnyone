@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from "react";
 import {useParams} from "react-router";
-import {Box, Button, InputLabel, MenuItem, Select} from "@mui/material";
+import {Box, Button, Divider, IconButton, InputLabel, MenuItem, Select, TextField} from "@mui/material";
 import {useDispatch, useSelector} from "react-redux";
 import Selector from "../state/selector";
 import Api from "../api";
@@ -9,6 +9,8 @@ import KeycloakAuth from "../keycloakAuth";
 import DraggablePoint from "../components/videosMakingEditor/DraggablePoint";
 import Command from "../state/actions/command";
 import {v4 as uuidv4} from "uuid";
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
+import ShieldLogoIcon from "../components/common/ShieldLogoIcon";
 
 const VideoMaskingEditorPage = () => {
     const dispatch = useDispatch();
@@ -16,18 +18,20 @@ const VideoMaskingEditorPage = () => {
     const { videoId } = useParams<{ videoId: string }>();
 
     const imgRef = useRef<HTMLImageElement>(null);
+    const [currentFrame, setCurrentFrame] = useState<number>(0);
     const [posePrompts, setPosePrompts] = useState<[number, number, number][][]>([]);
     const [overlayStrategies, setOverlayStrategories] = useState<string[]>([]);
     const [bounds, setBounds] = useState({ left: 0, top: 0, right: 0, bottom: 0 });
     const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
     const [segmentationImageUrl, setSegmentationImageUrl] = useState<string | null>(null);
+    const [videoPosePrompts, setVideoPosePrompts] = useState<Record<string, [number, number, number][][]>>({});
 
     useEffect(() => {
         if (!videoId) {
             return;
         }
 
-        Api.fetchPosePrompt(videoId).then(posePrompts => {
+        Api.fetchPosePrompt(videoId, currentFrame).then(posePrompts => {
             setPosePrompts(posePrompts);
             setOverlayStrategories(posePrompts.map((_: any) => 'mp_pose'));
         });
@@ -117,6 +121,26 @@ const VideoMaskingEditorPage = () => {
         }
     };
 
+    const addNewTarget = () => {
+        setPosePrompts([
+            ...posePrompts,
+            [[100, 100, 1]],
+        ]);
+        setOverlayStrategories([...overlayStrategies, 'none'])
+    };
+
+    const removeTarget = (targetIndex: number) => {
+        const newPosePrompts = [...posePrompts];
+        newPosePrompts.splice(targetIndex, 1);
+        setPosePrompts(newPosePrompts);
+    };
+
+    const addPrompt = () => {
+        setVideoPosePrompts({
+            [currentFrame]: posePrompts,
+        });
+    };
+
     if (!videoId && videoList.length > 0) {
         return null;
     }
@@ -129,7 +153,9 @@ const VideoMaskingEditorPage = () => {
             resultVideoId: uuidv4(),
             runData: {
                 videoMasking: {
-                    posePrompts,
+                    posePrompts: {
+                        [currentFrame]: posePrompts,
+                    },
                     overlayStrategies,
                 } as any,
                 voiceMasking: {
@@ -140,7 +166,7 @@ const VideoMaskingEditorPage = () => {
     };
 
     const segmentPrompt = () => {
-        Api.fetchPosePromptSegmentation(videoId!, posePrompts).then((segmentationImage) => {
+        Api.fetchPosePromptSegmentation(videoId!, currentFrame, posePrompts).then((segmentationImage) => {
             // Create a Blob from the binary data
             const blob = new Blob([segmentationImage], { type: 'image/jpeg' }); // Adjust the MIME type if needed
             // Create a URL for the Blob
@@ -157,14 +183,21 @@ const VideoMaskingEditorPage = () => {
     };
 
     return (
-        <Box component="div">
-            <Box component='div' sx={{ marginBottom: 0.5 }}>
-                <Button onClick={maskVideo} variant={'contained'} color={'primary'}>Mask</Button>
-                <Button onClick={segmentPrompt} variant={'contained'} color={'secondary'} sx={{ marginLeft: 1, marginRight: 1 }}>Segment</Button>
+        <Box component="div" sx={{ display: 'flex' }}>
+            <Box component='div' sx={{ width: 320 }}>
+                <Button onClick={maskVideo} variant={'contained'} color={'secondary'} startIcon={<ShieldLogoIcon />}>Mask</Button>
+                <Button onClick={segmentPrompt} variant={'contained'} color={'primary'} sx={{ marginLeft: 1, marginRight: 1 }}>Test</Button>
+
+                <Divider sx={{ marginTop: 2 }} />
 
                 {posePrompts.map((_, index) => (
-                    <Box component='div' sx={{ display: 'inline-block' }}>
-                        <InputLabel id="demo-simple-select-label">Overlay Strategy {index + 1}</InputLabel>
+                    <Box component='div' sx={{ marginTop: 1 }}>
+                        <div>
+                            Target {index + 1}
+                            <IconButton><HighlightOffIcon onClick={() => removeTarget(index)} /></IconButton>
+                        </div>
+
+                        <InputLabel id="demo-simple-select-label">Overlay Strategy</InputLabel>
                         <Select 
                             labelId="demo-simple-select-label" 
                             label={`Overlay Strategy ${index + 1}`} 
@@ -183,6 +216,23 @@ const VideoMaskingEditorPage = () => {
                         </Select>
                     </Box>
                 ))}
+
+                <Box component='div' sx={{ marginTop: 3}}>
+                    <Button variant={'contained'} onClick={addNewTarget}>Add Target</Button>
+                </Box>
+
+                <Divider sx={{ marginTop: 2 }} />
+
+                <Box component='div' sx={{ marginTop: 2}}>
+                    <Button variant={'contained'} onClick={addPrompt}>Add Prompt</Button>
+                </Box>
+
+                {Object.entries(videoPosePrompts).map(([frameIndex, framePosePrompts]) => (
+                    <Box component='div'>
+                        <strong>Frame {frameIndex}:</strong><br />
+                        {JSON.stringify(framePosePrompts)}
+                    </Box>
+                ))}
             </Box>
             <Box 
                 component="div" 
@@ -192,7 +242,7 @@ const VideoMaskingEditorPage = () => {
                 {videoId && (
                     <img
                         ref={imgRef}
-                        src={segmentationImageUrl || `${Config.api.baseUrl}/videos/${videoId}/first-frame?token=${KeycloakAuth.getToken()}`}
+                        src={segmentationImageUrl || `${Config.api.baseUrl}/videos/${videoId}/frames/${currentFrame}?token=${KeycloakAuth.getToken()}`}
                         alt="Video Frame"
                         style={{display: 'block'}}
                     />

@@ -188,17 +188,17 @@ const Api = {
             method: 'post',
         });
     },
-    fetchPosePrompt: async (videoId: string): Promise<any> => {
+    fetchPosePrompt: async (videoId: string, frameIndex: number): Promise<any> => {
         const result = await sendApiRequest({
-            url: `prompts/${videoId}/pose`,
+            url: `prompts/${videoId}/frames/${frameIndex}/pose`,
             method: 'get',
         });
 
         return result.data.pose_prompts;
     },
-    fetchPosePromptSegmentation: async (videoId: string, posePrompts: [number, number, number][][]): Promise<any> => {
+    fetchPosePromptSegmentation: async (videoId: string, frameIndex: number, posePrompts: [number, number, number][][]): Promise<any> => {
         const result = await sendApiRequest({
-            url: `prompts/${videoId}/sam2`,
+            url: `prompts/${videoId}/frames/${frameIndex}/sam2`,
             method: 'post',
             data: {
                 pose_prompts: posePrompts,

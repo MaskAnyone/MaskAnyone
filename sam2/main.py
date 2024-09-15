@@ -46,7 +46,8 @@ async def segment_image(
         with open(frame_file_path, "wb") as f:
             f.write(image_content)
 
-        masks = perform_sam2_segmentation(temp_dir, pose_prompts)[0]
+        video_pose_prompts = { 0: pose_prompts }
+        masks = perform_sam2_segmentation(temp_dir, video_pose_prompts)[0]
 
         output_image = cv2.imread(frame_file_path)
         for object_id in range(1, len(masks) + 1):

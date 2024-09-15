@@ -88,13 +88,14 @@ def get_preview_for_video(video_id: str, token_payload: dict = Depends(JWTBearer
     return Response(content=image_content, media_type="image/jpeg")
 
 
-@router.get("/{video_id}/first-frame")
-def get_preview_for_video(video_id: str, token_payload: dict = Depends(JWTBearer())):
+@router.get("/{video_id}/frames/{frame_index}")
+def get_preview_for_video(video_id: str, frame_index: int, token_payload: dict = Depends(JWTBearer())):
     user_id = token_payload["sub"]
     video_manager.assert_user_has_video(video_id, user_id)
 
     video_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
     capture = cv2.VideoCapture(video_path)
+    capture.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
     success, frame = capture.read()
     capture.release()
 

@@ -18,13 +18,14 @@ router = APIRouter(
 model = YOLO('./models/yolov8m-pose.pt')
 
 
-@router.get("/{video_id}/pose")
-def fetch_pose_prompts(video_id: str, token_payload: dict = Depends(JWTBearer())):
+@router.get("/{video_id}/frames/{frame_index}/pose")
+def fetch_pose_prompts(video_id: str, frame_index: int, token_payload: dict = Depends(JWTBearer())):
     user_id = token_payload["sub"]
     # @todo must be users video
 
     video_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
     capture = cv2.VideoCapture(video_path)
+    capture.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
     success, frame = capture.read()
     capture.release()
 
@@ -52,13 +53,14 @@ class Sam2Params(BaseModel):
     pose_prompts: list[list[list[int]]]
 
 
-@router.post("/{video_id}/sam2")
-def test(sam2_params: Sam2Params, video_id: str, token_payload: dict = Depends(JWTBearer())):
+@router.post("/{video_id}/frames/{frame_index}/sam2")
+def test(sam2_params: Sam2Params, video_id: str, frame_index: int, token_payload: dict = Depends(JWTBearer())):
     user_id = token_payload["sub"]
     # @todo must be users video
 
     video_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
     capture = cv2.VideoCapture(video_path)
+    capture.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
     success, frame = capture.read()
     capture.release()
 
