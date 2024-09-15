@@ -79,6 +79,9 @@ def extract_points_and_labels(pose_prompts):
             points_sublist.append(point[:2])  # Take the first two elements
             labels_sublist.append(point[2])   # Take the last element
 
+        if len(points_sublist) < 1:
+            continue
+
         # Append the processed sublists to the main lists
         points.append(points_sublist)
         labels.append(labels_sublist)

@@ -1,6 +1,6 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useParams} from "react-router";
-import {Box, Button, Divider, IconButton, InputLabel, MenuItem, Select, TextField} from "@mui/material";
+import {Box, Button, Divider, IconButton, InputLabel, MenuItem, Select, Slider, TextField} from "@mui/material";
 import {useDispatch, useSelector} from "react-redux";
 import Selector from "../state/selector";
 import Api from "../api";
@@ -10,7 +10,9 @@ import DraggablePoint from "../components/videosMakingEditor/DraggablePoint";
 import Command from "../state/actions/command";
 import {v4 as uuidv4} from "uuid";
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import ShieldLogoIcon from "../components/common/ShieldLogoIcon";
+import { debounce } from 'lodash';
 
 const VideoMaskingEditorPage = () => {
     const dispatch = useDispatch();
@@ -19,6 +21,7 @@ const VideoMaskingEditorPage = () => {
 
     const imgRef = useRef<HTMLImageElement>(null);
     const [currentFrame, setCurrentFrame] = useState<number>(0);
+    const [debouncedCurrentFrame, setDebouncedCurrentFrame] = useState<number>(currentFrame);
     const [posePrompts, setPosePrompts] = useState<[number, number, number][][]>([]);
     const [overlayStrategies, setOverlayStrategories] = useState<string[]>([]);
     const [bounds, setBounds] = useState({ left: 0, top: 0, right: 0, bottom: 0 });
@@ -51,6 +54,27 @@ const VideoMaskingEditorPage = () => {
             };
         }
     }, [imgRef.current]);
+
+    const targetCount = useMemo(() => {
+        const posePromptsTargets = posePrompts.length;
+        const videoPosePromptsTargets = Object.values(videoPosePrompts).reduce(
+            (currentMax, framePosePrompt) => Math.max(currentMax, framePosePrompt.length),
+            0,
+        );
+
+        return Math.max(posePromptsTargets, videoPosePromptsTargets);
+    }, [posePrompts, videoPosePrompts]);
+
+    const debouncedSetCurrentFrame = useCallback(
+        debounce((frame) => {
+            setDebouncedCurrentFrame(frame);
+        }, 500),
+        [],
+    );
+
+    useEffect(() => {
+        debouncedSetCurrentFrame(currentFrame);
+    }, [currentFrame, debouncedSetCurrentFrame]);
 
     const handleDragStart = (e: any, data: any) => {
         setDragStartPosition({ x: data.x, y: data.y });
@@ -87,10 +111,6 @@ const VideoMaskingEditorPage = () => {
         e.stopPropagation();
         const newPoints = [...posePrompts];
         newPoints[poseIndex] = newPoints[poseIndex].filter((_, index) => index !== pointIndex);
-
-        if (newPoints[poseIndex].length === 0) {
-            newPoints.splice(poseIndex, 1);
-        }
 
         setPosePrompts(newPoints);
     };
@@ -129,6 +149,13 @@ const VideoMaskingEditorPage = () => {
         setOverlayStrategories([...overlayStrategies, 'none'])
     };
 
+    const addTargetPoint = (targetIndex: number) => {
+        const newPosePrompts = [...posePrompts];
+        newPosePrompts[targetIndex].push([100, 100, 1]);
+
+        setPosePrompts(newPosePrompts);
+    };
+
     const removeTarget = (targetIndex: number) => {
         const newPosePrompts = [...posePrompts];
         newPosePrompts.splice(targetIndex, 1);
@@ -137,13 +164,19 @@ const VideoMaskingEditorPage = () => {
 
     const addPrompt = () => {
         setVideoPosePrompts({
+            ...videoPosePrompts,
             [currentFrame]: posePrompts,
         });
+        setPosePrompts(Array.from({ length: targetCount }, () => []));
+        setSegmentationImageUrl(null);
     };
 
     if (!videoId && videoList.length > 0) {
         return null;
     }
+
+    const video = videoList.find(videoListItem => videoListItem.id === videoId)!;
+    const frameCount = video?.videoInfo.frameCount || 0;
 
     const maskVideo = () => {
         dispatch(Command.Video.maskVideo({
@@ -154,6 +187,7 @@ const VideoMaskingEditorPage = () => {
             runData: {
                 videoMasking: {
                     posePrompts: {
+                        ...videoPosePrompts,
                         [currentFrame]: posePrompts,
                     },
                     overlayStrategies,
@@ -190,11 +224,12 @@ const VideoMaskingEditorPage = () => {
 
                 <Divider sx={{ marginTop: 2 }} />
 
-                {posePrompts.map((_, index) => (
+                {Array.from({ length: targetCount }, (_, ti) => ti).map((_, index) => (
                     <Box component='div' sx={{ marginTop: 1 }}>
                         <div>
                             Target {index + 1}
                             <IconButton><HighlightOffIcon onClick={() => removeTarget(index)} /></IconButton>
+                            <IconButton><AddCircleOutlineIcon onClick={() => addTargetPoint(index)} /></IconButton>
                         </div>
 
                         <InputLabel id="demo-simple-select-label">Overlay Strategy</InputLabel>
@@ -230,38 +265,43 @@ const VideoMaskingEditorPage = () => {
                 {Object.entries(videoPosePrompts).map(([frameIndex, framePosePrompts]) => (
                     <Box component='div'>
                         <strong>Frame {frameIndex}:</strong><br />
-                        {JSON.stringify(framePosePrompts)}
+                        {framePosePrompts.map((framePosePrompt, targetIndex) => <>T{targetIndex + 1}: {JSON.stringify(framePosePrompt)}<br /></>)}
                     </Box>
                 ))}
             </Box>
-            <Box 
-                component="div" 
-                style={{position: 'relative', display: 'inline-block'}}
-                onContextMenu={handleRightClickImage}
-            >
-                {videoId && (
-                    <img
-                        ref={imgRef}
-                        src={segmentationImageUrl || `${Config.api.baseUrl}/videos/${videoId}/frames/${currentFrame}?token=${KeycloakAuth.getToken()}`}
-                        alt="Video Frame"
-                        style={{display: 'block'}}
-                    />
-                )}
-                {posePrompts.map((pose, poseIndex) => (
-                    pose.map((point, pointIndex) => (
-                        <DraggablePoint
-                            key={`${poseIndex}-${pointIndex}`}
-                            position={{x: point[0], y: point[1]}}
-                            onStart={handleDragStart}
-                            onStop={(e, data) => handleDragStop(poseIndex, pointIndex, e, data)}
-                            onContextMenu={(e) => handleRightClickPoint(e, poseIndex, pointIndex)}
-                            bounds={bounds}
-                            isActive={!!point[2]}
-                            pointLabel={`(${Math.round(point[0])}, ${Math.round(point[1])})`}
-                            promptNumber={poseIndex + 1}
+            <Box component="div">
+                <Box 
+                    component="div" 
+                    style={{position: 'relative', display: 'inline-block'}}
+                    onContextMenu={handleRightClickImage}
+                >
+                    {videoId && (
+                        <img
+                            ref={imgRef}
+                            src={segmentationImageUrl || `${Config.api.baseUrl}/videos/${videoId}/frames/${debouncedCurrentFrame}?token=${KeycloakAuth.getToken()}`}
+                            alt="Video Frame"
+                            style={{display: 'block'}}
                         />
-                    ))
-                ))}
+                    )}
+                    {posePrompts.map((pose, poseIndex) => (
+                        pose.map((point, pointIndex) => (
+                            <DraggablePoint
+                                key={`${poseIndex}-${pointIndex}`}
+                                position={{x: point[0], y: point[1]}}
+                                onStart={handleDragStart}
+                                onStop={(e, data) => handleDragStop(poseIndex, pointIndex, e, data)}
+                                onContextMenu={(e) => handleRightClickPoint(e, poseIndex, pointIndex)}
+                                bounds={bounds}
+                                isActive={!!point[2]}
+                                pointLabel={`(${Math.round(point[0])}, ${Math.round(point[1])})`}
+                                promptNumber={poseIndex + 1}
+                            />
+                        ))
+                    ))}
+                </Box>
+                {Boolean(videoPosePrompts[0]) && (
+                    <Slider min={0} max={frameCount - 1} value={currentFrame} onChange={(_, newFrame: number | number[]) => setCurrentFrame(newFrame as number)} />
+                )}
             </Box>
         </Box>
     );

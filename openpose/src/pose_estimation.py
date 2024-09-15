@@ -81,7 +81,7 @@ def estimate_max_input_height(options):
     if 'model_pose' in options and options["model_pose"] == 'BODY_25B':
         max_input_height -= 16
     elif 'model_pose' in options and options["model_pose"] == 'BODY_135':
-        max_input_height -= 128
+        max_input_height -= 160
 
     if 'face' in options and options['face']:
         max_input_height -= 64
