@@ -13,11 +13,12 @@ import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import ShieldLogoIcon from "../components/common/ShieldLogoIcon";
 import { debounce } from 'lodash';
+import { ReduxState } from "../state/reducer";
 
 const VideoMaskingEditorPage = () => {
     const dispatch = useDispatch();
     const videoList = useSelector(Selector.Video.videoList);
-    const { videoId } = useParams<{ videoId: string }>();
+    const { videoId, resultVideoId } = useParams<{ videoId: string, resultVideoId?: string }>();
 
     const imgRef = useRef<HTMLImageElement>(null);
     const [currentFrame, setCurrentFrame] = useState<number>(0);
@@ -29,16 +30,31 @@ const VideoMaskingEditorPage = () => {
     const [segmentationImageUrl, setSegmentationImageUrl] = useState<string | null>(null);
     const [videoPosePrompts, setVideoPosePrompts] = useState<Record<string, [number, number, number][][]>>({});
 
+    const resultVideoLists = useSelector(Selector.Video.resultVideoLists);
+    const resultVideos = resultVideoLists[videoId || ''] || [];
+    const activeResultVideo = resultVideos.find(resultVideo => resultVideo.videoResultId === resultVideoId);
+    const selectJobById = Selector.Job.makeSelectJobById();
+    const resultVideoJob = useSelector((state: ReduxState) => selectJobById(state, activeResultVideo?.jobId || ''));
+
     useEffect(() => {
         if (!videoId) {
             return;
         }
 
-        Api.fetchPosePrompt(videoId, currentFrame).then(posePrompts => {
-            setPosePrompts(posePrompts);
-            setOverlayStrategories(posePrompts.map((_: any) => 'mp_pose'));
-        });
-    }, [videoId]);
+        if (resultVideoId) {
+            if (!resultVideoJob) {
+                return;
+            }
+
+            setVideoPosePrompts((resultVideoJob.data as any)['videoMasking']['posePrompts']);
+            setPosePrompts((resultVideoJob.data as any)['videoMasking']['posePrompts'][0]);
+        } else {
+            Api.fetchPosePrompt(videoId, currentFrame).then(posePrompts => {
+                setPosePrompts(posePrompts);
+                setOverlayStrategories(posePrompts.map((_: any) => 'mp_pose'));
+            });
+        }
+    }, [videoId, resultVideoId, resultVideoJob]);
 
     useEffect(() => {
         if (imgRef.current) {

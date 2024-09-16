@@ -29,11 +29,17 @@ const videoActiveJobCountRecord = createSelector(
     },
 );
 
+const makeSelectJobById = () => createSelector(
+    [jobList, (state: ReduxState, jobId: string) => jobId],
+    (jobList, jobId) => jobList.find(job => job.id === jobId)
+);
+
 const JobSelector = {
     jobList,
 
     openAndRunningJobCount,
     videoActiveJobCountRecord,
+    makeSelectJobById,
 };
 
 export default JobSelector;

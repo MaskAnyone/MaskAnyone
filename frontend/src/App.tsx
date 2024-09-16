@@ -99,6 +99,7 @@ const App = () => {
                 <Route path={Paths.videoDetails} element={<VideosPage />} />
                 <Route path={Paths.videoRunMasking} element={<VideosMaskingPage />} />
                 <Route path={Paths.videoMaskingEditor} element={<VideoMaskingEditorPage />} />
+                <Route path={Paths.videoResultMaskingEditor} element={<VideoMaskingEditorPage />} />
                 <Route path={Paths.resultVideoDetails} element={<VideosPage />} />
                 <Route path={Paths.runs} element={<RunsPage />} />
                 <Route path={Paths.presets} element={<PresetsPage />} />
