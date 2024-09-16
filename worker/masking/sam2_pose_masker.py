@@ -64,7 +64,13 @@ class Sam2PoseMasker:
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
         video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)
 
-        mask_renderer = MaskRenderer('contours', {'level': 4, 'object_borders': True, 'averageColor': True})
+        mask_renderers = {
+            obj_id: MaskRenderer(
+                video_masking_data['hidingStrategies'][obj_id - 1],
+                {'level': 4, 'object_borders': True, 'averageColor': True}
+            )
+            for obj_id in pose_data_dict.keys()
+        }
 
         pose_renderers = {
             obj_id: PoseRenderer(video_masking_data['overlayStrategies'][obj_id - 1])
@@ -81,7 +87,7 @@ class Sam2PoseMasker:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
             output_frame = frame.copy()
-            self._render_all_masks_on_image(output_frame, mask_renderer, idx, masks)
+            self._render_all_masks_on_image(output_frame, mask_renderers, idx, masks)
 
             if DEBUG:
                 self._render_bounding_boxes(output_frame, bounding_boxes, idx, (255, 255, 255))
@@ -331,10 +337,10 @@ class Sam2PoseMasker:
 
         return [np.int64(x_min), np.int64(y_min), np.int64(x_max), np.int64(y_max)]
 
-    def _render_all_masks_on_image(self, image, mask_renderer, frame_idx, masks):
+    def _render_all_masks_on_image(self, image, mask_renderers, frame_idx, masks):
         for object_id in range(1, len(masks[frame_idx]) + 1):
             mask = masks[frame_idx][object_id][0]
-            mask_renderer.apply_to_image(image, mask, object_id)
+            mask_renderers[object_id].apply_to_image(image, mask, object_id)
 
     def _compute_pose_data(self, video_masking_data, sub_video_paths, frame_count):
         pose_data_dict = {}

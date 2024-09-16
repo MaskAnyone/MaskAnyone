@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import React, {Fragment, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useParams} from "react-router";
 import {Box, Button, Divider, IconButton, InputLabel, MenuItem, Select, Slider, TextField} from "@mui/material";
 import {useDispatch, useSelector} from "react-redux";
@@ -24,6 +24,7 @@ const VideoMaskingEditorPage = () => {
     const [currentFrame, setCurrentFrame] = useState<number>(0);
     const [debouncedCurrentFrame, setDebouncedCurrentFrame] = useState<number>(currentFrame);
     const [posePrompts, setPosePrompts] = useState<[number, number, number][][]>([]);
+    const [hidingStrategies, setHidingStrategies] = useState<string[]>([]);
     const [overlayStrategies, setOverlayStrategories] = useState<string[]>([]);
     const [bounds, setBounds] = useState({ left: 0, top: 0, right: 0, bottom: 0 });
     const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
@@ -43,15 +44,19 @@ const VideoMaskingEditorPage = () => {
 
         if (resultVideoId) {
             if (!resultVideoJob) {
+                dispatch(Command.Video.fetchResultsList({ videoId }));
                 return;
             }
 
             setVideoPosePrompts((resultVideoJob.data as any)['videoMasking']['posePrompts']);
             setPosePrompts((resultVideoJob.data as any)['videoMasking']['posePrompts'][0]);
+            setOverlayStrategories((resultVideoJob.data as any)['videoMasking']['overlayStrategies']);
+            setHidingStrategies((resultVideoJob.data as any)['videoMasking']['hidingStrategies'] || []);
         } else {
             Api.fetchPosePrompt(videoId, currentFrame).then(posePrompts => {
                 setPosePrompts(posePrompts);
                 setOverlayStrategories(posePrompts.map((_: any) => 'mp_pose'));
+                setHidingStrategies(posePrompts.map((_: any) => 'solid_fill'));
             });
         }
     }, [videoId, resultVideoId, resultVideoJob]);
@@ -162,13 +167,18 @@ const VideoMaskingEditorPage = () => {
             ...posePrompts,
             [[100, 100, 1]],
         ]);
-        setOverlayStrategories([...overlayStrategies, 'none'])
+        setOverlayStrategories([...overlayStrategies, 'none']);
+        setHidingStrategies([...hidingStrategies, 'none']);
     };
 
     const addTargetPoint = (targetIndex: number) => {
         const newPosePrompts = [...posePrompts];
-        newPosePrompts[targetIndex].push([100, 100, 1]);
 
+        while (newPosePrompts.length <= targetIndex) {
+            newPosePrompts.push([]);
+        }
+
+        newPosePrompts[targetIndex].push([100, 100, 1]);
         setPosePrompts(newPosePrompts);
     };
 
@@ -202,11 +212,11 @@ const VideoMaskingEditorPage = () => {
             resultVideoId: uuidv4(),
             runData: {
                 videoMasking: {
-                    posePrompts: {
-                        ...videoPosePrompts,
-                        [currentFrame]: posePrompts,
-                    },
+                    posePrompts: posePrompts.some(prompt => prompt.length > 0) 
+                        ? { ...videoPosePrompts, [currentFrame]: posePrompts } 
+                        : videoPosePrompts,
                     overlayStrategies,
+                    hidingStrategies,
                 } as any,
                 voiceMasking: {
                     strategy: 'remove',
@@ -232,6 +242,12 @@ const VideoMaskingEditorPage = () => {
         setOverlayStrategories(newOverlayStrategies);
     };
 
+    const updateHidingStrategy = (newValue: string, index: number) => {
+        const newHidingStrategies = [...hidingStrategies];
+        newHidingStrategies[index] = newValue;
+        setHidingStrategies(newHidingStrategies);
+    };
+
     return (
         <Box component="div" sx={{ display: 'flex' }}>
             <Box component='div' sx={{ width: 320 }}>
@@ -241,17 +257,14 @@ const VideoMaskingEditorPage = () => {
                 <Divider sx={{ marginTop: 2 }} />
 
                 {Array.from({ length: targetCount }, (_, ti) => ti).map((_, index) => (
-                    <Box component='div' sx={{ marginTop: 1 }}>
+                    <Box component='div' sx={{ marginTop: 1 }} key={index}>
                         <div>
                             Target {index + 1}
                             <IconButton><HighlightOffIcon onClick={() => removeTarget(index)} /></IconButton>
                             <IconButton><AddCircleOutlineIcon onClick={() => addTargetPoint(index)} /></IconButton>
                         </div>
 
-                        <InputLabel id="demo-simple-select-label">Overlay Strategy</InputLabel>
                         <Select 
-                            labelId="demo-simple-select-label" 
-                            label={`Overlay Strategy ${index + 1}`} 
                             value={overlayStrategies[index] || ''}
                             onChange={e => updateOverlayStrategy(e.target.value as string, index)}
                             size='small'
@@ -264,6 +277,19 @@ const VideoMaskingEditorPage = () => {
                             <MenuItem value={'openpose_body25b'}>Openpose (BODY_25B)</MenuItem>
                             <MenuItem value={'openpose_face'}>Openpose + Face</MenuItem>
                             <MenuItem value={'openpose_body_135'}>Openpose (BODY_135)</MenuItem>
+                        </Select>
+                        <br />
+                        <Select 
+                            value={hidingStrategies[index] || ''}
+                            onChange={e => updateHidingStrategy(e.target.value as string, index)}
+                            size='small'
+                        >
+                            <MenuItem value={'none'}>No Hiding</MenuItem>
+                            <MenuItem value={'solid_fill'}>Solid Fill</MenuItem>
+                            <MenuItem value={'transparent_fill'}>Transparent Fill</MenuItem>
+                            <MenuItem value={'blurring'}>Blurring</MenuItem>
+                            <MenuItem value={'pixelation'}>Pixelation</MenuItem>
+                            <MenuItem value={'contours'}>Contours</MenuItem>
                         </Select>
                     </Box>
                 ))}
@@ -279,9 +305,9 @@ const VideoMaskingEditorPage = () => {
                 </Box>
 
                 {Object.entries(videoPosePrompts).map(([frameIndex, framePosePrompts]) => (
-                    <Box component='div'>
+                    <Box component='div' key={frameIndex}>
                         <strong>Frame {frameIndex}:</strong><br />
-                        {framePosePrompts.map((framePosePrompt, targetIndex) => <>T{targetIndex + 1}: {JSON.stringify(framePosePrompt)}<br /></>)}
+                        {framePosePrompts.map((framePosePrompt, targetIndex) => <Fragment key={targetIndex}>T{targetIndex + 1}: {JSON.stringify(framePosePrompt)}<br /></Fragment>)}
                     </Box>
                 ))}
             </Box>

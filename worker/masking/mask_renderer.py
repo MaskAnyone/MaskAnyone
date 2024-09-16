@@ -89,6 +89,8 @@ class MaskRenderer:
             self._apply_pixelation_to_image(rgb_image, boolean_segmentation_mask)
         elif self._strategy == 'contours':
             self._apply_contours_to_image(rgb_image, boolean_segmentation_mask)
+        elif self._strategy == 'none':
+            pass
         else:
             raise Exception(f'Unknown video masking strategy, got {self._strategy}')
 
