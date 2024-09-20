@@ -43,8 +43,17 @@ class Sam2PoseMasker:
 
     def mask(self, video_masking_data: dict):
         content = self._read_video_content()
-        masks = self._sam2_client.segment_video(video_masking_data['posePrompts'], content)
+        raw_mask_content = self._sam2_client.segment_video(video_masking_data['posePrompts'], content)
         del content
+
+        # @todo move to video manager too
+        sam2_masks_path = self._output_path.replace('.mp4', '_sam2_masks')
+        sam2_masks_file = open(sam2_masks_path, "wb")
+        sam2_masks_file.write(raw_mask_content)
+        sam2_masks_file.close()
+
+        masks = self._sam2_client.decode_mask_npz_content(raw_mask_content)
+        del raw_mask_content
 
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
         total_frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))

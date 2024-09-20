@@ -46,6 +46,15 @@ class VideoManager:
                 video_id, result_video_id, data
             )
 
+    def upload_result_data(self, video_id: str, result_video_id, data_type: str):
+        path = self._get_output_video_path(video_id).replace(".mp4", "_" + data_type)
+
+        if self.__local_data_manager.path_exists(path):
+            result_data = self.__local_data_manager.read_binary(path)
+            self.__backend_client.upload_result_data(
+                video_id, result_video_id, data_type, result_data
+            )
+
     def get_original_video_path(self, video_id: str):
         return os.path.join(self.__local_data_manager.get_base_dir(), self._get_original_video_path(video_id))
 
@@ -60,3 +69,4 @@ class VideoManager:
 
     def _get_output_video_path(self, video_id: str) -> str:
         return os.path.join("results", video_id + ".mp4")
+

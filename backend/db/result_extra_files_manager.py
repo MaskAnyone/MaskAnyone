@@ -14,22 +14,20 @@ class ResultExtraFilesManager:
         result_video_id: str,
         video_id: str,
         job_id: str,
-        file_ending: str,
+        type: str,
         data: bytes,
     ):
-        print("a51")
         self.__db_connection.execute(
-            "INSERT INTO result_extra_files (id, result_video_id, video_id, job_id, data, ending) VALUES (%(id)s, %(result_video_id)s, %(video_id)s, %(job_id)s, %(data)s, %(ending)s)",
+            "INSERT INTO result_extra_files (id, result_video_id, video_id, job_id, data, type) VALUES (%(id)s, %(result_video_id)s, %(video_id)s, %(job_id)s, %(data)s, %(type)s)",
             {
                 "id": id,
                 "result_video_id": result_video_id,
                 "video_id": video_id,
                 "job_id": job_id,
                 "data": data,
-                "ending": file_ending,
+                "type": type,
             },
         )
-        print("a52")
 
     def fetch_result_extra_files_entry(self, extra_file_id: str):
         result_extra_files_data_list = self.__db_connection.select_all(

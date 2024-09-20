@@ -77,6 +77,9 @@ class WorkerProcess:
             if job['type'] == 'basic_masking':
                 self._video_manager.upload_result_mp_kinematics(job["video_id"], job["result_video_id"])
 
+            if job['type'] == 'sam2_masking':
+                self._video_manager.upload_result_data(job["video_id"], job["result_video_id"], 'sam2_masks')
+
             self._backend_client.mark_job_as_finished(job["id"])
             print("Finished processing job with id " + job["id"], flush=True)
         except Exception as e:

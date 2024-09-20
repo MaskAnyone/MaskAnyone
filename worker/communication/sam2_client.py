@@ -25,7 +25,10 @@ class Sam2Client:
             data=data,
         )
 
-        buffer = io.BytesIO(response.content)
+        return response.content
+
+    def decode_mask_npz_content(self, content):
+        buffer = io.BytesIO(content)
         loaded = np.load(buffer)
 
         masks = {}

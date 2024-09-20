@@ -66,6 +66,15 @@ class BackendClient:
             json=data,
         )
 
+    def upload_result_data(
+        self, video_id: str, result_video_id: str, data_type: str, content
+    ):
+        requests.post(
+            self._make_url("videos/" + video_id + "/results/" + result_video_id + "/data/" + data_type),
+            data=content,
+            headers={"Content-Type": "application/octet-stream"},
+        )
+
     def update_progress(self, job_id: str, progress: int):
         requests.post(
             self._make_url("jobs/" + job_id + "/progress"),

@@ -55,3 +55,6 @@ class MpKinematicsType(str, Enum):
 
 class RegisterWorkerParams(BaseModel):
     capabilities: list[str]
+
+class ResultDataType(str, Enum):
+    sam2_masks = "sam2_masks"

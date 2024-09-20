@@ -4,7 +4,7 @@ import cv2
 
 from fastapi import APIRouter, Request
 
-from models import RunParams, MpKinematicsType, UpdateJobProgressParams, RegisterWorkerParams
+from models import RunParams, MpKinematicsType, ResultDataType, UpdateJobProgressParams, RegisterWorkerParams
 from db.job_manager import JobManager
 from db.worker_manager import WorkerManager
 from db.video_manager import VideoManager
@@ -168,46 +168,21 @@ async def upload_result_mp_kinematics(
         str(uuid.uuid4()), result_video_id, video_id, job.id, type, await request.json()
     )
 
-
-@router.post("/videos/{video_id}/results/{result_video_id}/blendshapes")
-async def upload_result_blendshapes(
-    worker_id: str, video_id: str, result_video_id: str, request: Request
-):
-    job = job_manager.fetch_job_by_result_video_id(result_video_id)
-
-    result_blendshapes_manager.create_result_mp_kinematics_entry(
-        str(uuid.uuid4()), result_video_id, video_id, job.id, await request.json()
-    )
-
-
-@router.post("/videos/{video_id}/results/{result_video_id}/audio_files")
-async def upload_result_audio_file(
-    worker_id: str, video_id: str, result_video_id: str, request: Request
-):
-    job = job_manager.fetch_job_by_result_video_id(result_video_id)
-
-    result_audio_files_manager.create_result_audio_files_entry(
-        str(uuid.uuid4()), result_video_id, video_id, job.id, await request.body()
-    )
-
-
-@router.post("/videos/{video_id}/results/{result_video_id}/extra_files/{file_ending}")
-async def upload_result_extra_file(
+@router.post("/videos/{video_id}/results/{result_video_id}/data/{type}")
+async def upload_result_data(
     worker_id: str,
     video_id: str,
     result_video_id: str,
-    file_ending: str,
+    type: ResultDataType,
     request: Request,
 ):
     job = job_manager.fetch_job_by_result_video_id(result_video_id)
-    print("a5")
 
     result_extra_files_manager.create_result_extra_files_entry(
         str(uuid.uuid4()),
         result_video_id,
         video_id,
         job.id,
-        file_ending,
         await request.body(),
+        type,
     )
-    print("a6")
