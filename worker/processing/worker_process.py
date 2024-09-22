@@ -79,6 +79,7 @@ class WorkerProcess:
 
             if job['type'] == 'sam2_masking':
                 self._video_manager.upload_result_data(job["video_id"], job["result_video_id"], 'sam2_masks')
+                self._video_manager.upload_result_data(job["video_id"], job["result_video_id"], 'poses')
 
             self._backend_client.mark_job_as_finished(job["id"])
             print("Finished processing job with id " + job["id"], flush=True)
@@ -114,6 +115,8 @@ class WorkerProcess:
             self._openpose_client,
             self._video_manager.get_original_video_path(job["video_id"]),
             self._video_manager.get_output_video_path(job["video_id"]),
+            self._video_manager.get_result_data_path(job["video_id"], 'sam2_masks'),
+            self._video_manager.get_result_data_path(job["video_id"], 'poses'),
             progress_callback
         )
 

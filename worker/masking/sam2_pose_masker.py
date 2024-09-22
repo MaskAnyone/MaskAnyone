@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
-import supervision as sv
 import os
 import shutil
+import json
 
 from typing import Callable
 from communication.sam2_client import Sam2Client
@@ -21,6 +21,8 @@ class Sam2PoseMasker:
     _openpose_client: OpenposeClient
     _input_path: str
     _output_path: str
+    _sam2_masks_path: str
+    _poses_path: str
     _progress_callback: Callable[[int], None]
     _media_pipe_landmarker: MediaPipeLandmarker
     _pose_postprocessor: PosePostprocessor
@@ -31,12 +33,16 @@ class Sam2PoseMasker:
             openpose_client: OpenposeClient,
             input_path: str,
             output_path: str,
+            sam2_masks_path: str,
+            poses_path: str,
             progress_callback: Callable[[int], None]
     ):
         self._sam2_client = sam2_client
         self._openpose_client = openpose_client
         self._input_path = input_path
         self._output_path = output_path
+        self._sam2_masks_path = sam2_masks_path
+        self._poses_path = poses_path
         self._progress_callback = progress_callback
         self._media_pipe_landmarker = MediaPipeLandmarker()
         self._pose_postprocessor = PosePostprocessor()
@@ -46,9 +52,7 @@ class Sam2PoseMasker:
         raw_mask_content = self._sam2_client.segment_video(video_masking_data['posePrompts'], content)
         del content
 
-        # @todo move to video manager too
-        sam2_masks_path = self._output_path.replace('.mp4', '_sam2_masks')
-        sam2_masks_file = open(sam2_masks_path, "wb")
+        sam2_masks_file = open(self._sam2_masks_path, "wb")
         sam2_masks_file.write(raw_mask_content)
         sam2_masks_file.close()
 
@@ -69,6 +73,29 @@ class Sam2PoseMasker:
         self._pose_postprocessor.postprocess(pose_data_dict, video_masking_data['overlayStrategies'], total_frames, sample_rate, estimation_input_bounding_boxes)
 
         shutil.rmtree(subvideo_output_dir)
+
+
+
+        def convert_numpy_to_native(obj):
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()  # Convert numpy arrays to lists
+            elif isinstance(obj, np.float64):
+                return float(obj)  # Convert np.float64 to Python float
+            elif isinstance(obj, dict):
+                return {convert_numpy_to_native(k): convert_numpy_to_native(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_numpy_to_native(i) for i in obj]
+            else:
+                return obj
+
+        poses_file = open(self._poses_path, "w")
+        data_converted = convert_numpy_to_native(pose_data_dict)
+        json_data = json.dumps(data_converted)
+        poses_file.write(json_data)
+        poses_file.close()
+
+
+
 
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
         video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)

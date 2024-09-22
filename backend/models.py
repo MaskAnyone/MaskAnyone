@@ -58,3 +58,4 @@ class RegisterWorkerParams(BaseModel):
 
 class ResultDataType(str, Enum):
     sam2_masks = "sam2_masks"
+    poses = "poses"

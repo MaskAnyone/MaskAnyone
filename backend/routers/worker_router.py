@@ -1,6 +1,7 @@
 import os
 import uuid
 import cv2
+import json
 
 from fastapi import APIRouter, Request
 
@@ -168,12 +169,12 @@ async def upload_result_mp_kinematics(
         str(uuid.uuid4()), result_video_id, video_id, job.id, type, await request.json()
     )
 
-@router.post("/videos/{video_id}/results/{result_video_id}/data/{type}")
+@router.post("/videos/{video_id}/results/{result_video_id}/data/{data_type}")
 async def upload_result_data(
     worker_id: str,
     video_id: str,
     result_video_id: str,
-    type: ResultDataType,
+    data_type: ResultDataType,
     request: Request,
 ):
     job = job_manager.fetch_job_by_result_video_id(result_video_id)
@@ -183,6 +184,6 @@ async def upload_result_data(
         result_video_id,
         video_id,
         job.id,
-        await request.body(),
-        type,
+        data_type,
+        (json.dumps(await request.json()) if data_type == 'poses' else await request.body()),
     )
