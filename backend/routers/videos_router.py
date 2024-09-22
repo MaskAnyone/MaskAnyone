@@ -238,7 +238,7 @@ def get_downloadable_result_files(video_id: str, result_video_id: str, token_pay
     audio_file_entries = result_audio_files_manager.find_entries(result_video_id)
     extra_file_entries = result_extra_files_manager.find_entries(
         result_video_id
-    )  # List[{id, ending}]
+    )  # List[{id, type}]
 
     for blendshapes_id in blendshapes_entries:
         files.append(
@@ -293,7 +293,7 @@ def get_downloadable_result_files(video_id: str, result_video_id: str, token_pay
         files.append(
             {
                 "id": extra_file["id"],
-                "title": "Additional output (." + extra_file["ending"] + ")",
+                "title": "Additional output (." + extra_file["type"] + ")",
                 "url": "/videos/"
                 + video_id
                 + "/results/"

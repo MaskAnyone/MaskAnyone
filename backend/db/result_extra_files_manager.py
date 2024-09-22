@@ -43,13 +43,13 @@ class ResultExtraFilesManager:
         result = []
 
         result_extra_files_data_list = self.__db_connection.select_all(
-            "SELECT id, ending FROM result_extra_files WHERE result_video_id=%(result_video_id)s",
+            "SELECT id, type FROM result_extra_files WHERE result_video_id=%(result_video_id)s",
             {"result_video_id": result_video_id},
         )
 
         for result_extra_files_data in result_extra_files_data_list:
             result.append(
-                {"id": result_extra_files_data[0], "ending": result_extra_files_data[1]}
+                {"id": result_extra_files_data[0], "type": result_extra_files_data[1]}
             )
 
         return result
