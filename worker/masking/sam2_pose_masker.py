@@ -3,6 +3,7 @@ import numpy as np
 import os
 import shutil
 import json
+import time
 
 from typing import Callable
 from communication.sam2_client import Sam2Client
@@ -48,6 +49,8 @@ class Sam2PoseMasker:
         self._pose_postprocessor = PosePostprocessor()
 
     def mask(self, video_masking_data: dict):
+        start = time.time()
+
         content = self._read_video_content()
         raw_mask_content = self._sam2_client.segment_video(video_masking_data['posePrompts'], content)
         del content
@@ -58,6 +61,8 @@ class Sam2PoseMasker:
 
         masks = self._sam2_client.decode_mask_npz_content(raw_mask_content)
         del raw_mask_content
+
+        print("Elapsed time (sam2):", time.time() - start)
 
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
         total_frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -140,6 +145,8 @@ class Sam2PoseMasker:
 
         video_capture.release()
         video_writer.release()
+
+        print("Elapsed time (total):", time.time() - start)
 
     def _open_video(self):
         video_capture = cv2.VideoCapture(self._input_path)
