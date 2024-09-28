@@ -74,26 +74,27 @@ async def segment_video(
     pose_prompts = Form(...),
     video: UploadFile = File(...)
 ):
-    video_content = await video.read()
-    pose_prompts = json.loads(pose_prompts)
+    try:
+        video_content = await video.read()
+        pose_prompts = json.loads(pose_prompts)
 
-    video_dir = unpack_video_for_sam2(video_content)
+        video_dir = unpack_video_for_sam2(video_content)
 
-    masks = perform_sam2_segmentation(video_dir, pose_prompts)
+        masks = perform_sam2_segmentation(video_dir, pose_prompts)
 
-    flattened_masks = {
-        f"frame{frame}_mask{mask}": mask_array
-        for frame, masks in masks.items()
-        for mask, mask_array in masks.items()
-    }
+        flattened_masks = {
+            f"frame{frame}_mask{mask}": mask_array
+            for frame, masks in masks.items()
+            for mask, mask_array in masks.items()
+        }
 
-    buffer = io.BytesIO()
-    np.savez_compressed(buffer, **flattened_masks)
-    buffer.seek(0)
+        buffer = io.BytesIO()
+        np.savez_compressed(buffer, **flattened_masks)
+        buffer.seek(0)
 
-    gc.collect()
-
-    return Response(buffer.getvalue(), media_type="application/octet-stream")
+        return Response(buffer.getvalue(), media_type="application/octet-stream")
+    finally:
+        gc.collect()
 
 
 def unpack_video_for_sam2(video_content) -> str:

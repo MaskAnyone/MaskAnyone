@@ -59,7 +59,7 @@ const VideoMaskingEditorPage = () => {
                 setHidingStrategies(posePrompts.map((_: any) => 'solid_fill'));
             });
         }
-    }, [videoId, resultVideoId, resultVideoJob]);
+    }, [videoId, resultVideoId, Boolean(resultVideoJob)]);
 
     useEffect(() => {
         if (imgRef.current) {
@@ -163,12 +163,25 @@ const VideoMaskingEditorPage = () => {
     };
 
     const addNewTarget = () => {
-        setPosePrompts([
+        const updatedPosePrompts = [
             ...posePrompts,
-            [[100, 100, 1]],
-        ]);
-        setOverlayStrategories([...overlayStrategies, 'none']);
-        setHidingStrategies([...hidingStrategies, 'none']);
+            ...Array(Math.max(0, targetCount - posePrompts.length)).fill([]),
+        ];
+
+        const updatedOverlayStrategies = [
+            ...overlayStrategies,
+            ...Array(Math.max(0, targetCount - overlayStrategies.length)).fill('none'),
+        ];
+
+        const updatedHidingStrategies = [
+            ...hidingStrategies,
+            ...Array(Math.max(0, targetCount - hidingStrategies.length)).fill('none'),
+        ];
+
+        // Add the actual new target
+        setPosePrompts([...updatedPosePrompts, [[100, 100, 1]]]);
+        setOverlayStrategories([...updatedOverlayStrategies, 'none']);
+        setHidingStrategies([...updatedHidingStrategies, 'none']);
     };
 
     const addTargetPoint = (targetIndex: number) => {
@@ -345,6 +358,7 @@ const VideoMaskingEditorPage = () => {
                     <Slider min={0} max={frameCount - 1} value={currentFrame} onChange={(_, newFrame: number | number[]) => setCurrentFrame(newFrame as number)} />
                 )}
             </Box>
+            {JSON.stringify(posePrompts)}
         </Box>
     );
 };
