@@ -393,6 +393,7 @@ class Sam2PoseMasker:
                 obj_id, start_frame, content = self._read_sub_video(sub_video_path)
 
                 if video_masking_data['overlayStrategies'][obj_id - 1] == 'none':
+                    pose_data_dict[obj_id] = [None] * frame_count
                     continue
 
                 if obj_id not in pose_data_dict:

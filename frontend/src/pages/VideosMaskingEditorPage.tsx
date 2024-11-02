@@ -324,41 +324,48 @@ const VideoMaskingEditorPage = () => {
                     </Box>
                 ))}
             </Box>
-            <Box component="div">
-                <Box 
-                    component="div" 
-                    style={{position: 'relative', display: 'inline-block'}}
-                    onContextMenu={handleRightClickImage}
-                >
-                    {videoId && (
-                        <img
-                            ref={imgRef}
-                            src={segmentationImageUrl || `${Config.api.baseUrl}/videos/${videoId}/frames/${debouncedCurrentFrame}?token=${KeycloakAuth.getToken()}`}
-                            alt="Video Frame"
-                            style={{display: 'block'}}
-                        />
-                    )}
-                    {posePrompts.map((pose, poseIndex) => (
-                        pose.map((point, pointIndex) => (
-                            <DraggablePoint
-                                key={`${poseIndex}-${pointIndex}`}
-                                position={{x: point[0], y: point[1]}}
-                                onStart={handleDragStart}
-                                onStop={(e, data) => handleDragStop(poseIndex, pointIndex, e, data)}
-                                onContextMenu={(e) => handleRightClickPoint(e, poseIndex, pointIndex)}
-                                bounds={bounds}
-                                isActive={!!point[2]}
-                                pointLabel={`(${Math.round(point[0])}, ${Math.round(point[1])})`}
-                                promptNumber={poseIndex + 1}
+            <Box component="div" sx={{ width: 'calc(100% - 320px)', overflow: 'auto' }}>
+                <Box component="div" sx={{ maxHeight: 'calc(100vh - 120px)', overflow: 'auto' }}>
+                    <Box 
+                        component="div" 
+                        style={{position: 'relative', display: 'inline-block'}}
+                        onContextMenu={handleRightClickImage}
+                    >
+                        {videoId && (
+                            <img
+                                ref={imgRef}
+                                src={segmentationImageUrl || `${Config.api.baseUrl}/videos/${videoId}/frames/${debouncedCurrentFrame}?token=${KeycloakAuth.getToken()}`}
+                                alt="Video Frame"
+                                style={{display: 'block'}}
                             />
-                        ))
-                    ))}
+                        )}
+                        {posePrompts.map((pose, poseIndex) => (
+                            pose.map((point, pointIndex) => (
+                                <DraggablePoint
+                                    key={`${poseIndex}-${pointIndex}`}
+                                    position={{x: point[0], y: point[1]}}
+                                    onStart={handleDragStart}
+                                    onStop={(e, data) => handleDragStop(poseIndex, pointIndex, e, data)}
+                                    onContextMenu={(e) => handleRightClickPoint(e, poseIndex, pointIndex)}
+                                    bounds={bounds}
+                                    isActive={!!point[2]}
+                                    pointLabel={`(${Math.round(point[0])}, ${Math.round(point[1])})`}
+                                    promptNumber={poseIndex + 1}
+                                />
+                            ))
+                        ))}
+                    </Box>
                 </Box>
                 {Boolean(videoPosePrompts[0]) && (
-                    <Slider min={0} max={frameCount - 1} value={currentFrame} onChange={(_, newFrame: number | number[]) => setCurrentFrame(newFrame as number)} />
+                    <Slider 
+                        min={0} 
+                        max={frameCount - 1} 
+                        value={currentFrame} 
+                        onChange={(_, newFrame: number | number[]) => setCurrentFrame(newFrame as number)} 
+                        sx={{ margin: '0 12px' }}
+                    />
                 )}
             </Box>
-            {JSON.stringify(posePrompts)}
         </Box>
     );
 };
