@@ -265,7 +265,7 @@ const VideoMaskingEditorPage = () => {
         <Box component="div" sx={{ display: 'flex' }}>
             <Box component='div' sx={{ width: 320 }}>
                 <Button onClick={maskVideo} variant={'contained'} color={'secondary'} startIcon={<ShieldLogoIcon />}>Mask</Button>
-                <Button onClick={segmentPrompt} variant={'contained'} color={'primary'} sx={{ marginLeft: 1, marginRight: 1 }}>Test</Button>
+                <Button onClick={segmentPrompt} variant={'contained'} color={'primary'} sx={{ marginLeft: 1, marginRight: 1 }}>Test Prompt</Button>
 
                 <Divider sx={{ marginTop: 2 }} />
 
@@ -308,13 +308,13 @@ const VideoMaskingEditorPage = () => {
                 ))}
 
                 <Box component='div' sx={{ marginTop: 3}}>
-                    <Button variant={'contained'} onClick={addNewTarget}>Add Target</Button>
+                    <Button variant={'contained'} onClick={addNewTarget}>Add New Target</Button>
                 </Box>
 
                 <Divider sx={{ marginTop: 2 }} />
 
                 <Box component='div' sx={{ marginTop: 2}}>
-                    <Button variant={'contained'} onClick={addPrompt}>Add Prompt</Button>
+                    <Button variant={'contained'} onClick={addPrompt}>Prompt Another Frame</Button>
                 </Box>
 
                 {Object.entries(videoPosePrompts).map(([frameIndex, framePosePrompts]) => (
