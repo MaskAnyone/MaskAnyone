@@ -32,14 +32,14 @@ jobs:
       - name: "Build images"
         run: docker compose -f docker-compose-build.yml build
 
-      #- name: "Login GitHub package registry"
-      #  env:
-      #    DOCKER_USERNAME: ${{ github.actor }}
-      #    DOCKER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #  run: docker login ghcr.io -u $DOCKER_USERNAME -p "$DOCKER_TOKEN"
+      - name: "Login GitHub package registry"
+        env:
+          DOCKER_USERNAME: ${{ github.actor }}
+          DOCKER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: docker login ghcr.io -u $DOCKER_USERNAME -p "$DOCKER_TOKEN"
 
-      #- name: "Push images"
-      #  run: "docker compose -f docker-compose-build.yml push"
+      - name: "Push images"
+        run: "docker compose -f docker-compose-build.yml push"
 
       - name: "Cleanup"
         run: rm /home/runner/.docker/config.json
