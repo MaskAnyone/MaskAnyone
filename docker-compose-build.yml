@@ -35,3 +35,9 @@ services:
     build:
       context: .
       dockerfile: docker_build/worker/Dockerfile
+
+  sam2:
+    image: ${DOCKER_REGISTRY}sam2:${DOCKER_TAG}
+    build:
+      context: .
+      dockerfile: docker_build/sam2/Dockerfile
