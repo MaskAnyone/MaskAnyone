@@ -29,6 +29,8 @@ RUN cd segment-anything-2/checkpoints \
 # Runtime stage
 FROM nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu22.04
 
+ARG DEBIAN_FRONTEND=noninteractive
+
 WORKDIR /app
 
 COPY --from=builder /usr/local/lib/python3.10/dist-packages /usr/local/lib/python3.10/dist-packages
