@@ -25,4 +25,8 @@ RUN git clone https://github.com/facebookresearch/segment-anything-2.git \
 RUN cd segment-anything-2/checkpoints \
     && wget https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt
 
+COPY ./sam2 /app
+
 WORKDIR /app
+
+CMD ["gunicorn", "-k", "uvicorn_prod_worker.UvicornProdWorker", "main:app", "--bind=0.0.0.0:8000"]
