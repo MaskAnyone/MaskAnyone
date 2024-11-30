@@ -13,8 +13,13 @@ RUN apt-get update \
         libgl1 \
         libglib2.0-0 \
         libpq-dev \
+        ffmpeg \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
+    && pip3 install \
+        torch \
+        torchvision \
+        torchaudio --index-url https://download.pytorch.org/whl/cpu \
     && pip install \
         fastapi \
         uvicorn[standard] \
