@@ -1,6 +1,4 @@
 FROM ubuntu:22.04
-#FROM nvidia/cuda:11.7.1-runtime-ubuntu22.04
-#FROM nvidia/cuda:12.2.2-cudnn8-devel-ubuntu22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -12,6 +10,10 @@ RUN apt-get update \
         python3-opencv \
         wget \
         ffmpeg \
+        mesa-common-dev \
+        libegl1-mesa-dev \
+        libgles2-mesa-dev \
+        mesa-utils \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -26,13 +28,5 @@ RUN mkdir /worker_models \
         -O /worker_models/face_landmarker.task \
     && wget https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task \
         -O /worker_models/hand_landmarker.task
-
-RUN apt-get update \
-    && apt-get -y install \
-        mesa-common-dev libegl1-mesa-dev libgles2-mesa-dev mesa-utils \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN pip install supervision
 
 WORKDIR /app

@@ -15,7 +15,7 @@ def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
         torch.cuda.empty_cache()
 
         sam2_checkpoint = "/workspace/segment-anything-2/checkpoints/sam2.1_hiera_small.pt"
-        model_cfg = "sam2.1_hiera_small.yaml"
+        model_cfg = "sam2.1_hiera_s.yaml"
         predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint)
 
     inference_state = predictor.init_state(
