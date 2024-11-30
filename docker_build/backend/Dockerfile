@@ -6,23 +6,29 @@ WORKDIR /app
 
 RUN apt-get update \
     && apt-get -y install \
-    python3 \
-    python3-pip \
-    python-is-python3 \
-    python3-opencv \
-    libgl1 \
-    libglib2.0-0 \
-    libpq-dev \
+        python3 \
+        python3-pip \
+        python-is-python3 \
+        python3-opencv \
+        libgl1 \
+        libglib2.0-0 \
+        libpq-dev \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN pip install \
-    fastapi \
-    uvicorn[standard] \
-    gunicorn \
-    psycopg2 \
-    requests \
-    python-jose[cryptography]
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install \
+        fastapi \
+        uvicorn[standard] \
+        gunicorn \
+        psycopg2 \
+        requests \
+        python-jose[cryptography] \
+    && pip install ultralytics --no-deps \
+    && pip install \
+        numpy==1.24.4 \
+        psutil \
+        matplotlib \
+        tqdm \
+        pandas
 
 COPY ./backend /app
 
