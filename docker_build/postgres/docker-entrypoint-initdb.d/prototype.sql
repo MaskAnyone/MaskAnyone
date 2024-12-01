@@ -107,7 +107,7 @@ CREATE TABLE public.result_extra_files (
     result_video_id uuid NOT NULL,
     video_id uuid NOT NULL,
     job_id uuid NOT NULL,
-    ending character varying NOT NULL,
+    type character varying NOT NULL,
     data bytea NOT NULL
 );
 
