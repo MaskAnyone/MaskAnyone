@@ -40,9 +40,13 @@ RUN pip3 install \
 
 RUN git clone https://github.com/CMU-Perceptual-Computing-Lab/openpose.git
 
-RUN gdown gdown https://drive.google.com/uc?id=19ohrLGTdsRL7jLCb35QQBwxlY2Jg3Eye \
+RUN gdown https://drive.google.com/uc?id=19ohrLGTdsRL7jLCb35QQBwxlY2Jg3Eye \
     && 19ohrLGTdsRL7jLCb35QQBwxlY2Jg3Eye.zip \
-    && mv 19ohrLGTdsRL7jLCb35QQBwxlY2Jg3Eye/models/* /workspace/openpose/models
+    && mv 19ohrLGTdsRL7jLCb35QQBwxlY2Jg3Eye/models/* /workspace/openpose/models \
+    && ls /workspace/openpose/models \
+    && ls /workspace/openpose/models/pose/body_25 \
+    && ls /workspace/openpose/models/face \
+    && ls /workspace/openpose/models/hand
 
 ENV PATH /usr/local/cuda/bin:$PATH
 ENV LD_LIBRARY_PATH /usr/local/cuda/lib64:$LD_LIBRARY_PATH
