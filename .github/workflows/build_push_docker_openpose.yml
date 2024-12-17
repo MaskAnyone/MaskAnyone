@@ -2,11 +2,11 @@ on:
   release:
     types: [published]
 
-name: "Build And Push Docker (SAM2)"
+name: "Build And Push Docker (Openpose)"
 
 jobs:
   build-and-push-docker:
-    name: "Build And Push Docker (SAM2)"
+    name: "Build And Push Docker (Openpose)"
     permissions:
       contents: read
       packages: write
@@ -38,7 +38,7 @@ jobs:
         run: cat .env
 
       - name: "Build images"
-        run: docker compose -f docker-compose-build.yml build sam2
+        run: docker compose -f docker-compose-build.yml build openpose
 
       - name: "Login GitHub package registry"
         env:
@@ -47,7 +47,7 @@ jobs:
         run: docker login ghcr.io -u $DOCKER_USERNAME -p "$DOCKER_TOKEN"
 
       - name: "Push images"
-        run: "docker compose -f docker-compose-build.yml push sam2"
+        run: "docker compose -f docker-compose-build.yml push openpose"
 
       - name: "Cleanup"
         run: rm /home/runner/.docker/config.json

@@ -41,3 +41,9 @@ services:
     build:
       context: .
       dockerfile: docker_build/sam2/Dockerfile
+
+  openpose:
+    image: ${DOCKER_REGISTRY}openpose:${DOCKER_TAG}
+    build:
+      context: .
+      dockerfile: docker_build/openpose/Dockerfile
