@@ -41,7 +41,7 @@ RUN pip3 install \
 RUN git clone https://github.com/CMU-Perceptual-Computing-Lab/openpose.git
 
 RUN gdown https://drive.google.com/uc?id=19ohrLGTdsRL7jLCb35QQBwxlY2Jg3Eye \
-    && unzip openpose_models.zip \
+    && unzip openpose_models.zip -d openpose_models \
     && mv openpose_models/models/* /workspace/openpose/models \
     && rm openpose_models.zip \
     && rm -rf openpose_models \
