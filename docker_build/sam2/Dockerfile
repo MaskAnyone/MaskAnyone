@@ -26,8 +26,9 @@ RUN pip3 install \
     gunicorn \
     python-multipart
 
-RUN git clone https://github.com/facebookresearch/sam2.git \
-    && cd sam2 \
+RUN git clone https://github.com/facebookresearch/sam2.git
+
+RUN cd sam2 \
     && pip install -e .
 
 RUN cd sam2/checkpoints \
