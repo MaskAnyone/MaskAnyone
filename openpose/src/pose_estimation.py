@@ -1,8 +1,11 @@
 import cv2
 import sys
+import os
 
 sys.path.append('/workspace/openpose/build/python')
 from openpose import pyopenpose as op
+
+OPENPOSE_MODEL_DIR = os.environ["OPENPOSE_MODEL_DIR"]
 
 
 def perform_openpose_pose_estimation(input_path: str, options: dict):
@@ -43,7 +46,7 @@ def perform_openpose_pose_estimation(input_path: str, options: dict):
 
 def prepare_openpose_params(options: dict, video_height: int) -> dict:
     params = dict()
-    params["model_folder"] = "/models/"
+    params["model_folder"] = f"{OPENPOSE_MODEL_DIR}/"
     params["number_people_max"] = 1
     params["render_pose"] = 0
 

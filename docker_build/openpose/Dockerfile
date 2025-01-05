@@ -44,11 +44,7 @@ RUN gdown https://drive.google.com/uc?id=19ohrLGTdsRL7jLCb35QQBwxlY2Jg3Eye \
     && unzip openpose_models.zip -d openpose_models \
     && cp -ru openpose_models/models/* /workspace/openpose/models \
     && rm openpose_models.zip \
-    && rm -rf openpose_models \
-    && ls /workspace/openpose/models \
-    && ls /workspace/openpose/models/pose/body_25 \
-    && ls /workspace/openpose/models/face \
-    && ls /workspace/openpose/models/hand
+    && rm -rf openpose_models
 
 ENV PATH /usr/local/cuda/bin:$PATH
 ENV LD_LIBRARY_PATH /usr/local/cuda/lib64:$LD_LIBRARY_PATH
