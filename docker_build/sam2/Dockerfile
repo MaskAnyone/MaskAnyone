@@ -15,7 +15,7 @@ RUN apt-get update \
         libswscale-dev \
         pkg-config \
         build-essential \
-        libffi-dev
+        libffi-dev \
         git \
         python3-opencv \
         wget \
