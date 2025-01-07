@@ -17,7 +17,6 @@ RUN apt-get update \
         build-essential \
         libffi-dev \
         git \
-        python3-opencv \
         wget \
     && rm -rf /var/lib/apt/lists/*
 
@@ -27,15 +26,13 @@ RUN pip install --upgrade \
     fastapi \
     uvicorn[standard] \
     gunicorn \
-    python-multipart
+    python-multipart \
+    opencv-python
 
 RUN git clone https://github.com/facebookresearch/sam2.git
 
 RUN cd sam2 \
     && pip install -e .
-
-# https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/issues/69#issuecomment-1826764707
-#RUN rm /opt/conda/bin/ffmpeg && ln -s /bin/ffmpeg /opt/conda/bin/ffmpeg
 
 RUN cd sam2/checkpoints \
     && wget https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt
