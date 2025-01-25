@@ -66,4 +66,4 @@ WORKDIR /app
 
 COPY ./openpose /app
 
-CMD ["gunicorn", "-k", "uvicorn_prod_worker.UvicornProdWorker", "main:app", "--bind=0.0.0.0:8000"]
+CMD ["gunicorn", "-k", "uvicorn_prod_worker.UvicornProdWorker", "main:app", "--bind=0.0.0.0:8000", "--timeout", "3600"]
