@@ -33,7 +33,8 @@ RUN apt-get update \
         psutil \
         matplotlib \
         tqdm \
-        pandas
+        pandas \
+        ultralytics-thop
 
 COPY ./backend /app
 

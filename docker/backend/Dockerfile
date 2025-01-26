@@ -35,4 +35,5 @@ RUN pip install \
     psutil \
     matplotlib \
     tqdm \
-    pandas
+    pandas \
+    ultralytics-thop
