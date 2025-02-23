@@ -29,4 +29,26 @@ RUN mkdir /worker_models \
     && wget https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task \
         -O /worker_models/hand_landmarker.task
 
+####################
+# Enable this if you want to test the CLI
+
+# When installing it with deps, it will also install all CUDA deps even if there is not GPU
+#RUN pip install ultralytics==8.3.78 --no-deps
+
+# Manually install ultralytics deps
+#RUN pip install \
+#    psutil \
+#    matplotlib \
+#    pandas \
+#    tqdm \
+#    pyyaml \
+#    ultralytics-thop
+
+#RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+#RUN wget https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11x-pose.pt \
+#        -O /worker_models/yolo11x-pose.pt
+
+####################
+
 WORKDIR /app

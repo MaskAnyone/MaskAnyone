@@ -14,6 +14,7 @@ RUN apt-get update \
     libglib2.0-0 \
     libpq-dev \
     ffmpeg \
+    wget \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -27,7 +28,7 @@ RUN pip install \
     python-jose[cryptography]
 
 # When installing it with deps, it will also install all CUDA deps even if there is not GPU
-RUN pip install ultralytics --no-deps
+RUN pip install ultralytics==8.3.78 --no-deps
 
 # Manually install ultralytics deps
 RUN pip install \
@@ -37,3 +38,7 @@ RUN pip install \
     tqdm \
     pandas \
     ultralytics-thop
+
+RUN mkdir /backend_models \
+    && wget https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11m-pose.pt \
+        -O /backend_models/yolo11m-pose.pt

@@ -14,6 +14,7 @@ RUN apt-get update \
         libglib2.0-0 \
         libpq-dev \
         ffmpeg \
+        wget \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && pip3 install \
@@ -27,7 +28,7 @@ RUN apt-get update \
         psycopg2 \
         requests \
         python-jose[cryptography] \
-    && pip install ultralytics --no-deps \
+    && pip install ultralytics==8.3.78 --no-deps \
     && pip install \
         numpy==1.24.4 \
         psutil \
@@ -35,6 +36,10 @@ RUN apt-get update \
         tqdm \
         pandas \
         ultralytics-thop
+
+RUN mkdir /backend_models \
+    && wget https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11m-pose.pt \
+        -O /backend_models/yolo11m-pose.pt
 
 COPY ./backend /app
 

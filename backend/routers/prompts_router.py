@@ -15,7 +15,7 @@ router = APIRouter(
     prefix="/prompts",
 )
 
-model = YOLO('./models/yolo11m-pose.pt')
+model = YOLO('/backend_models/yolo11m-pose.pt')
 
 
 @router.get("/{video_id}/frames/{frame_index}/pose")
