@@ -1,25 +1,15 @@
-FROM ubuntu:22.04
+FROM python:3.10-slim AS base
 
 ARG DEBIAN_FRONTEND=noninteractive
+WORKDIR /app
 
-RUN apt-get update \
-    && apt-get -y install \
-        python3 \
-        python3-pip \
-        python-is-python3 \
-        python3-opencv \
-        wget \
-        ffmpeg \
-        mesa-common-dev \
-        libegl1-mesa-dev \
-        libgles2-mesa-dev \
-        mesa-utils \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip install \
-        mediapipe==0.10.14 \
-        requests \
-    && mkdir /worker_models \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 libpq-dev ffmpeg wget mesa-common-dev libegl1-mesa-dev libgles2-mesa-dev mesa-utils \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir mediapipe==0.10.14 requests opencv-python-headless
+
+RUN mkdir /worker_models \
     && wget https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/latest/pose_landmarker_heavy.task \
         -O /worker_models/pose_landmarker_heavy.task \
     && wget https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task \
