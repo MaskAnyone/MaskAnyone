@@ -30,7 +30,7 @@ jobs:
         run: docker compose run --rm yarn yarn build
 
       - name: "Build images"
-        run: docker compose -f docker-compose-build.yml build proxy postgres frontend keycloak backend worker
+        run: docker compose -f docker-compose-build.yml build proxy postgres frontend keycloak backend worker cli
 
       - name: "Login GitHub package registry"
         env:
@@ -39,7 +39,7 @@ jobs:
         run: docker login ghcr.io -u $DOCKER_USERNAME -p "$DOCKER_TOKEN"
 
       - name: "Push images"
-        run: "docker compose -f docker-compose-build.yml push proxy postgres frontend keycloak backend worker"
+        run: "docker compose -f docker-compose-build.yml push proxy postgres frontend keycloak backend worker cli"
 
       - name: "Cleanup"
         run: rm /home/runner/.docker/config.json

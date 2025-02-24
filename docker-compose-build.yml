@@ -47,3 +47,9 @@ services:
     build:
       context: .
       dockerfile: docker_build/openpose/Dockerfile
+
+  cli:
+    image: ${DOCKER_REGISTRY}cli:${DOCKER_TAG}
+    build:
+      context: .
+      dockerfile: docker_build/cli/Dockerfile
