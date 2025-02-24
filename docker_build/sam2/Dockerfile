@@ -33,7 +33,7 @@ RUN pip install --upgrade --no-cache-dir \
 RUN git clone https://github.com/facebookresearch/sam2.git
 
 RUN cd sam2 \
-    && SAM2_BUILD_ALLOW_ERRORS=0 pip install -e --no-cache-dir .
+    && SAM2_BUILD_ALLOW_ERRORS=0 pip install -e .
 
 RUN cd sam2/checkpoints \
     && wget https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt
