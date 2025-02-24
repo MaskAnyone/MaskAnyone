@@ -30,7 +30,7 @@ RUN apt-get update \
         unzip \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install \
+RUN pip3 install --no-cache-dir \
     numpy==1.24.4 \
     fastapi \
     uvicorn[standard] \

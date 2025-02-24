@@ -1,4 +1,5 @@
 FROM pytorch/pytorch:2.5.1-cuda12.1-cudnn9-devel
+# @todo needed to install SAM2 dependencies, can probably be solved with multi-stage build
 
 WORKDIR /workspace
 
@@ -20,19 +21,19 @@ RUN apt-get update \
         wget \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --upgrade \
+RUN pip install --upgrade --no-cache-dir \
     pip \
     setuptools \
     fastapi \
     uvicorn[standard] \
     gunicorn \
     python-multipart \
-    opencv-python
+    opencv-python-headless
 
 RUN git clone https://github.com/facebookresearch/sam2.git
 
 RUN cd sam2 \
-    && SAM2_BUILD_ALLOW_ERRORS=0 pip install -e .
+    && SAM2_BUILD_ALLOW_ERRORS=0 pip install -e --no-cache-dir .
 
 RUN cd sam2/checkpoints \
     && wget https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt

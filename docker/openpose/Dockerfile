@@ -30,7 +30,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python packages
-RUN pip3 install numpy==1.24.4
+RUN pip3 install --no-cache-dir numpy==1.24.4
 
 # Clone OpenPose repository
 RUN git clone https://github.com/CMU-Perceptual-Computing-Lab/openpose.git
