@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:2.5.1-cuda12.1-cudnn9-runtime
+FROM pytorch/pytorch:2.5.1-cuda12.1-cudnn9-devel
 
 WORKDIR /workspace
 
@@ -28,7 +28,7 @@ RUN pip install --upgrade \
 
 RUN git clone https://github.com/facebookresearch/sam2.git \
     && cd sam2 \
-    && pip install -e .
+    && SAM2_BUILD_ALLOW_ERRORS=0 pip install -e .
 
 RUN cd sam2/checkpoints \
     && wget https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt
