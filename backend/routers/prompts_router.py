@@ -38,13 +38,16 @@ def fetch_pose_prompts(video_id: str, frame_index: int, token_payload: dict = De
     confs = results[0].keypoints.conf.cpu().numpy()
 
     poses = np.array([[point if conf > 0.8 else (0, 0)
-                                for point, conf in zip(keypoints, confidences)]
-                               for keypoints, confidences in zip(poses, confs)])
+                       for point, conf in zip(keypoints, confidences)]
+                      for keypoints, confidences in zip(poses, confs)])
 
     # Remove empty poses (where all points are (0, 0))
     poses = np.array([pose for pose in poses if not np.all(pose == (0, 0))])
 
-    pose_prompts = [extract_pose_points(pose) for pose in poses]
+    pose_prompts = [extract_pose_points(pose, confs[i]) for i, pose in enumerate(poses)]
+
+    # Remove prompts that have only a single point
+    pose_prompts = [prompt for prompt in pose_prompts if len(prompt) >= 2]
 
     return {'pose_prompts': pose_prompts}
 
@@ -106,14 +109,14 @@ def average_points(points):
         return [0, 0]
 
 
-def extract_pose_points(pose):
+def extract_pose_points(pose, confs):
     #return [point.tolist() + [1] for point in pose]
-
     points_0_to_4 = [pose[j] for j in range(5)]
     merged_head_point = average_points(points_0_to_4)
 
-    points_5_and_6 = [pose[j] for j in range(5, 7)]
-    merged_upper_body_point = average_points(points_5_and_6)
+    # TODO: temporarily disabled merging of shoulder points because it can cause issues by placing the point on the skin rather than clothing
+    #points_5_and_6 = [pose[j] for j in range(5, 7)]
+    #merged_upper_body_point = average_points(points_5_and_6)
 
     points_11_and_12 = [pose[j] for j in range(11, 13)]
     merged_lower_body_point = average_points(points_11_and_12)
@@ -122,16 +125,20 @@ def extract_pose_points(pose):
 
     if is_valid(merged_head_point):
         new_pose.append(merged_head_point + [1])
-    if is_valid(merged_upper_body_point):
-        new_pose.append(merged_upper_body_point + [1])
+    #if is_valid(merged_upper_body_point):
+    #    new_pose.append(merged_upper_body_point + [1])
     if is_valid(merged_lower_body_point):
         new_pose.append(merged_lower_body_point + [1])
 
-    # Check if we have less than 2 points and add points from indices 7-10 and 13-end if valid
-    for j in list(range(7, 11)) + list(range(13, len(pose))):
-        if len(new_pose) >= 2:
+    # If we have less than 3 points, add highest-confidence remaining points (excluding merged ones)
+    #merged_indices = set(range(5)) | set(range(5, 7)) | set(range(11, 13))
+    merged_indices = set(range(5)) | set(range(11, 13))
+    remaining_points = [(pose[j], confs[j]) for j in range(len(pose)) if j not in merged_indices and is_valid(pose[j])]
+    remaining_points.sort(key=lambda x: x[1], reverse=True)  # Sort by confidence
+
+    for point, _ in remaining_points:
+        if len(new_pose) >= 3:
             break
-        if is_valid(pose[j]):
-            new_pose.append(pose[j].tolist() + [1])
+        new_pose.append(point.tolist() + [1])
 
     return new_pose
