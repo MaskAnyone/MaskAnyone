@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu \
     && pip install --no-cache-dir \
         fastapi uvicorn[standard] psycopg2 requests python-jose[cryptography] opencv-python-headless \
-        numpy==1.24.4 psutil matplotlib tqdm pandas ultralytics-thop \
+        gunicorn numpy==1.24.4 psutil matplotlib tqdm pandas ultralytics-thop \
     && pip install --no-cache-dir ultralytics==8.3.78 --no-deps
 
 RUN mkdir /backend_models \
