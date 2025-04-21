@@ -218,6 +218,15 @@ const VideoMaskingEditorPage = () => {
     const frameCount = video?.videoInfo.frameCount || 0;
 
     const maskVideo = () => {
+        if (!posePrompts.some(prompt => prompt.length > 0) && Object.entries(videoPosePrompts).length < 1) {
+            dispatch(Command.Notification.enqueueNotification({
+                severity: 'error',
+                message: 'You need to specify a pose prompt to trigger the masking process.',
+            }));
+
+            return;
+        }
+
         dispatch(Command.Video.maskVideo({
             id: uuidv4(),
             type: 'sam2_masking',
@@ -239,6 +248,15 @@ const VideoMaskingEditorPage = () => {
     };
 
     const segmentPrompt = () => {
+        if (!posePrompts.some(prompt => prompt.length > 0)) {
+            dispatch(Command.Notification.enqueueNotification({
+                severity: 'error',
+                message: 'You need to specify a pose prompt to preview the segmentation.',
+            }));
+
+            return;
+        }
+
         Api.fetchPosePromptSegmentation(videoId!, currentFrame, posePrompts).then((segmentationImage) => {
             // Create a Blob from the binary data
             const blob = new Blob([segmentationImage], { type: 'image/jpeg' }); // Adjust the MIME type if needed
