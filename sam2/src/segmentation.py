@@ -1,10 +1,13 @@
 import torch
 import sys
+import os
 
 sys.path.append('/workspace/segment-anything-2')
 from sam2.build_sam import build_sam2_video_predictor
 
 predictor = None
+
+SAM2_OFFLOAD_STATE_TO_CPU = os.environ["SAM2_OFFLOAD_STATE_TO_CPU"] == "true"
 
 
 def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
@@ -21,7 +24,7 @@ def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
     inference_state = predictor.init_state(
         video_path=frame_dir_path,
         offload_video_to_cpu=True,
-        offload_state_to_cpu=False,
+        offload_state_to_cpu=SAM2_OFFLOAD_STATE_TO_CPU,
         async_loading_frames=True,
     )
 
