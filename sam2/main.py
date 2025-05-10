@@ -5,7 +5,6 @@ import cv2
 import io
 import tempfile
 import shutil
-import subprocess
 import gc
 import time
 
@@ -99,6 +98,7 @@ async def segment_video(
 
         return Response(buffer.getvalue(), media_type="application/octet-stream")
     finally:
+        shutil.rmtree(temp_dir)
         gc.collect()
 
 

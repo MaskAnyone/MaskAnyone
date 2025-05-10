@@ -46,6 +46,9 @@ RUN pip install --upgrade --no-cache-dir \
 COPY --from=builder /opt/conda/lib/python3.11/site-packages /opt/conda/lib/python3.11/site-packages
 COPY --from=builder /workspace/sam2 /workspace/sam2
 
+COPY ./sam2_patched_misc.py /workspace/sam2_patched_misc.py
+RUN rm /workspace/sam2/sam2/utils/misc.py && mv /workspace/sam2_patched_misc.py /workspace/sam2/sam2/utils/misc.py
+
 ENV PYTHONPATH=/workspace/sam2:$PYTHONPATH
 
 WORKDIR /app
