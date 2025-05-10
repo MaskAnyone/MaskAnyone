@@ -49,7 +49,8 @@ RUN pip install --upgrade --no-cache-dir \
     uvicorn[standard] \
     gunicorn \
     python-multipart \
-    opencv-python-headless
+    opencv-python-headless \
+    decord
 
 COPY --from=builder /opt/conda/lib/python3.11/site-packages /opt/conda/lib/python3.11/site-packages
 COPY --from=builder /workspace/sam2 /workspace/sam2

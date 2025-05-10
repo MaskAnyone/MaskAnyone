@@ -7,6 +7,7 @@ import tempfile
 import shutil
 import subprocess
 import gc
+import time
 
 from fastapi import FastAPI, APIRouter, File, Form, UploadFile, HTTPException, Response
 from src.segmentation import perform_sam2_segmentation
@@ -78,9 +79,13 @@ async def segment_video(
         video_content = await video.read()
         pose_prompts = json.loads(pose_prompts)
 
-        video_dir = unpack_video_for_sam2(video_content)
+        temp_dir = tempfile.mkdtemp()
+        video_path = os.path.join(temp_dir, f"video_{int(time.time())}.mp4")
+        file = open(video_path, "wb")
+        file.write(video_content)
+        file.close()
 
-        masks = perform_sam2_segmentation(video_dir, pose_prompts)
+        masks = perform_sam2_segmentation(video_path, pose_prompts)
 
         flattened_masks = {
             f"frame{frame}_mask{mask}": mask_array
@@ -97,6 +102,8 @@ async def segment_video(
         gc.collect()
 
 
+# This is no longer needed, in SAM2.0 there was no support for using videos directly; leaving this for reference
+"""
 def unpack_video_for_sam2(video_content) -> str:
     temp_dir = tempfile.mkdtemp()
 
@@ -123,6 +130,7 @@ def unpack_video_for_sam2(video_content) -> str:
     except Exception as e:
         shutil.rmtree(temp_dir)
         raise e
+"""
 
 
 app.include_router(router)
