@@ -36,14 +36,6 @@ FROM pytorch/pytorch:2.5.1-cuda12.1-cudnn9-runtime
 
 WORKDIR /workspace
 
-RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    libavutil-dev \
-    libavcodec-dev \
-    libavformat-dev \
-    libswscale-dev && \
-    rm -rf /var/lib/apt/lists/*  # Clean up to reduce image size
-
 RUN pip install --upgrade --no-cache-dir \
     fastapi \
     uvicorn[standard] \
