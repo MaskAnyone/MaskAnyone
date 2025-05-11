@@ -7,6 +7,7 @@ from sam2.build_sam import build_sam2_video_predictor
 
 predictor = None
 
+SAM2_OFFLOAD_VIDEO_TO_CPU = os.environ["SAM2_OFFLOAD_VIDEO_TO_CPU"] == "true"
 SAM2_OFFLOAD_STATE_TO_CPU = os.environ["SAM2_OFFLOAD_STATE_TO_CPU"] == "true"
 
 
@@ -21,9 +22,13 @@ def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
         model_cfg = "configs/sam2.1/sam2.1_hiera_s.yaml"
         predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint)
 
+    print(f"Initializing SAM2 predictor with flags: "
+          f"offload_video_to_cpu={SAM2_OFFLOAD_VIDEO_TO_CPU}, "
+          f"offload_state_to_cpu={SAM2_OFFLOAD_STATE_TO_CPU}, "
+          f"async_loading_frames=True")
     inference_state = predictor.init_state(
         video_path=frame_dir_path,
-        offload_video_to_cpu=True,
+        offload_video_to_cpu=SAM2_OFFLOAD_VIDEO_TO_CPU,
         offload_state_to_cpu=SAM2_OFFLOAD_STATE_TO_CPU,
         async_loading_frames=True,
     )
