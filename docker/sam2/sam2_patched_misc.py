@@ -175,8 +175,6 @@ def load_video_frames(
     async_loading_frames=False,
     compute_device=torch.device("cuda"),
 ):
-    print("TESTTESTTEST")
-
     """
     Load the video frames from video_path. The frames are resized to image_size as in
     the model and are loaded to GPU if offload_video_to_cpu=False. This is used by the demo.
@@ -367,9 +365,11 @@ def concat_points(old_point_inputs, new_points, new_labels):
 
 # PATCHED: Custom async video loader (bounded, forward-only async frame buffer)
 import threading
+import queue
 import time
+
 class SequentialAsyncVideoLoader:
-    def __init__(self, video_path, image_size, img_mean, img_std, compute_device, offload_video_to_cpu):
+    def __init__(self, video_path, image_size, img_mean, img_std, compute_device, offload_video_to_cpu, buffer_size=10):
         print("INITIALIZING SIMPLE SEQUENTIAL VIDEO LOADER FOR SAM2")
 
         import decord
@@ -379,22 +379,46 @@ class SequentialAsyncVideoLoader:
         self.device = compute_device
         self.offload_video_to_cpu = offload_video_to_cpu
         self.current_index = 0
-        self.video_height, self.video_width, _ = decord.VideoReader(video_path).next().shape
+        self.buffer_size = buffer_size
+        self.frame_queue = queue.Queue(maxsize=buffer_size)
+        self.stop_signal = False
+
+        first_frame = decord.VideoReader(video_path)[0]
+        self.video_height, self.video_width, _ = first_frame.shape
         self.reader = decord.VideoReader(video_path, width=image_size, height=image_size)
-        #self.reader.seek(0)
         print("INIT", self.video_width, self.video_height)
+
+        self.loader_thread = threading.Thread(target=self._buffer_frames, daemon=True)
+        self.loader_thread.start()
+
+    def _buffer_frames(self):
+        import decord
+        decord.bridge.set_bridge("torch")
+
+        while not self.stop_signal and self.current_index < len(self.reader):
+            if self.frame_queue.full():
+                time.sleep(0.01)
+                continue
+            try:
+                frame = self.reader.next()
+                #frame = torch.as_tensor(self.reader.next())
+                frame = frame.permute(2, 0, 1).float() / 255.0
+                frame -= self.img_mean
+                frame /= self.img_std
+                if not self.offload_video_to_cpu:
+                    frame = frame.to(self.device, non_blocking=True)
+                self.frame_queue.put(frame)
+                self.current_index += 1
+            except Exception as e:
+                print(f"[ERROR in buffering thread] {e}")
+                break
 
     def __getitem__(self, index):
         print("-->", index)
-        if index != self.current_index:
-            raise ValueError(f"Frames must be accessed sequentially. Expected index {self.current_index}, got {index}")
-        frame = self.reader.next()
-        frame = frame.permute(2, 0, 1).float() / 255.0
-        frame -= self.img_mean
-        frame /= self.img_std
-        if not self.offload_video_to_cpu:
-            frame = frame.to(self.device, non_blocking=True)
-        self.current_index += 1
+        try:
+            frame = self.frame_queue.get(timeout=5)
+        except queue.Empty:
+            raise RuntimeError("Frame buffer is empty; frame loading too slow.")
         return frame
 
     def __len__(self):
@@ -402,3 +426,8 @@ class SequentialAsyncVideoLoader:
 
     def get_resolution(self):
         return self.video_height, self.video_width
+
+    def stop(self):
+        self.stop_signal = True
+        if self.loader_thread.is_alive():
+            self.loader_thread.join()
