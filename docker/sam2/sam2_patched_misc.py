@@ -370,7 +370,7 @@ import time
 
 class SequentialAsyncVideoLoader:
     def __init__(self, video_path, image_size, img_mean, img_std, compute_device, offload_video_to_cpu, buffer_size=10):
-        print("INITIALIZING SIMPLE SEQUENTIAL VIDEO LOADER FOR SAM2")
+        print("INITIALIZING CUSTOM SEQUENTIAL SAM2 VIDEO LOADER FOR MASKANYONE")
 
         import decord
         decord.bridge.set_bridge("torch")
@@ -386,7 +386,6 @@ class SequentialAsyncVideoLoader:
         first_frame = decord.VideoReader(video_path)[0]
         self.video_height, self.video_width, _ = first_frame.shape
         self.reader = decord.VideoReader(video_path, width=image_size, height=image_size)
-        print("INIT", self.video_width, self.video_height)
 
         self.loader_thread = threading.Thread(target=self._buffer_frames, daemon=True)
         self.loader_thread.start()
@@ -394,6 +393,8 @@ class SequentialAsyncVideoLoader:
     def _buffer_frames(self):
         import decord
         decord.bridge.set_bridge("torch")
+
+        pbar = tqdm(total=len(self.reader), desc="Buffering Frames", unit="frame")
 
         while not self.stop_signal and self.current_index < len(self.reader):
             if self.frame_queue.full():
@@ -409,12 +410,12 @@ class SequentialAsyncVideoLoader:
                     frame = frame.to(self.device, non_blocking=True)
                 self.frame_queue.put(frame)
                 self.current_index += 1
+                pbar.update(1)
             except Exception as e:
                 print(f"[ERROR in buffering thread] {e}")
                 break
 
     def __getitem__(self, index):
-        print("-->", index)
         try:
             frame = self.frame_queue.get(timeout=5)
         except queue.Empty:
