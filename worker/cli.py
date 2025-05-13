@@ -27,8 +27,11 @@ def validate_directories(input_dir, output_dir):
         raise FileNotFoundError(f"Error: Output directory '{output_dir}' does not exist.")
 
 
-def duplicate_strategies(strategies, max_size):
+def duplicate_strategies(strategies: str | list, max_size: int):
     """Duplicates the strategies to match the max size of pose prompts."""
+    if type(strategies) == str: # without this, if a string is passed, it is trimmed to max_size instead of the list
+        strategies = [strategies] 
+
     if len(strategies) < max_size:
         factor = (max_size // len(strategies)) + 1  # Calculate how many times to repeat the strategies
         strategies = strategies * factor  # Repeat the strategies
