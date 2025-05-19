@@ -6,39 +6,49 @@ WORKDIR /workspace
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    cmake \
-    git \
-    wget \
-    libatlas-base-dev \
-    libprotobuf-dev \
-    libleveldb-dev \
-    libsnappy-dev \
-    libhdf5-serial-dev \
-    protobuf-compiler \
-    libboost-all-dev \
-    libgflags-dev \
-    libgoogle-glog-dev \
-    liblmdb-dev \
-    python3-dev \
-    python3-pip \
-    python-is-python3 \
-    libopencv-dev \
-    python3-opencv \
+ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6+PTX"
+
+RUN apt-get update \
+    && apt-get install -y \
+        build-essential \
+        cmake \
+        git \
+        wget \
+        libatlas-base-dev \
+        libprotobuf-dev \
+        libleveldb-dev \
+        libsnappy-dev \
+        libhdf5-serial-dev \
+        protobuf-compiler \
+        libboost-all-dev \
+        libgflags-dev \
+        libgoogle-glog-dev \
+        liblmdb-dev \
+        python3-dev \
+        python3-pip \
+        python-is-python3 \
+        libopencv-dev \
+        python3-opencv \
+        unzip \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python packages
-RUN pip3 install --no-cache-dir numpy==1.24.4
+RUN pip3 install --no-cache-dir \
+    numpy==1.24.4 \
+    fastapi \
+    uvicorn[standard] \
+    python-multipart \
+    gunicorn \
+    gdown
 
 # Clone OpenPose repository
 RUN git clone https://github.com/CMU-Perceptual-Computing-Lab/openpose.git
 
 # Copy model files
-COPY models/pose/body_25/pose_iter_584000.caffemodel /workspace/openpose/models/pose/body_25/pose_iter_584000.caffemodel
-COPY models/face/pose_iter_116000.caffemodel /workspace/openpose/models/face/pose_iter_116000.caffemodel
-COPY models/hand/pose_iter_102000.caffemodel /workspace/openpose/models/hand/pose_iter_102000.caffemodel
+RUN gdown https://drive.google.com/uc?id=1f-kvdjHbpvkgDECVsSPxm8NMLRgdRBj7 \
+    && unzip openpose_models_full.zip \
+    && cp -ru openpose_models_full/models/* /workspace/openpose/models \
+    && rm openpose_models_full.zip \
+    && rm -rf openpose_models_full
 
 # Set environment variables for CUDA and cuDNN
 ENV PATH /usr/local/cuda/bin:$PATH

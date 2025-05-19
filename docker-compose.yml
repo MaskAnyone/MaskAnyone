@@ -1,85 +1,108 @@
 
 services:
-  nginx:
-    build: ./docker/nginx
-    ports:
-      - "443:443"
-    restart: "on-failure"
+#   nginx:
+#     build: ./docker/nginx
+#     ports:
+#       - "443:443"
+#     restart: "on-failure"
 
-  python:
+#   python:
+#     build:
+#       context: ./docker/backend
+#     command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+#     environment:
+#       - TIMEOUT=600
+#     env_file:
+#       - ./app.env
+#     volumes:
+#       - ./backend:/app
+#       - ./data/backend:/var/lib/maskanyone/data
+#     depends_on:
+#       - postgres
+
+#   postgres:
+#     build:
+#       context: ./docker/postgres
+#     env_file:
+#       - ./app.env
+#     volumes:
+#       - ./docker/postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
+#       - ./data/postgres:/var/lib/postgresql/data
+
+#   pgadmin:
+#     build:
+#       context: ./docker/pgadmin
+#     ports:
+#       - "5433:443"
+#     environment:
+#       PGADMIN_ENABLE_TLS: "True"
+#       PGADMIN_DEFAULT_EMAIL: "dev@dev.dev"
+#       PGADMIN_DEFAULT_PASSWORD: "dev"
+#       PGADMIN_CONFIG_SERVER_MODE: "False"
+#       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+#     depends_on:
+#       - postgres
+
+#   yarn:
+#     build:
+#       context: ./docker/yarn
+#     command: "yarn start"
+#     volumes:
+#       - ./frontend:/app
+
+#   keycloak:
+#     build:
+#       context: ./docker/keycloak
+#     environment:
+#       KEYCLOAK_ADMIN: dev
+#       KEYCLOAK_ADMIN_PASSWORD: dev
+#     command: "start-dev"
+#     ports:
+#       - "8080:8080"
+#     depends_on:
+#       - postgres
+
+#   worker:
+#     build:
+#       context: ./docker/worker
+#     command: "python worker.py"
+#     env_file:
+#       - ./app.env
+#     volumes:
+#       - ./worker:/app
+#     depends_on:
+#       - python
+#     restart: on-failure
+# #    deploy:
+# #      resources:
+# #        reservations:
+# #          devices:
+# #            - driver: nvidia
+# #              count: 1
+# #              capabilities: [gpu]
+
+  api:
     build:
-      context: ./docker/backend
-    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
-    environment:
-      - TIMEOUT=600
+      context: .
+      dockerfile: docker_build/api/Dockerfile
     env_file:
       - ./app.env
-    volumes:
-      - ./backend:/app
-      - ./data/backend:/var/lib/maskanyone/data
     depends_on:
-      - postgres
+      - openpose
+    restart: on-failure
 
-  postgres:
-    build:
-      context: ./docker/postgres
-    env_file:
-      - ./app.env
-    volumes:
-      - ./docker/postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
-      - ./data/postgres:/var/lib/postgresql/data
-
-  pgadmin:
-    build:
-      context: ./docker/pgadmin
-    ports:
-      - "5433:443"
-    environment:
-      PGADMIN_ENABLE_TLS: "True"
-      PGADMIN_DEFAULT_EMAIL: "dev@dev.dev"
-      PGADMIN_DEFAULT_PASSWORD: "dev"
-      PGADMIN_CONFIG_SERVER_MODE: "False"
-      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
-    depends_on:
-      - postgres
-
-  yarn:
-    build:
-      context: ./docker/yarn
-    command: "yarn start"
-    volumes:
-      - ./frontend:/app
-
-  keycloak:
-    build:
-      context: ./docker/keycloak
-    environment:
-      KEYCLOAK_ADMIN: dev
-      KEYCLOAK_ADMIN_PASSWORD: dev
-    command: "start-dev"
-    ports:
-      - "8080:8080"
-    depends_on:
-      - postgres
-
-  worker:
+  test:
     build:
       context: ./docker/worker
-    command: "python worker.py"
+    command: "python test.py"
     env_file:
       - ./app.env
     volumes:
       - ./worker:/app
+      - ./data:/data
     depends_on:
-      - python
+      - api
     restart: on-failure
-#    deploy:
-#      resources:
-#        reservations:
-#          devices:
-#            - driver: nvidia
-#              count: 1
-#              capabilities: [gpu]
 
   sam2:
     build:
