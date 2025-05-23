@@ -44,13 +44,16 @@ async def mask_video(
     sam2_client = Sam2Client(WORKER_SAM2_BASE_PATH)
     openpose_client = OpenposeClient(WORKER_OPENPOSE_BASE_PATH)
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as input_tmp, \
-         tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as output_tmp:
-        input_tmp.write(await video.read())
-        input_tmp_path = input_tmp.name
-        output_tmp_path = output_tmp.name
 
+    input_tmp_path = None
+    output_tmp_path = None
     try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as input_tmp, \
+            tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as output_tmp:
+            input_tmp.write(await video.read())
+            input_tmp_path = input_tmp.name
+            output_tmp_path = output_tmp.name
+
         process_video(
             input_file=input_tmp_path,
             output_file=output_tmp_path,
@@ -66,5 +69,7 @@ async def mask_video(
             headers={"Content-Disposition": "attachment; filename=processed.mp4"}
         )
     finally:
-        os.remove(input_tmp_path)
-        os.remove(output_tmp_path)
+        if input_tmp_path: 
+            os.remove(input_tmp_path)
+        if output_tmp_path:
+            os.remove(output_tmp_path)
