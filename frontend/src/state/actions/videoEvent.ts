@@ -33,6 +33,10 @@ export interface ResultVideoDeletedPayload {
     resultVideoId: string;
 }
 
+export interface VideoDeletedPayload {
+    videoId: string;
+}
+
 const VideoEvent = {
     videoListFetched: createVideoEvent<VideoListFetchedPayload>('VIDEO_LIST_FETCHED'),
     resultsListFetched: createVideoEvent<ResultsListFetchedPayload>('RESULTS_LIST_FETCHED'),
@@ -40,6 +44,7 @@ const VideoEvent = {
     blendshapesFetched: createVideoEvent<BlendshapesFetchedPayload>('BLENDSHAPES_FETCHED'),
     mpKinematicsFetched: createVideoEvent<MpKinematicsFetchedPayload>('MP_KINEMATICS_FETCHED'),
     resultVideoDeleted: createVideoEvent<ResultVideoDeletedPayload>('RESULT_VIDEO_DELETED'),
+    videoDeleted: createVideoEvent<VideoDeletedPayload>('VIDEO_DELETED'),
 };
 
 export default VideoEvent;

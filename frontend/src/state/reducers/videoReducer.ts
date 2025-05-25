@@ -4,6 +4,7 @@ import {
     BlendshapesFetchedPayload,
     DownloadableResultFilesFetchedPayload, MpKinematicsFetchedPayload,
     ResultsListFetchedPayload, ResultVideoDeletedPayload,
+    VideoDeletedPayload,
     VideoListFetchedPayload,
 } from "../actions/videoEvent";
 import { Video } from "../types/Video";
@@ -82,6 +83,15 @@ export const videoReducer = handleActions<VideoState, any>(
                         resultVideo => resultVideo.videoResultId !== action.payload.resultVideoId
                     ),
                 },
+            };
+        },
+        [Event.Video.videoDeleted.toString()]: (state, action: Action<VideoDeletedPayload>): VideoState => {
+            return {
+                ...state,
+                videoList: state.videoList.filter(video => video.id !== action.payload.videoId),
+                resultVideoLists: Object.fromEntries(
+                    Object.entries(state.resultVideoLists).filter(([key]) => key !== action.payload.videoId)
+                ),
             };
         },
     },

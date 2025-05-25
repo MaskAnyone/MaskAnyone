@@ -46,3 +46,9 @@ class VideoManager:
 
         if len(result) == 0:
             raise Exception("User does not have video with id " + video_id)
+
+    def delete_video(self, video_id: str):
+        self.__db_connection.execute(
+            "DELETE FROM videos WHERE id=%(video_id)s",
+            {"video_id": video_id},
+        )

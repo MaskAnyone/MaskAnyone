@@ -11,6 +11,7 @@ from utils.request_utils import range_requests_response
 from utils.preview_image_utils import aspect_preserving_resize_and_crop
 from utils.video_utils import extract_video_info_from_capture
 from utils.ffmpeg_converter import FFmpegConverter
+from utils.video_compatibility_checker import VideoCompatibilityChecker
 from models import (
     RunParams,
     RequestVideoUploadParams,
@@ -135,7 +136,8 @@ def finalize_video_upload(params: FinalizeVideoUploadParams, token_payload: dict
             status_code=400, detail="A video with this name does not exist"
         )
 
-    ffmpeg_converter.convert_video_in_place(video_path)
+    if not VideoCompatibilityChecker.is_browser_compatible(video_path):
+        ffmpeg_converter.convert_video_in_place(video_path)
 
     capture = cv2.VideoCapture(video_path)
 
@@ -169,6 +171,20 @@ async def upload_video(video_id, request: Request, token_payload: dict = Depends
     file = open(video_path, "wb")
     file.write(video_content)
     file.close()
+
+
+@router.post("/{video_id}/delete")
+async def delete_video(video_id, request: Request, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+
+    video_manager.delete_video(video_id)
+
+    video_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
+    if os.path.exists(video_path):
+        os.remove(video_path)
+
+    # @todo we would also need to delete all related results here or block if there are any
 
 
 @router.get("/{video_id}/results")
