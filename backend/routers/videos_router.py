@@ -11,6 +11,7 @@ from utils.request_utils import range_requests_response
 from utils.preview_image_utils import aspect_preserving_resize_and_crop
 from utils.video_utils import extract_video_info_from_capture
 from utils.ffmpeg_converter import FFmpegConverter
+from utils.video_compatibility_checker import VideoCompatibilityChecker
 from models import (
     RunParams,
     RequestVideoUploadParams,
@@ -135,7 +136,8 @@ def finalize_video_upload(params: FinalizeVideoUploadParams, token_payload: dict
             status_code=400, detail="A video with this name does not exist"
         )
 
-    ffmpeg_converter.convert_video_in_place(video_path)
+    if not VideoCompatibilityChecker.is_browser_compatible(video_path):
+        ffmpeg_converter.convert_video_in_place(video_path)
 
     capture = cv2.VideoCapture(video_path)
 
