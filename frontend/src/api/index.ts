@@ -145,6 +145,12 @@ const Api = {
             },
         });
     },
+    deleteVideo: async (videoId: string): Promise<void> => {
+        await sendApiRequest({
+            url: `videos/${videoId}/delete`,
+            method: 'post',
+        });
+    },
     fetchWorkers: async (): Promise<ApiFetchWorkersResponse> => {
         const result = await sendApiRequest({
             url: 'workers',

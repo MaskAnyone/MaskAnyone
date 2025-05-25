@@ -173,6 +173,20 @@ async def upload_video(video_id, request: Request, token_payload: dict = Depends
     file.close()
 
 
+@router.post("/{video_id}/delete")
+async def delete_video(video_id, request: Request, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+
+    video_manager.delete_video(video_id)
+
+    video_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
+    if os.path.exists(video_path):
+        os.remove(video_path)
+
+    # @todo we would also need to delete all related results here or block if there are any
+
+
 @router.get("/{video_id}/results")
 def get_results_for_video(video_id: str, token_payload: dict = Depends(JWTBearer())):
     user_id = token_payload["sub"]

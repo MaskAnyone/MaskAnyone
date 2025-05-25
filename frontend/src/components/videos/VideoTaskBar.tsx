@@ -1,14 +1,17 @@
-import { Box, Button } from "@mui/material";
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton } from "@mui/material";
 import VideoRunParamsDialog from "./VideoRunParamsDialog";
 import React, { useState } from "react";
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import DeleteIcon from '@mui/icons-material/Delete';
 import DownloadMenu from "./videoTaskBar/DownloadMenu";
 import ShieldLogoIcon from "../common/ShieldLogoIcon";
 import Paths from "../../paths";
 import {useNavigate} from "react-router";
 import Selector from "../../state/selector";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { ReduxState } from "../../state/reducer";
+import Api from "../../api";
+import Command from "../../state/actions/command";
 
 const styles = {
     container: {
@@ -26,8 +29,10 @@ interface VideoTaskBarProps {
 
 const VideoTaskBar = (props: VideoTaskBarProps) => {
     const navigate = useNavigate();
+    const dispatch = useDispatch();
     const [videoRunParamsOpen, setVideoRunParamsOpen] = useState<boolean>(false);
     const [downloadAnchorEl, setDownloadAnchorEl] = useState<null | HTMLElement>(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
 
     const resultVideoLists = useSelector(Selector.Video.resultVideoLists);
     const resultVideos = resultVideoLists[props.videoId] || [];
@@ -50,6 +55,12 @@ const VideoTaskBar = (props: VideoTaskBarProps) => {
         }
 
         navigate(Paths.makeResultVideoMaskingEditorUrl(props.videoId, props.resultVideoId));
+    };
+
+    const handleDelete = () => {
+        dispatch(Command.Video.deleteVideo({ videoId: props.videoId }));
+        setDeleteDialogOpen(false);
+        navigate(Paths.videos);
     };
 
     return (<>
@@ -95,6 +106,7 @@ const VideoTaskBar = (props: VideoTaskBarProps) => {
                     anchorEl={downloadAnchorEl}
                     onClose={() => setDownloadAnchorEl(null)}
                 />
+                <IconButton onClick={() => setDeleteDialogOpen(true)}><DeleteIcon /></IconButton>
             </Box>
         </Box>
         <VideoRunParamsDialog
@@ -102,6 +114,25 @@ const VideoTaskBar = (props: VideoTaskBarProps) => {
             open={videoRunParamsOpen}
             onClose={() => setVideoRunParamsOpen(false)}
         />
+        <Dialog
+            open={deleteDialogOpen}
+            onClose={() => setDeleteDialogOpen(false)}
+        >
+            <DialogTitle>Delete Video</DialogTitle>
+            <DialogContent>
+                <DialogContentText>
+                    Are you sure you want to delete this video? This action cannot be undone.
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
+                    Cancel
+                </Button>
+                <Button onClick={handleDelete} color="error">
+                    Delete
+                </Button>
+            </DialogActions>
+        </Dialog>
     </>);
 };
 

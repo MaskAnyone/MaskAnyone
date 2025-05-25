@@ -14,6 +14,7 @@ import { fetchBlendshapesFlow } from "./sagas/video/fetchBlendshapesFlow";
 import { fetchMpKinematicsFlow } from "./sagas/video/fetchMpKinematicsFlow";
 import {deleteJobFlow} from "./sagas/job/deleteJobFlow";
 import {deleteResultVideoFlow} from "./sagas/video/deleteResultVideoFlow";
+import { deleteVideoFlow } from './sagas/video/deleteVideoFlow';
 
 /**
  * Prevents the root saga from terminating entirely due to some error in another saga
@@ -50,6 +51,7 @@ const sagas: any[] = [
     fetchBlendshapesFlow,
     fetchMpKinematicsFlow,
     deleteResultVideoFlow,
+    deleteVideoFlow,
 
     uploadFilesFlow,
     uploadProgressWatcherFlow,

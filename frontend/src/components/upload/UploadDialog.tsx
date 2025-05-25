@@ -67,7 +67,7 @@ const UploadDialog = (props: UploadDialogProps) => {
 
     useEffect(() => {
         setStagedFiles([
-            ...stagedFiles.filter(stagedFile => Object.keys(uploadProgress).includes(stagedFile.file.name)),
+            ...stagedFiles.filter(stagedFile => Object.keys(uploadProgress).includes(stagedFile.id)),
         ]);
 
         if (currentUploadCount < 1) {
