@@ -35,6 +35,7 @@ services:
     build:
       context: .
       dockerfile: docker_build/worker/Dockerfile
+      target: worker
 
   sam2:
     image: ${DOCKER_REGISTRY}sam2:${DOCKER_TAG}
@@ -52,10 +53,12 @@ services:
     image: ${DOCKER_REGISTRY}cli:${DOCKER_TAG}
     build:
       context: .
-      dockerfile: docker_build/cli/Dockerfile
+      dockerfile: docker_build/worker/Dockerfile
+      target: cli
 
   api:
     image: ${DOCKER_REGISTRY}api:${DOCKER_TAG}
     build:
       context: .
-      dockerfile: docker_build/api/Dockerfile
+      dockerfile: docker_build/worker/Dockerfile
+      target: api

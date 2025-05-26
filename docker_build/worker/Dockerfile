@@ -21,4 +21,25 @@ COPY ./worker /app
 
 WORKDIR /app
 
+
+# Worker image
+FROM base AS worker
 CMD ["python3", "/app/worker.py"]
+
+FROM base AS video-masker-core
+RUN pip install --no-cache-dir ultralytics==8.3.78 --no-deps
+RUN pip install --no-cache-dir psutil matplotlib pandas tqdm pyyaml
+RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+RUN wget https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11x-pose.pt -O /worker_models/yolo11x-pose.pt
+
+# API image
+FROM video-masker-core AS api
+RUN pip install --no-cache-dir fastapi uvicorn[standard] python-multipart 
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# CLI image
+FROM video-masker-core AS cli
+ENTRYPOINT ["python3", "/app/cli.py"]
+
+
+
