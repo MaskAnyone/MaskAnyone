@@ -7,9 +7,11 @@ import tempfile
 import shutil
 import gc
 import time
+import struct
 
-from fastapi import FastAPI, APIRouter, File, Form, UploadFile, HTTPException, Response
-from src.segmentation import perform_sam2_segmentation
+from fastapi import FastAPI, APIRouter, File, Query, Form, UploadFile, HTTPException, Response
+from fastapi.responses import StreamingResponse
+from src.segmentation import perform_sam2_segmentation, perform_sam2_segmentation_yielding
 
 app = FastAPI()
 
@@ -72,7 +74,8 @@ async def segment_image(
 @router.post("/segment-video")
 async def segment_video(
     pose_prompts = Form(...),
-    video: UploadFile = File(...)
+    video: UploadFile = File(...),
+    stream: bool = Query(False)
 ):
     try:
         video_content = await video.read()
@@ -80,23 +83,37 @@ async def segment_video(
 
         temp_dir = tempfile.mkdtemp()
         video_path = os.path.join(temp_dir, f"video_{int(time.time())}.mp4")
-        file = open(video_path, "wb")
-        file.write(video_content)
-        file.close()
+        with open(video_path, "wb") as file:
+            file.write(video_content)
 
-        masks = perform_sam2_segmentation(video_path, pose_prompts)
+        if stream:
+            def stream_segmented_masks():
+                for frame_idx, masks in perform_sam2_segmentation_yielding(video_path, pose_prompts):
+                    flattened = {
+                        f"frame{frame_idx}_mask{mask_id}": mask_data
+                        for mask_id, mask_data in masks.items()
+                    }
+                    buffer = io.BytesIO()
+                    np.savez_compressed(buffer, **flattened)
+                    data = buffer.getvalue()
+                    yield struct.pack("!I", len(data))  # 4-byte length
+                    yield data
 
-        flattened_masks = {
-            f"frame{frame}_mask{mask}": mask_array
-            for frame, masks in masks.items()
-            for mask, mask_array in masks.items()
-        }
+            return StreamingResponse(stream_segmented_masks(), media_type="application/octet-stream")
+        else:
+            masks = perform_sam2_segmentation(video_path, pose_prompts)
 
-        buffer = io.BytesIO()
-        np.savez_compressed(buffer, **flattened_masks)
-        buffer.seek(0)
+            flattened_masks = {
+                f"frame{frame}_mask{mask}": mask_array
+                for frame, masks in masks.items()
+                for mask, mask_array in masks.items()
+            }
 
-        return Response(buffer.getvalue(), media_type="application/octet-stream")
+            buffer = io.BytesIO()
+            np.savez_compressed(buffer, **flattened_masks)
+            buffer.seek(0)
+
+            return Response(buffer.getvalue(), media_type="application/octet-stream")
     finally:
         shutil.rmtree(temp_dir)
         gc.collect()
