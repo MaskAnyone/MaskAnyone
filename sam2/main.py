@@ -7,9 +7,12 @@ import tempfile
 import shutil
 import gc
 import time
+import struct
 
-from fastapi import FastAPI, APIRouter, File, Form, UploadFile, HTTPException, Response
-from src.segmentation import perform_sam2_segmentation
+from fastapi import FastAPI, APIRouter, File, Form, Query, UploadFile, HTTPException, Response
+from fastapi.responses import StreamingResponse
+from src.segmentation import perform_sam2_segmentation, perform_sam2_segmentation_yielding
+
 
 app = FastAPI()
 
@@ -74,15 +77,16 @@ async def segment_video(
     pose_prompts = Form(...),
     video: UploadFile = File(...)
 ):
+    temp_dir = None
     try:
         video_content = await video.read()
         pose_prompts = json.loads(pose_prompts)
 
         temp_dir = tempfile.mkdtemp()
         video_path = os.path.join(temp_dir, f"video_{int(time.time())}.mp4")
-        file = open(video_path, "wb")
-        file.write(video_content)
-        file.close()
+        with open(video_path, "wb") as file:
+            file.write(video_content)
+        del video_content
 
         masks = perform_sam2_segmentation(video_path, pose_prompts)
 
@@ -92,14 +96,51 @@ async def segment_video(
             for mask, mask_array in masks.items()
         }
 
+        del masks
         buffer = io.BytesIO()
         np.savez_compressed(buffer, **flattened_masks)
+        del flattened_masks
         buffer.seek(0)
 
         return Response(buffer.getvalue(), media_type="application/octet-stream")
     finally:
-        shutil.rmtree(temp_dir)
+        if temp_dir is not None:
+            shutil.rmtree(temp_dir)
         gc.collect()
+
+
+@router.post("/stream-segment-video")
+async def stream_segment_video(
+    pose_prompts = Form(...),
+    video: UploadFile = File(...)
+):
+    video_content = await video.read()
+    pose_prompts = json.loads(pose_prompts)
+
+    temp_dir = tempfile.mkdtemp()
+    video_path = os.path.join(temp_dir, f"video_{int(time.time())}.mp4")
+    with open(video_path, "wb") as file:
+        file.write(video_content)
+    del video_content
+
+    def generator():
+        try:
+            for frame_idx, masks in perform_sam2_segmentation_yielding(video_path, pose_prompts):
+                flattened = {
+                    f"frame{frame_idx}_mask{mask_id}": mask_data
+                    for mask_id, mask_data in masks.items()
+                }
+                buffer = io.BytesIO()
+                np.savez_compressed(buffer, **flattened)
+                data = buffer.getvalue()
+                yield struct.pack("!I", len(data))
+                yield data
+        finally:
+            shutil.rmtree(temp_dir)
+            gc.collect()
+
+    return StreamingResponse(generator(), media_type="application/octet-stream")
+
 
 
 # This is no longer needed, in SAM2.0 there was no support for using videos directly; leaving this for reference
