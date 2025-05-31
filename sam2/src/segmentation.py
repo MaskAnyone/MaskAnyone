@@ -61,6 +61,57 @@ def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
     return video_segments
 
 
+def perform_sam2_segmentation_yielding(video_path: str, pose_prompts):
+    global predictor
+
+    if predictor is None:
+        configure_torch()
+        torch.cuda.empty_cache()
+
+        sam2_checkpoint = "/workspace/sam2/checkpoints/sam2.1_hiera_small.pt"
+        model_cfg = "configs/sam2.1/sam2.1_hiera_s.yaml"
+        predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint)
+
+    print(f"Initializing SAM2 predictor with flags: "
+          f"offload_video_to_cpu={SAM2_OFFLOAD_VIDEO_TO_CPU}, "
+          f"offload_state_to_cpu={SAM2_OFFLOAD_STATE_TO_CPU}, "
+          f"async_loading_frames=True")
+
+    inference_state = predictor.init_state(
+        video_path=video_path,
+        offload_video_to_cpu=SAM2_OFFLOAD_VIDEO_TO_CPU,
+        offload_state_to_cpu=SAM2_OFFLOAD_STATE_TO_CPU,
+        async_loading_frames=True,
+    )
+
+    predictor.reset_state(inference_state)
+    torch.cuda.empty_cache()
+
+    for frame_idx, frame_pose_prompts in pose_prompts.items():
+        points_list, labels_list = extract_points_and_labels(frame_pose_prompts)
+
+        obj_id = 1
+        for points, labels in zip(points_list, labels_list):
+            _, out_obj_ids, out_mask_logits = predictor.add_new_points(
+                inference_state=inference_state,
+                frame_idx=int(frame_idx),
+                obj_id=obj_id,
+                points=points,
+                labels=labels,
+            )
+            obj_id += 1
+
+    for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state):
+        frame_masks = {
+            out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy()
+            for i, out_obj_id in enumerate(out_obj_ids)
+        }
+        yield out_frame_idx, frame_masks
+
+    predictor.reset_state(inference_state)
+    torch.cuda.empty_cache()
+
+
 def configure_torch():
     # use bfloat16
     torch.autocast(device_type="cuda", dtype=torch.bfloat16).__enter__()
