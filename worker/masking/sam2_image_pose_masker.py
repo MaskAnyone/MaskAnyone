@@ -9,6 +9,18 @@ from communication.openpose_client import OpenposeClient
 from masking.mask_renderer import MaskRenderer
 from masking.pose_renderer import PoseRenderer
 from masking.media_pipe_image_landmarker import MediaPipeImageLandmarker
+from OneEuroFilter import OneEuroFilter
+
+DEBUG = True
+NUM_KEYPOINTS = 33 # TODO!!
+MIN_ALLOWED_OBJECT_SCALE = 0.02 # 2% of frame height or width
+
+ONE_EURO_CONFIG = {
+    'freq': 30.0,       # Default frame rate, will be replaced by video FPS if known
+    'mincutoff': 0.3,   # 1.0,   # Base smoothing
+    'beta': 0.1,        # 0.2,        # Responsiveness to motion
+    'dcutoff': 1.0      # Derivative smoothing
+}
 
 class Sam2ImagePoseMasker:
     _sam2_client: Sam2Client
@@ -49,9 +61,12 @@ class Sam2ImagePoseMasker:
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
         video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)
 
+        keypoint_filters = self._initialize_keypoint_filters(video_masking_data, sample_rate)
+
         sam2_masks_file = open(self._sam2_masks_path, "wb")
         sam2_masks_file.close()
 
+        frame_idx = 0
         for npz_chunk in chunk_generator:
             # The chunks *should* always come in incremental order, so we can just read the next frame here and they should match
             success, frame = video_capture.read()
@@ -60,6 +75,9 @@ class Sam2ImagePoseMasker:
 
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             output_frame = frame.copy()
+            timestamp = frame_idx / ONE_EURO_CONFIG['freq']
+
+            print("TS", timestamp)
 
             masks = np.load(io.BytesIO(npz_chunk))
             for name in masks.files:
@@ -70,11 +88,12 @@ class Sam2ImagePoseMasker:
                 mask_renderer = mask_renderers[obj_id]
                 mask_renderer.apply_to_image(output_frame, mask, obj_id)
 
-                current_bbox = self._calculate_bounding_box_from_mask(mask)
+                current_bbox = self._calculate_bounding_box_from_mask(mask, frame_width, frame_height)
                 if current_bbox is None:
                     continue
 
-                # TODO: We need to add safety margin around bbox
+                if DEBUG:
+                    self._render_bounding_box(output_frame, current_bbox)
 
                 print("Calculated bbox", obj_id, current_bbox)
                 cropped_sub_image = self._prepare_estimation_input_frame(frame, mask, current_bbox)
@@ -84,13 +103,25 @@ class Sam2ImagePoseMasker:
                     continue
 
                 xmin, ymin, xmax, ymax = current_bbox
+                obj_scale = max(xmax - xmin, ymax - ymin) / max(frame_width, frame_height)
                 adjusted_pose = []
-                for keypoint in pose_data:
-                    if keypoint is not None and (
-                            keypoint.x > 0 or keypoint.y > 0) and keypoint.visibility > 0.05:
+                for i, keypoint in enumerate(pose_data):
+                    if keypoint is not None and (keypoint.x > 0 or keypoint.y > 0) and keypoint.visibility > 0.05:
                         # Translate the keypoint back to the original frame coordinates
-                        adjusted_keypoint = (keypoint.x * (xmax - xmin) + xmin, keypoint.y * (ymax - ymin) + ymin)
-                        adjusted_pose.append(adjusted_keypoint)
+                        x = keypoint.x * (xmax - xmin) + xmin
+                        y = keypoint.y * (ymax - ymin) + ymin
+
+                        x_filt, y_filt = keypoint_filters[obj_id][i]
+
+                        if obj_scale < MIN_ALLOWED_OBJECT_SCALE:
+                            # Skip smoothing, but update filter state to keep it synced
+                            x_filt(x, timestamp)
+                            y_filt(y, timestamp)
+                            adjusted_pose.append((x, y))
+                        else:
+                            x_smooth = x_filt(x, timestamp)
+                            y_smooth = y_filt(y, timestamp)
+                            adjusted_pose.append((x_smooth, y_smooth))
                     else:
                         adjusted_pose.append(None)
 
@@ -98,6 +129,7 @@ class Sam2ImagePoseMasker:
 
             output_frame = cv2.cvtColor(output_frame, cv2.COLOR_RGB2BGR)
             video_writer.write(output_frame)
+            frame_idx += 1
 
         video_capture.release()
         video_writer.release()
@@ -134,13 +166,27 @@ class Sam2ImagePoseMasker:
                 video_masking_data['hidingStrategies'][int(obj_id_0)],
                 {'level': 4, 'object_borders': True, 'averageColor': True}
             )
-            for obj_id_0 in video_masking_data['posePrompts'].keys()
+            for obj_id_0 in range(len(video_masking_data['hidingStrategies']))
         }
 
     def _initialize_pose_renderers(self, video_masking_data: dict):
         return {
             int(obj_id_0) + 1: PoseRenderer(video_masking_data['overlayStrategies'][int(obj_id_0)])
-            for obj_id_0 in video_masking_data['posePrompts'].keys()
+            for obj_id_0 in range(len(video_masking_data['overlayStrategies']))
+        }
+
+    def _initialize_keypoint_filters(self, video_masking_data: dict, sample_rate: float):
+        config = {
+            **ONE_EURO_CONFIG,
+            'freq': sample_rate if sample_rate else ONE_EURO_CONFIG['freq'],
+        }
+
+        return {
+            int(obj_id_0) + 1: [
+                (OneEuroFilter(**config), OneEuroFilter(**config))
+                for _ in range(NUM_KEYPOINTS)
+            ]
+            for obj_id_0 in range(len(video_masking_data['overlayStrategies']))
         }
 
     def _trigger_mask_generation(self, video_masking_data: dict):
@@ -149,7 +195,7 @@ class Sam2ImagePoseMasker:
         del content
         return chunk_generator
 
-    def _calculate_bounding_box_from_mask(self, segmentation_mask):
+    def _calculate_bounding_box_from_mask(self, segmentation_mask, frame_width: int, frame_height: int):
         # Find the coordinates of the non-zero values in the mask
         y_indices, x_indices = np.where(segmentation_mask > 0)
 
@@ -162,33 +208,42 @@ class Sam2ImagePoseMasker:
         y_min = np.min(y_indices)
         y_max = np.max(y_indices)
 
+        bbox_width = x_max - x_min
+        bbox_height = y_max - y_min
+
+        x_margin = max(10, int(0.05 * bbox_width))
+        y_margin = max(10, int(0.05 * bbox_height))
+
+        x_min = max(0, x_min - x_margin)
+        y_min = max(0, y_min - y_margin)
+        x_max = min(frame_width - 1, x_max + x_margin)
+        y_max = min(frame_height - 1, y_max + y_margin)
+
         return [x_min, y_min, x_max, y_max]
 
     def _prepare_estimation_input_frame(self, frame, mask, bbox):
         crop_alpha = 1.0
 
-        # Crop the frame using the bounding box
         cropped_frame = frame[bbox[1]:bbox[3], bbox[0]:bbox[2]]
         cropped_frame = cropped_frame.astype(np.uint8)
         cropped_frame_height, cropped_frame_width, _ = cropped_frame.shape
 
-        # Crop the mask using the bounding box
         cropped_mask = mask[bbox[1]:bbox[3], bbox[0]:bbox[2]]
 
-        # Create reverse mask
         reverse_mask = ~cropped_mask
         reverse_mask_8bit = (reverse_mask * 255).astype(np.uint8)
 
-        # Find contours and draw them on the reverse mask
-        cropped_contours, _ = cv2.findContours(cropped_mask.astype(np.uint8), cv2.RETR_EXTERNAL,
-                                               cv2.CHAIN_APPROX_SIMPLE)
+        cropped_contours, _ = cv2.findContours(cropped_mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         cv2.drawContours(reverse_mask_8bit, cropped_contours, -1, 0, round(cropped_frame_width / 100))
 
-        # Create a boolean mask
         reverse_mask_bool = reverse_mask_8bit > 0
 
-        # Apply the overlay using crop_alpha
         overlay = np.zeros_like(cropped_frame)
         cropped_frame[reverse_mask_bool] = (crop_alpha * overlay[reverse_mask_bool] + (1 - crop_alpha) * cropped_frame[reverse_mask_bool]).astype(np.uint8)
 
         return cropped_frame
+
+    def _render_bounding_box(self, output_frame, current_bbox):
+        start_point = (current_bbox[0], current_bbox[1])
+        end_point = (current_bbox[2], current_bbox[3])
+        cv2.rectangle(output_frame, start_point, end_point, (255, 0, 0), 2)
