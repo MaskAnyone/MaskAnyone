@@ -84,13 +84,17 @@ def extract_pose_points(pose):
 
 
 def process_video(input_file, output_file, sam2_client, openpose_client, hiding_strategy, overlay_strategy):
+    video_output_path = output_file
+    pose_output_path = output_file.replace('.mp4', '.poses.json')
+    masks_output_path = output_file.replace('.mp4', '.masks.npz')
+
     sam2_pose_masker = Sam2PoseMasker(
         sam2_client,
         openpose_client,
         input_file,
-        output_file,
-        output_file.replace('.mp4', '.masks.npz'),
-        output_file.replace('.mp4', '.poses.json'),
+        video_output_path,
+        masks_output_path,
+        pose_output_path,
         lambda _: _
     )
 
@@ -130,6 +134,8 @@ def process_video(input_file, output_file, sam2_client, openpose_client, hiding_
         'hidingStrategies': hiding_strategies,  # Use duplicated hiding strategies
         'overlayStrategies': overlay_strategies  # Use duplicated overlay strategies
     })
+
+    return [video_output_path, pose_output_path, masks_output_path]
 
 
 def process_videos(input_dir, output_dir, hiding_strategy, overlay_strategy):

@@ -1,6 +1,8 @@
 import os
 import tempfile
 import json
+import zipfile
+import io
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import StreamingResponse
@@ -35,6 +37,7 @@ async def mask_video(
             raise ValueError(f"Invalid hiding_strategy: {hiding_strategy}. Must be one of {valid_hiding_strategies}")
         if overlay_strategy not in valid_overlay_strategies:
             raise ValueError(f"Invalid overlay_strategy: {overlay_strategy}. Must be one of {valid_overlay_strategies}")
+        
     except Exception as e:
         raise HTTPException(
             status_code=400,
@@ -44,32 +47,43 @@ async def mask_video(
     sam2_client = Sam2Client(WORKER_SAM2_BASE_PATH)
     openpose_client = OpenposeClient(WORKER_OPENPOSE_BASE_PATH)
 
-
     input_tmp_path = None
     output_tmp_path = None
+    output_files = []
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as input_tmp, \
-            tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as output_tmp:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as input_tmp:
             input_tmp.write(await video.read())
             input_tmp_path = input_tmp.name
-            output_tmp_path = output_tmp.name
+        
+        output_tmp_path = os.path.join(tempfile.gettempdir(), os.path.basename(video.filename))
 
-        process_video(
+        output_files = process_video(
             input_file=input_tmp_path,
             output_file=output_tmp_path,
             sam2_client=sam2_client,
             openpose_client=openpose_client,
             hiding_strategy=hiding_strategy,
             overlay_strategy=overlay_strategy
-        )
+        ) 
 
+        zip_stream = io.BytesIO()
+        with zipfile.ZipFile(zip_stream, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for file_path in output_files:
+                if os.path.exists(file_path):
+                    zip_file.write(file_path, os.path.basename(file_path))
+        zip_stream.seek(0)
+        
         return StreamingResponse(
-            open(output_tmp_path, "rb"),
-            media_type="video/mp4",
-            headers={"Content-Disposition": "attachment; filename=processed.mp4"}
+            zip_stream,
+            media_type='application/zip',
+            headers={"Content-Disposition": "attachment; filename=masked_video.zip"}
         )
     finally:
-        if input_tmp_path: 
+        if input_tmp_path and os.path.exists(input_tmp_path): 
             os.remove(input_tmp_path)
-        if output_tmp_path:
+        if output_tmp_path and os.path.exists(output_tmp_path):
             os.remove(output_tmp_path)
+        for file in output_files:
+            if os.path.exists(file):
+                os.remove(file)
+       
