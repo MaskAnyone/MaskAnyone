@@ -209,13 +209,9 @@ class Sam2PoseMasker:
     def _calculate_full_object_bounding_boxes(self, masks, iou_threshold=0.25):
         bounding_boxes = {}
         active_bboxes = {}
-
-        # print("MASKS:::", len(masks), type(masks), masks.keys())
-        # for idx in range(len(masks)):
         for idx in masks.keys():
             # Iterate over all objects in the frame
             idx = int(idx)
-            # print("processing idx", idx)
             for object_id in range(1, len(masks[idx]) + 1):
                 mask = masks[idx][object_id][0]
                 current_bbox = self._calculate_bounding_box_from_mask(mask)
