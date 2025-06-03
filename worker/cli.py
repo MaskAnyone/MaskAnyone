@@ -84,18 +84,18 @@ def extract_pose_points(pose):
 
 def get_first_frame_pose_prompts(input_file):
     capture = cv2.VideoCapture(input_file)
+    frame_number = 0 # to note the 1st frame with a person is detected 
     poses = None 
     confs = None
-    frame_number = 0
 
-    person_class_id = [id for id, name in model.names.items() if name == "person"][0]
+    person_class_id = [id for id, name in model.names.items() if name == "person"][0] # to get class id of "person"
     
     while True:
         success, frame = capture.read()
         if not success:
             break
 
-        result = model.predict(source=frame, device='cpu', conf=0.5, classes=[person_class_id], verbose=True)[0] # 1st detection
+        result = model.predict(source=frame, device='cpu', classes=[person_class_id], verbose=False)[0] # 1st frame
 
         if ((result.keypoints is not None) and 
             (result.keypoints.xy is not None) and 
@@ -103,7 +103,6 @@ def get_first_frame_pose_prompts(input_file):
             (len(result.keypoints.xy) > 0)):
                 poses = result.keypoints.xy.cpu().numpy().astype(int)
                 confs = result.keypoints.conf.cpu().numpy()
-                print("FOUND PERSON ON FRAME", frame_number)
                 break
         
         frame_number += 1
@@ -111,7 +110,7 @@ def get_first_frame_pose_prompts(input_file):
     capture.release()
 
     if (poses is None) or (confs is None) or (poses.size == 0) or (confs.size == 0):
-        return [], [], -1
+        return [], [], -1 # in case no person was detected in the video
 
     return poses, confs, frame_number
 
@@ -129,11 +128,10 @@ def process_video(input_file, output_file, sam2_client, openpose_client, hiding_
         pose_output_path,
         lambda _: _
     )
-    print("WORKING ON", output_file)
     poses, confs, frame_number = get_first_frame_pose_prompts(input_file)
 
     if frame_number == -1:
-        print(f"No valid poses found in {input_file}. Skipping video processing.")
+        print(f"No valid poses found in {output_file}. Skipping video processing.")
         return [video_output_path, pose_output_path, masks_output_path]
     
     poses = np.array([[point if conf > 0.8 else (0, 0)
