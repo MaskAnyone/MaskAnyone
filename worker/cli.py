@@ -82,6 +82,38 @@ def extract_pose_points(pose):
 
     return new_pose
 
+def get_first_frame_pose_prompts(input_file):
+    capture = cv2.VideoCapture(input_file)
+    poses = None 
+    confs = None
+    frame_number = 0
+
+    person_class_id = [id for id, name in model.names.items() if name == "person"][0]
+    
+    while True:
+        success, frame = capture.read()
+        if not success:
+            break
+
+        result = model.predict(source=frame, device='cpu', conf=0.5, classes=[person_class_id], verbose=True)[0] # 1st detection
+
+        if ((result.keypoints is not None) and 
+            (result.keypoints.xy is not None) and 
+            (result.keypoints.conf is not None) and 
+            (len(result.keypoints.xy) > 0)):
+                poses = result.keypoints.xy.cpu().numpy().astype(int)
+                confs = result.keypoints.conf.cpu().numpy()
+                print("FOUND PERSON ON FRAME", frame_number)
+                break
+        
+        frame_number += 1
+
+    capture.release()
+
+    if (poses is None) or (confs is None) or (poses.size == 0) or (confs.size == 0):
+        return [], [], -1
+
+    return poses, confs, frame_number
 
 def process_video(input_file, output_file, sam2_client, openpose_client, hiding_strategy, overlay_strategy):
     video_output_path = output_file
@@ -97,20 +129,13 @@ def process_video(input_file, output_file, sam2_client, openpose_client, hiding_
         pose_output_path,
         lambda _: _
     )
+    print("WORKING ON", output_file)
+    poses, confs, frame_number = get_first_frame_pose_prompts(input_file)
 
-    capture = cv2.VideoCapture(input_file)
-    capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
-    success, frame = capture.read()
-    capture.release()
-
-    results = model.predict(
-        source=frame,
-        device='cpu',
-    )
-
-    poses = results[0].keypoints.xy.cpu().numpy().astype(int)
-    confs = results[0].keypoints.conf.cpu().numpy()
-
+    if frame_number == -1:
+        print(f"No valid poses found in {input_file}. Skipping video processing.")
+        return [video_output_path, pose_output_path, masks_output_path]
+    
     poses = np.array([[point if conf > 0.8 else (0, 0)
                                 for point, conf in zip(keypoints, confidences)]
                                for keypoints, confidences in zip(poses, confs)])
@@ -120,11 +145,11 @@ def process_video(input_file, output_file, sam2_client, openpose_client, hiding_
 
     # Here we always only have the first frame prompted, but the system can handle multi-frame prompts
     pose_prompts = {
-        "0": first_frame_pose_prompts
+        str(frame_number): first_frame_pose_prompts
     }
 
     # Duplicate strategies based on the number of pose prompt entries
-    max_size = max(len(p) for p in pose_prompts["0"])  # Get the max length of pose prompt entries
+    max_size = max(len(p) for p in pose_prompts[str(frame_number)])  # Get the max length of pose prompt entries
     hiding_strategies = duplicate_strategies(hiding_strategy, max_size)
     overlay_strategies = duplicate_strategies(overlay_strategy, max_size)
 

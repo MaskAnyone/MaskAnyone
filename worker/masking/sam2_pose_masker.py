@@ -210,8 +210,12 @@ class Sam2PoseMasker:
         bounding_boxes = {}
         active_bboxes = {}
 
-        for idx in range(len(masks)):
+        # print("MASKS:::", len(masks), type(masks), masks.keys())
+        # for idx in range(len(masks)):
+        for idx in masks.keys():
             # Iterate over all objects in the frame
+            idx = int(idx)
+            # print("processing idx", idx)
             for object_id in range(1, len(masks[idx]) + 1):
                 mask = masks[idx][object_id][0]
                 current_bbox = self._calculate_bounding_box_from_mask(mask)
@@ -381,6 +385,8 @@ class Sam2PoseMasker:
         return [np.int64(x_min), np.int64(y_min), np.int64(x_max), np.int64(y_max)]
 
     def _render_all_masks_on_image(self, image, mask_renderers, frame_idx, masks):
+        if frame_idx not in masks: # in case person is not in 1st frame
+            return
         for object_id in range(1, len(masks[frame_idx]) + 1):
             mask = masks[frame_idx][object_id][0]
             mask_renderers[object_id].apply_to_image(image, mask, object_id)
