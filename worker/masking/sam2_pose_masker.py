@@ -381,7 +381,7 @@ class Sam2PoseMasker:
         return [np.int64(x_min), np.int64(y_min), np.int64(x_max), np.int64(y_max)]
 
     def _render_all_masks_on_image(self, image, mask_renderers, frame_idx, masks):
-        if frame_idx not in masks: # in case person is not in 1st frame
+        if frame_idx not in masks: # If the 1st prompt is not on the 1st frame, there won't be any masks until the 1st promp
             return
         for object_id in range(1, len(masks[frame_idx]) + 1):
             mask = masks[frame_idx][object_id][0]

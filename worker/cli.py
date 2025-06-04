@@ -87,15 +87,13 @@ def get_first_frame_pose_prompts(input_file):
     frame_number = 0 # to note the 1st frame with a person is detected 
     poses = None 
     confs = None
-
-    person_class_id = [id for id, name in model.names.items() if name == "person"][0] # to get class id of "person"
     
     while True:
         success, frame = capture.read()
         if not success:
             break
 
-        result = model.predict(source=frame, device='cpu', classes=[person_class_id], verbose=False)[0] # 1st frame
+        result = model.predict(source=frame, device='cpu', verbose=False)[0] # 1st frame
 
         if ((result.keypoints is not None) and 
             (result.keypoints.xy is not None) and 
@@ -110,7 +108,7 @@ def get_first_frame_pose_prompts(input_file):
     capture.release()
 
     if (poses is None) or (confs is None) or (poses.size == 0) or (confs.size == 0):
-        return [], [], -1 # in case no person was detected in the video
+        raise ValueError(f"No valid poses found. Ensure the video contains a person and is not empty.")
 
     return poses, confs, frame_number
 
@@ -130,10 +128,6 @@ def process_video(input_file, output_file, sam2_client, openpose_client, hiding_
     )
     poses, confs, frame_number = get_first_frame_pose_prompts(input_file)
 
-    if frame_number == -1:
-        print(f"No valid poses found in {output_file}. Skipping video processing.")
-        return [video_output_path, pose_output_path, masks_output_path]
-    
     poses = np.array([[point if conf > 0.8 else (0, 0)
                                 for point, conf in zip(keypoints, confidences)]
                                for keypoints, confidences in zip(poses, confs)])
