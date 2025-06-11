@@ -49,19 +49,19 @@ def average_points(points):
         avg_y = round(sum(point[1] for point in valid_points) / len(valid_points))
         return [avg_x, avg_y]
     else:
-        return [0, 0]
+        return [0, 0] # invalid point detection
 
 
 def extract_pose_points(pose):
     #return [point.tolist() + [1] for point in pose]
 
-    points_0_to_4 = [pose[j] for j in range(5)]
-    merged_head_point = average_points(points_0_to_4)
+    points_0_to_4 = [pose[j] for j in range(5)] # nose, left eye, right eye, left ear, right ear
+    merged_head_point = average_points(points_0_to_4) # returns [avg_x, avg_y] or [0,0]
 
-    points_5_and_6 = [pose[j] for j in range(5, 7)]
+    points_5_and_6 = [pose[j] for j in range(5, 7)] # left and right shoulder
     merged_upper_body_point = average_points(points_5_and_6)
 
-    points_11_and_12 = [pose[j] for j in range(11, 13)]
+    points_11_and_12 = [pose[j] for j in range(11, 13)] # left and right hip
     merged_lower_body_point = average_points(points_11_and_12)
 
     new_pose = []
@@ -74,6 +74,8 @@ def extract_pose_points(pose):
         new_pose.append(merged_lower_body_point + [1])
 
     # Check if we have less than 2 points and add points from indices 7-10 and 13-end if valid
+    # 7 - 10 left and right elbow and write
+    # 13 - 16 left and right knee and ankle
     for j in list(range(7, 11)) + list(range(13, len(pose))):
         if len(new_pose) >= 2:
             break
@@ -126,9 +128,10 @@ def process_video(input_file, output_file, sam2_client, openpose_client, hiding_
         pose_output_path,
         lambda _: _
     )
-    poses, confs, frame_number = get_first_frame_pose_prompts(input_file)
 
-    poses = np.array([[point if conf > 0.8 else (0, 0)
+    confidence_score = 0.5
+    poses, confs, frame_number = get_first_frame_pose_prompts(input_file)
+    poses = np.array([[point if conf >= confidence_score else (0, 0)
                                 for point, conf in zip(keypoints, confidences)]
                                for keypoints, confidences in zip(poses, confs)])
 
@@ -141,7 +144,11 @@ def process_video(input_file, output_file, sam2_client, openpose_client, hiding_
     }
 
     # Duplicate strategies based on the number of pose prompt entries
-    max_size = max(len(p) for p in pose_prompts[str(frame_number)])  # Get the max length of pose prompt entries
+    try: 
+        max_size = max(len(p) for p in pose_prompts[str(frame_number)])  # Get the max length of pose prompt entries
+    except:
+        raise ValueError(f"No high confidence valid poses found. Ensure the video contains a person and is not empty.")
+    
     hiding_strategies = duplicate_strategies(hiding_strategy, max_size)
     overlay_strategies = duplicate_strategies(overlay_strategy, max_size)
 
