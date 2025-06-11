@@ -105,18 +105,20 @@ class Sam2PoseMasker:
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
         video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)
 
-        mask_renderers = {
-            obj_id: MaskRenderer(
-                video_masking_data['hidingStrategies'][obj_id - 1],
-                {'level': 4, 'object_borders': True, 'averageColor': True}
-            )
-            for obj_id in pose_data_dict.keys()
-        }
+        mask_renderers = {}
+        pose_renderers = {}
+        mask_renderers_config = {'level': 4, 'object_borders': True, 'averageColor': True}
 
-        pose_renderers = {
-            obj_id: PoseRenderer(video_masking_data['overlayStrategies'][obj_id - 1])
-            for obj_id in pose_data_dict.keys()
-        }
+        for obj_id in pose_data_dict.keys():
+            try:
+                mask_renderers[obj_id] = MaskRenderer(video_masking_data['hidingStrategies'][obj_id - 1], mask_renderers_config)
+            except:
+                mask_renderers[obj_id] = MaskRenderer(video_masking_data['hidingStrategies'][0], mask_renderers_config)
+
+            try:
+                pose_renderers[obj_id] = PoseRenderer(video_masking_data['overlayStrategies'][obj_id - 1])
+            except:
+                pose_renderers[obj_id] = PoseRenderer(video_masking_data['overlayStrategies'][0])
 
         idx = 0
         while video_capture.isOpened():
@@ -209,11 +211,11 @@ class Sam2PoseMasker:
     def _calculate_full_object_bounding_boxes(self, masks, iou_threshold=0.25):
         bounding_boxes = {}
         active_bboxes = {}
-        for idx in masks.keys():
+        for frame_idx in masks.keys():
             # Iterate over all objects in the frame
-            idx = int(idx)
-            for object_id in range(1, len(masks[idx]) + 1):
-                mask = masks[idx][object_id][0]
+            frame_idx = int(frame_idx)
+            for object_id in range(1, len(masks[frame_idx]) + 1):
+                mask = masks[frame_idx][object_id][0]
                 current_bbox = self._calculate_bounding_box_from_mask(mask)
                 if current_bbox is None:
                     continue
@@ -224,14 +226,14 @@ class Sam2PoseMasker:
                 if object_id not in active_bboxes:
                     # Initialize the first bounding box for the object
                     active_bboxes[object_id] = current_bbox
-                    bounding_boxes[object_id] = {idx: current_bbox}
+                    bounding_boxes[object_id] = {frame_idx: current_bbox}
                 else:
                     # Calculate IoU between the current frame's bbox and the active bbox
                     iou = self._calculate_iou(active_bboxes[object_id], current_bbox)
 
                     if iou < iou_threshold:
                         # If IoU is below the threshold, create a new bounding box entry
-                        bounding_boxes[object_id][idx] = current_bbox
+                        bounding_boxes[object_id][frame_idx] = current_bbox
                         active_bboxes[object_id] = current_bbox
                     else:
                         # Update the active bounding box
@@ -385,7 +387,10 @@ class Sam2PoseMasker:
             return
         for object_id in range(1, len(masks[frame_idx]) + 1):
             mask = masks[frame_idx][object_id][0]
-            mask_renderers[object_id].apply_to_image(image, mask, object_id)
+            try:
+                mask_renderers[object_id].apply_to_image(image, mask, object_id)
+            except Exception as e:
+                print("erorr in render all masks", object_id, e)
 
     def _compute_pose_data(self, video_masking_data, sub_video_paths, frame_count):
         pose_data_dict = {}
@@ -394,21 +399,27 @@ class Sam2PoseMasker:
             if os.path.exists(sub_video_path):
                 obj_id, start_frame, content = self._read_sub_video(sub_video_path)
 
-                if video_masking_data['overlayStrategies'][obj_id - 1] == 'none':
+                try:
+                    object_strategy = video_masking_data['overlayStrategies'][obj_id - 1]
+                except Exception as e:
+                    object_strategy = video_masking_data['overlayStrategies'][0]
+                    
+
+                if object_strategy == 'none':
                     pose_data_dict[obj_id] = [None] * frame_count
                     continue
 
                 if obj_id not in pose_data_dict:
                     pose_data_dict[obj_id] = [None] * frame_count
 
-                if video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_pose':
+                if object_strategy == 'mp_pose':
                     data = self._compute_mp_pose_data(sub_video_path)
-                elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_face':
+                elif object_strategy == 'mp_face':
                     data = self._compute_mp_face_data(sub_video_path)
-                elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_hand':
+                elif object_strategy == 'mp_hand':
                     data = self._compute_mp_hand_data(sub_video_path)
-                elif video_masking_data['overlayStrategies'][obj_id - 1].startswith('openpose'):
-                    data = self._compute_openpose_pose_data(video_masking_data['overlayStrategies'][obj_id - 1], content)
+                elif object_strategy.startswith('openpose'):
+                    data = self._compute_openpose_pose_data(object_strategy, content)
                 else:
                     raise Exception(f'Unknown overlay strategy, got {video_masking_data["overlayStrategies"][obj_id - 1]}')
 

@@ -13,7 +13,10 @@ class PosePostprocessor:
 
     def postprocess(self, pose_data_dict, overlay_strategies, frame_count, sample_rate, estimation_input_bounding_boxes):
         for obj_id, pose_data in pose_data_dict.items():
-            overlay_strategy = overlay_strategies[obj_id - 1]
+            try:
+                overlay_strategy = overlay_strategies[obj_id - 1]
+            except:
+                overlay_strategy = overlay_strategies[0]
 
             if overlay_strategy.startswith('openpose'):
                 self._postprocess_openpose(
