@@ -73,13 +73,13 @@ services:
     depends_on:
       - python
     restart: on-failure
-#    deploy:
-#      resources:
-#        reservations:
-#          devices:
-#            - driver: nvidia
-#              count: 1
-#              capabilities: [gpu]
+    deploy:
+        resources:
+          reservations:
+            devices:
+              - driver: nvidia
+                device_ids: ["{MASKANYONE_GPU_ID:-0}"]
+                capabilities: [ gpu ]
 
   sam2:
     build:
@@ -91,20 +91,12 @@ services:
       - ./sam2:/app
     restart: on-failure
     deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [ gpu ]
-    runtime: nvidia
-    environment:
-      - NVIDIA_DISABLE_REQUIRE=1
-    devices:
-      - /dev/nvidia0:/dev/nvidia0
-      - /dev/nvidiactl:/dev/nvidiactl
-      - /dev/nvidia-uvm:/dev/nvidia-uvm
-      - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+        resources:
+          reservations:
+            devices:
+              - driver: nvidia
+                device_ids: ["{MASKANYONE_GPU_ID:-0}"]
+                capabilities: [ gpu ]
 
   openpose:
     build:
@@ -117,17 +109,9 @@ services:
       - ./docker/openpose/models:/models
     restart: on-failure
     deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [ gpu ]
-    runtime: nvidia
-    environment:
-      - NVIDIA_DISABLE_REQUIRE=1
-    devices:
-      - /dev/nvidia0:/dev/nvidia0
-      - /dev/nvidiactl:/dev/nvidiactl
-      - /dev/nvidia-uvm:/dev/nvidia-uvm
-      - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+        resources:
+          reservations:
+            devices:
+              - driver: nvidia
+                device_ids: ["{MASKANYONE_GPU_ID:-0}"]
+                capabilities: [ gpu ]
