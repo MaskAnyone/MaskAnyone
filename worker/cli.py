@@ -141,7 +141,7 @@ def process_video(input_file, output_file, sam2_client, openpose_client, hiding_
     }
 
     # Duplicate strategies based on the number of pose prompt entries
-    max_size = max(len(p) for p in pose_prompts[str(frame_number)])  # Get the max length of pose prompt entries
+    max_size = len(first_frame_pose_prompts)
     hiding_strategies = duplicate_strategies(hiding_strategy, max_size)
     overlay_strategies = duplicate_strategies(overlay_strategy, max_size)
 
