@@ -18,7 +18,7 @@ services:
           reservations:
             devices:
               - driver: nvidia
-                device_ids: ['0']
+                device_ids: ["{MASKANYONE_GPU_ID:-0}"]
                 capabilities: [ gpu ]
 
   sam2:
@@ -35,7 +35,7 @@ services:
           reservations:
             devices:
               - driver: nvidia
-                device_ids: ['0']
+                device_ids: ["{MASKANYONE_GPU_ID:-0}"]
                 capabilities: [ gpu ]
 
   openpose:
@@ -53,5 +53,5 @@ services:
           reservations:
             devices:
               - driver: nvidia
-                device_ids: ['0']
+                device_ids: ["{MASKANYONE_GPU_ID:-0}"]
                 capabilities: [ gpu ]
