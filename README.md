@@ -61,6 +61,18 @@ In this section we have collected some further information for developers.
 - Keycloak: [https://localhost/auth/](https://localhost/auth/) (Admin user: `dev:dev`)
 - PGAdmin: [https://localhost:5433/](https://localhost:5433/) (Password: `dev`)
 
+### CLI
+To run the CLI version first put the videos for masking into the folder `data/backend/videos`. Then execute the following commands:
+```
+docker compose -f docker-compose-cli.yml build
+docker compose -f docker-compose-cli.yml run cli python3 cli.py --input-path /data/videos --output-path /data/results --hiding-strategy blurring --overlay-strategy mp_pose # example
+```
+Possible hiding strategies are: `solid_fill, transparent_fill, blurring, pixelation, contours, none`.
+
+Possible overlay strategies are: `mp_hand, mp_face, mp_pose, openpose, openpose_body25b, openpose_face, openpose_body_135, none`.
+
+The results will be stored in `/data/backend/results`. Note that you have to clear the results folder before masking again, otherwise it will not mask any video.
+
 ### Debugging
 Run the application with 
 ```bash
