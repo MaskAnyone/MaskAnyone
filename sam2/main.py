@@ -50,8 +50,7 @@ async def segment_image(
         masks = perform_sam2_segmentation(temp_dir, video_pose_prompts)[0]
 
         output_image = cv2.imread(frame_file_path)
-        for object_id in range(1, len(masks) + 1):
-            mask = masks[object_id]
+        for object_id, mask in masks.items():
             mask = np.squeeze(mask)
 
             color = colors[(object_id - 1) % len(colors)]

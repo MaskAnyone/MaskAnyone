@@ -37,10 +37,9 @@ def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
     torch.cuda.empty_cache()
 
     for frame_idx, frame_pose_prompts in pose_prompts.items():
-        points_list, labels_list = extract_points_and_labels(frame_pose_prompts)
+        obj_id_list, points_list, labels_list = extract_points_and_labels(frame_pose_prompts)
 
-        obj_id = 1
-        for points, labels in zip(points_list, labels_list):
+        for obj_id, points, labels in zip(obj_id_list, points_list, labels_list):
             _, out_obj_ids, out_mask_logits = predictor.add_new_points(
                 inference_state=inference_state,
                 frame_idx=int(frame_idx),
@@ -48,7 +47,6 @@ def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
                 points=points,
                 labels=labels,
             )
-            obj_id += 1
 
     video_segments = {}
     for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state):
@@ -75,23 +73,29 @@ def configure_torch():
 
 def extract_points_and_labels(pose_prompts):
     # Initialize two empty lists to store the separated data
+    obj_ids = []
     points = []
     labels = []
 
+    obj_id = 0
     # Iterate through each sublist in the input list
     for pose_prompt in pose_prompts:
         # Separate coordinates and labels in each sublist
         points_sublist = []
         labels_sublist = []
+        obj_id += 1
+
         for point in pose_prompt:
             points_sublist.append(point[:2])  # Take the first two elements
             labels_sublist.append(point[2])   # Take the last element
 
+        # If the prompt is empty (no points) we ignore it and do not pass it to the model
         if len(points_sublist) < 1:
             continue
 
         # Append the processed sublists to the main lists
         points.append(points_sublist)
         labels.append(labels_sublist)
+        obj_ids.append(obj_id)
 
-    return points, labels
+    return obj_ids, points, labels

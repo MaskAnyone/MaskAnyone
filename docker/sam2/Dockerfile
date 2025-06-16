@@ -1,5 +1,5 @@
 # === Build Stage (Full dependencies for compilation) ===
-FROM pytorch/pytorch:2.5.1-cuda12.1-cudnn9-devel AS builder
+FROM pytorch/pytorch:2.7.1-cuda12.6-cudnn9-devel AS builder
 
 WORKDIR /workspace
 
@@ -33,7 +33,7 @@ RUN git clone https://github.com/facebookresearch/sam2.git && \
 RUN wget -P /workspace/sam2/checkpoints https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt
 
 # === Runtime Stage (Slimmer image) ===
-FROM pytorch/pytorch:2.5.1-cuda12.1-cudnn9-runtime
+FROM pytorch/pytorch:2.7.1-cuda12.6-cudnn9-runtime
 
 WORKDIR /workspace
 
