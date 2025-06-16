@@ -379,6 +379,7 @@ class SequentialAsyncVideoLoader:
         self.device = compute_device
         self.offload_video_to_cpu = offload_video_to_cpu
         self.current_index = 0
+        self.next_fetch_index = 0
         self.buffer_size = buffer_size
         self.frame_queue = queue.Queue(maxsize=buffer_size)
         self.stop_signal = False
@@ -386,6 +387,7 @@ class SequentialAsyncVideoLoader:
         first_frame = decord.VideoReader(video_path)[0]
         self.video_height, self.video_width, _ = first_frame.shape
         self.reader = decord.VideoReader(video_path, width=image_size, height=image_size)
+        self.random_reader = decord.VideoReader(video_path, width=image_size, height=image_size)  # for random access
 
         self.loader_thread = threading.Thread(target=self._buffer_frames, daemon=True)
         self.loader_thread.start()
@@ -403,11 +405,7 @@ class SequentialAsyncVideoLoader:
             try:
                 frame = self.reader.next()
                 #frame = torch.as_tensor(self.reader.next())
-                frame = frame.permute(2, 0, 1).float() / 255.0
-                frame -= self.img_mean
-                frame /= self.img_std
-                if not self.offload_video_to_cpu:
-                    frame = frame.to(self.device, non_blocking=True)
+                frame = self._process_frame(frame)
                 self.frame_queue.put(frame)
                 self.current_index += 1
                 pbar.update(1)
@@ -415,12 +413,36 @@ class SequentialAsyncVideoLoader:
                 print(f"[ERROR in buffering thread] {e}")
                 break
 
-    def __getitem__(self, index):
-        try:
-            frame = self.frame_queue.get(timeout=5)
-        except queue.Empty:
-            raise RuntimeError("Frame buffer is empty; frame loading too slow.")
+    def _process_frame(self, frame):
+        frame = frame.permute(2, 0, 1).float() / 255.0
+        frame -= self.img_mean
+        frame /= self.img_std
+        if not self.offload_video_to_cpu:
+            frame = frame.to(self.device, non_blocking=True)
         return frame
+
+    def __getitem__(self, index):
+        # Usually, the base case is that frames are requested in order 0, 1, 2, 3, 4, ...
+        # This is exactly true if the prompts are only specified for the first frame.
+        # However, if prompts are specified on multiple frames, SAM2 will start with the prompted frames first.
+        # E.g., if prompted on frame 0 and 100, this pattern will be encountered: 0, 100, 0, 100, 0, 1, 2, 3, 4, ...
+        # In either case, the model will eventually run into the predictable incremental pattern which benefits from
+        # preloading the frames in the background thread. To properly support multi-frame prompts, there is a fallback
+        # to loading exactly the requested frame to ensure that the model does not break.
+
+        if index == self.next_fetch_index:
+            # Frame requested in order - return from buffer queue
+            try:
+                frame = self.frame_queue.get(timeout=5)
+            except queue.Empty:
+                raise RuntimeError("Frame buffer is empty; frame loading too slow.")
+
+            self.next_fetch_index += 1
+            return frame
+        else:
+            # Frame requested out of order - read on the fly
+            frame = self.random_reader[index]
+            return self._process_frame(frame)
 
     def __len__(self):
         return len(self.reader)
