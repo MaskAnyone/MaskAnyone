@@ -10,6 +10,7 @@ from communication.openpose_client import OpenposeClient
 from communication.video_manager import VideoManager
 from masking.media_pipe_pose_masker import MediaPipePoseMasker
 from masking.sam2_pose_masker import Sam2PoseMasker
+from masking.sam2_image_pose_masker import Sam2ImagePoseMasker
 from masking.ffmpeg_converter import FFmpegConverter
 
 SLEEP_INTERVAL = 5
@@ -110,7 +111,19 @@ class WorkerProcess:
         def progress_callback(progress: int) -> None:
             self._report_masker_progress(job, progress)
 
-        sam2_pose_masker = Sam2PoseMasker(
+        #sam2_pose_masker = Sam2PoseMasker(
+        #    self._sam2_client,
+        #    self._openpose_client,
+        #    self._video_manager.get_original_video_path(job["video_id"]),
+        #    self._video_manager.get_output_video_path(job["video_id"]),
+        #    self._video_manager.get_result_data_path(job["video_id"], 'sam2_masks'),
+        #    self._video_manager.get_result_data_path(job["video_id"], 'poses'),
+        #    progress_callback
+        #)
+
+        #sam2_pose_masker.mask(job['data']['videoMasking'])
+
+        sam2_image_pose_masker = Sam2ImagePoseMasker(
             self._sam2_client,
             self._openpose_client,
             self._video_manager.get_original_video_path(job["video_id"]),
@@ -120,7 +133,7 @@ class WorkerProcess:
             progress_callback
         )
 
-        sam2_pose_masker.mask(job['data']['videoMasking'])
+        sam2_image_pose_masker.mask(job['data']['videoMasking'])
 
     def _convert_to_h264_codec_and_apply_audio(self, job):
         ffmpeg_converter = FFmpegConverter()

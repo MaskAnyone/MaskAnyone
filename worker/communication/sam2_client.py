@@ -1,4 +1,5 @@
 import os
+import struct
 import requests
 import json
 import io
@@ -10,7 +11,7 @@ class Sam2Client:
     def __init__(self, base_path: str):
         self._base_path = base_path
 
-    def segment_video(self, pose_prompts, video_content):
+    def segment_video(self, pose_prompts, video_content, stream=False):
         files = {
             'video': ('video.mp4', video_content, 'video/mp4'),
         }
@@ -19,13 +20,27 @@ class Sam2Client:
             'pose_prompts': json.dumps(pose_prompts),
         }
 
+        params = {'stream': 'true'} if stream else {}
+
         response = requests.post(
             self._make_url("segment-video"),
             files=files,
             data=data,
+            params=params,
+            stream=stream,
         )
 
-        return response.content
+        if not stream:
+            return response.content
+
+        raw = response.raw
+        while True:
+            length_bytes = raw.read(4)
+            if not length_bytes:
+                break
+            chunk_len = struct.unpack("!I", length_bytes)[0]
+            chunk = raw.read(chunk_len)
+            yield chunk
 
     def decode_mask_npz_content(self, content):
         buffer = io.BytesIO(content)
