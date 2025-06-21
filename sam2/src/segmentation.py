@@ -88,10 +88,9 @@ def perform_sam2_segmentation_yielding(video_path: str, pose_prompts):
     torch.cuda.empty_cache()
 
     for frame_idx, frame_pose_prompts in pose_prompts.items():
-        points_list, labels_list = extract_points_and_labels(frame_pose_prompts)
+        obj_id_list, points_list, labels_list = extract_points_and_labels(frame_pose_prompts)
 
-        obj_id = 1
-        for points, labels in zip(points_list, labels_list):
+        for obj_id, points, labels in zip(obj_id_list, points_list, labels_list):
             _, out_obj_ids, out_mask_logits = predictor.add_new_points(
                 inference_state=inference_state,
                 frame_idx=int(frame_idx),
@@ -99,7 +98,6 @@ def perform_sam2_segmentation_yielding(video_path: str, pose_prompts):
                 points=points,
                 labels=labels,
             )
-            obj_id += 1
 
     for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state):
         frame_masks = {

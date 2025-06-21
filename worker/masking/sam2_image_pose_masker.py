@@ -9,6 +9,7 @@ from communication.openpose_client import OpenposeClient
 from masking.mask_renderer import MaskRenderer
 from masking.pose_renderer import PoseRenderer
 from masking.media_pipe_image_landmarker import MediaPipeImageLandmarker
+from masking.async_video_writer import AsyncVideoWriter
 from OneEuroFilter import OneEuroFilter
 
 DEBUG = True
@@ -59,7 +60,7 @@ class Sam2ImagePoseMasker:
         pose_renderers = self._initialize_pose_renderers(video_masking_data)
 
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
-        video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)
+        async_video_writer = AsyncVideoWriter(self._output_path, (int(frame_width), int(frame_height)), sample_rate)
 
         keypoint_filters = self._initialize_keypoint_filters(video_masking_data, sample_rate)
 
@@ -75,7 +76,7 @@ class Sam2ImagePoseMasker:
 
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             output_frame = frame.copy()
-            timestamp = frame_idx / ONE_EURO_CONFIG['freq']
+            timestamp = frame_idx / (sample_rate if sample_rate else ONE_EURO_CONFIG['freq'])
 
             print("TS", timestamp)
 
@@ -128,11 +129,11 @@ class Sam2ImagePoseMasker:
                 pose_renderers[obj_id].render_keypoint_overlay(output_frame, adjusted_pose)
 
             output_frame = cv2.cvtColor(output_frame, cv2.COLOR_RGB2BGR)
-            video_writer.write(output_frame)
+            async_video_writer.write(output_frame)
             frame_idx += 1
 
         video_capture.release()
-        video_writer.release()
+        async_video_writer.close()
 
         poses_file = open(self._poses_path, "w")
         poses_file.write("{}")
@@ -151,14 +152,6 @@ class Sam2ImagePoseMasker:
         sample_rate = video_capture.get(cv2.CAP_PROP_FPS)
 
         return video_capture, frame_width, frame_height, sample_rate
-
-    def _initialize_video_writer(self, frame_width, frame_height, sample_rate):
-        return cv2.VideoWriter(
-            self._output_path,
-            cv2.VideoWriter_fourcc(*'mp4v'),
-            fps=sample_rate,
-            frameSize=(int(frame_width), int(frame_height))
-        )
 
     def _initialize_mask_renderers(self, video_masking_data: dict):
         return {
