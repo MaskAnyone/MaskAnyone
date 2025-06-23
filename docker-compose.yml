@@ -73,13 +73,6 @@ services:
     depends_on:
       - python
     restart: on-failure
-    deploy:
-        resources:
-          reservations:
-            devices:
-              - driver: nvidia
-                device_ids: ["{MASKANYONE_GPU_ID:-0}"]
-                capabilities: [ gpu ]
 
   sam2:
     build:
@@ -91,12 +84,17 @@ services:
       - ./sam2:/app
     restart: on-failure
     deploy:
-        resources:
-          reservations:
-            devices:
-              - driver: nvidia
-                device_ids: ["{MASKANYONE_GPU_ID:-0}"]
-                capabilities: [ gpu ]
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${MASKANYONE_GPU_ID:-0}"]
+              capabilities: [ gpu ]
+    # devices: # use in case the new resource reservation with GPU IDs is not working, uses GPU 0 by default
+    #   - /dev/nvidia0:/dev/nvidia0
+    #   - /dev/nvidiactl:/dev/nvidiactl
+    #   - /dev/nvidia-uvm:/dev/nvidia-uvm
+    #   - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
 
   openpose:
     build:
@@ -109,9 +107,14 @@ services:
       - ./docker/openpose/models:/models
     restart: on-failure
     deploy:
-        resources:
-          reservations:
-            devices:
-              - driver: nvidia
-                device_ids: ["{MASKANYONE_GPU_ID:-0}"]
-                capabilities: [ gpu ]
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${MASKANYONE_GPU_ID:-0}"]
+              capabilities: [ gpu ]
+    # devices: # use in case the new resource reservation with GPU IDs is not working, uses GPU 0 by default
+    #   - /dev/nvidia0:/dev/nvidia0
+    #   - /dev/nvidiactl:/dev/nvidiactl
+    #   - /dev/nvidia-uvm:/dev/nvidia-uvm
+    #   - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
