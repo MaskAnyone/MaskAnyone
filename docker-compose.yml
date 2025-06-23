@@ -73,13 +73,6 @@ services:
     depends_on:
       - python
     restart: on-failure
-#    deploy:
-#      resources:
-#        reservations:
-#          devices:
-#            - driver: nvidia
-#              count: 1
-#              capabilities: [gpu]
 
   sam2:
     build:
@@ -95,16 +88,13 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              count: 1
+              device_ids: ["${MASKANYONE_GPU_ID:-0}"]
               capabilities: [ gpu ]
-    runtime: nvidia
-    environment:
-      - NVIDIA_DISABLE_REQUIRE=1
-    devices:
-      - /dev/nvidia0:/dev/nvidia0
-      - /dev/nvidiactl:/dev/nvidiactl
-      - /dev/nvidia-uvm:/dev/nvidia-uvm
-      - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+    # devices: # use in case the new resource reservation with GPU IDs is not working, uses GPU 0 by default
+    #   - /dev/nvidia0:/dev/nvidia0
+    #   - /dev/nvidiactl:/dev/nvidiactl
+    #   - /dev/nvidia-uvm:/dev/nvidia-uvm
+    #   - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
 
   openpose:
     build:
@@ -121,13 +111,10 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              count: 1
+              device_ids: ["${MASKANYONE_GPU_ID:-0}"]
               capabilities: [ gpu ]
-    runtime: nvidia
-    environment:
-      - NVIDIA_DISABLE_REQUIRE=1
-    devices:
-      - /dev/nvidia0:/dev/nvidia0
-      - /dev/nvidiactl:/dev/nvidiactl
-      - /dev/nvidia-uvm:/dev/nvidia-uvm
-      - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+    # devices: # use in case the new resource reservation with GPU IDs is not working, uses GPU 0 by default
+    #   - /dev/nvidia0:/dev/nvidia0
+    #   - /dev/nvidiactl:/dev/nvidiactl
+    #   - /dev/nvidia-uvm:/dev/nvidia-uvm
+    #   - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
