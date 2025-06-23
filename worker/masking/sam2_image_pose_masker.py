@@ -78,13 +78,10 @@ class Sam2ImagePoseMasker:
             output_frame = frame.copy()
             timestamp = frame_idx / (sample_rate if sample_rate else ONE_EURO_CONFIG['freq'])
 
-            print("TS", timestamp)
-
             masks = np.load(io.BytesIO(npz_chunk))
             for name in masks.files:
                 mask = masks[name][0]
                 obj_id = int(name.split("_mask")[-1])
-                print(name, obj_id, mask.shape, flush=True)
 
                 mask_renderer = mask_renderers[obj_id]
                 mask_renderer.apply_to_image(output_frame, mask, obj_id)
@@ -96,7 +93,6 @@ class Sam2ImagePoseMasker:
                 if DEBUG:
                     self._render_bounding_box(output_frame, current_bbox)
 
-                print("Calculated bbox", obj_id, current_bbox)
                 cropped_sub_image = self._prepare_estimation_input_frame(frame, mask, current_bbox)
                 pose_data = self._media_pipe_image_landmarker.compute_pose_data(cropped_sub_image)
 
