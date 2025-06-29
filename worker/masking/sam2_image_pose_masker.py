@@ -1,6 +1,8 @@
 import time
 import io
 import cv2
+import json
+import base64
 
 import numpy as np
 from typing import Callable
@@ -64,11 +66,9 @@ class Sam2ImagePoseMasker:
 
         keypoint_filters = self._initialize_keypoint_filters(video_masking_data, sample_rate)
 
-        sam2_masks_file = open(self._sam2_masks_path, "wb")
-        sam2_masks_file.close()
-
-        frame_idx = 0
-        for npz_chunk in chunk_generator:
+        sam2_masks_file = open(self._sam2_masks_path, "w")
+        poses_file = open(self._poses_path, "w")
+        for frame_idx, npz_chunk in enumerate(chunk_generator):
             # The chunks *should* always come in incremental order, so we can just read the next frame here and they should match
             success, frame = video_capture.read()
             if not success:
@@ -107,15 +107,19 @@ class Sam2ImagePoseMasker:
 
                 pose_renderers[obj_id].render_keypoint_overlay(output_frame, adjusted_pose)
 
+                poses_file.write(json.dumps({ "frame": frame_idx, "object_id": obj_id, "keypoints": adjusted_pose }) + "\n")
+
             output_frame = cv2.cvtColor(output_frame, cv2.COLOR_RGB2BGR)
             async_video_writer.write(output_frame)
-            frame_idx += 1
+
+            sam2_masks_file.write(json.dumps({
+                "frame": frame_idx,
+                "npz_base64": base64.b64encode(npz_chunk).decode("utf-8")
+            }) + "\n")
 
         video_capture.release()
         async_video_writer.close()
-
-        poses_file = open(self._poses_path, "w")
-        poses_file.write("{}")
+        sam2_masks_file.close()
         poses_file.close()
 
         print("Elapsed time (total):", time.time() - start)
