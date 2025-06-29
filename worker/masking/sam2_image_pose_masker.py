@@ -8,8 +8,8 @@ from communication.sam2_client import Sam2Client
 from communication.openpose_client import OpenposeClient
 from masking.mask_renderer import MaskRenderer
 from masking.pose_renderer import PoseRenderer
-from masking.media_pipe_image_landmarker import MediaPipeImageLandmarker
-from masking.async_video_writer import AsyncVideoWriter
+from masking.image_masker.media_pipe_image_landmarker import MediaPipeImageLandmarker
+from masking.image_masker.async_video_writer import AsyncVideoWriter
 from OneEuroFilter import OneEuroFilter
 
 DEBUG = True
@@ -101,26 +101,9 @@ class Sam2ImagePoseMasker:
 
                 xmin, ymin, xmax, ymax = current_bbox
                 obj_scale = max(xmax - xmin, ymax - ymin) / max(frame_width, frame_height)
-                adjusted_pose = []
-                for i, keypoint in enumerate(pose_data):
-                    if keypoint is not None and (keypoint.x > 0 or keypoint.y > 0) and keypoint.visibility > 0.05:
-                        # Translate the keypoint back to the original frame coordinates
-                        x = keypoint.x * (xmax - xmin) + xmin
-                        y = keypoint.y * (ymax - ymin) + ymin
-
-                        x_filt, y_filt = keypoint_filters[obj_id][i]
-
-                        if obj_scale < MIN_ALLOWED_OBJECT_SCALE:
-                            # Skip smoothing, but update filter state to keep it synced
-                            x_filt(x, timestamp)
-                            y_filt(y, timestamp)
-                            adjusted_pose.append((x, y))
-                        else:
-                            x_smooth = x_filt(x, timestamp)
-                            y_smooth = y_filt(y, timestamp)
-                            adjusted_pose.append((x_smooth, y_smooth))
-                    else:
-                        adjusted_pose.append(None)
+                adjusted_pose = self._adjust_and_filter_pose(
+                    pose_data, current_bbox, keypoint_filters[obj_id], obj_scale, timestamp
+                )
 
                 pose_renderers[obj_id].render_keypoint_overlay(output_frame, adjusted_pose)
 
@@ -236,3 +219,23 @@ class Sam2ImagePoseMasker:
         start_point = (current_bbox[0], current_bbox[1])
         end_point = (current_bbox[2], current_bbox[3])
         cv2.rectangle(output_frame, start_point, end_point, (255, 0, 0), 2)
+
+    def _adjust_and_filter_pose(self, pose_data, bbox, filters, obj_scale, timestamp):
+        xmin, ymin, xmax, ymax = bbox
+        adjusted_pose = []
+        for i, keypoint in enumerate(pose_data):
+            if keypoint is not None and (keypoint.x > 0 or keypoint.y > 0) and keypoint.visibility > 0.05:
+                x = keypoint.x * (xmax - xmin) + xmin
+                y = keypoint.y * (ymax - ymin) + ymin
+                x_filt, y_filt = filters[i]
+                if obj_scale < MIN_ALLOWED_OBJECT_SCALE:
+                    x_filt(x, timestamp)
+                    y_filt(y, timestamp)
+                    adjusted_pose.append((x, y))
+                else:
+                    x_smooth = x_filt(x, timestamp)
+                    y_smooth = y_filt(y, timestamp)
+                    adjusted_pose.append((x_smooth, y_smooth))
+            else:
+                adjusted_pose.append(None)
+        return adjusted_pose
