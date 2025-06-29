@@ -15,13 +15,12 @@ from masking.image_masker.async_video_writer import AsyncVideoWriter
 from OneEuroFilter import OneEuroFilter
 
 DEBUG = True
-NUM_KEYPOINTS = 33 # TODO!!
-MIN_ALLOWED_OBJECT_SCALE = 0.02 # 2% of frame height or width
+MIN_ALLOWED_OBJECT_SCALE = 0.01 # 1% of frame height or width
 
 ONE_EURO_CONFIG = {
     'freq': 30.0,       # Default frame rate, will be replaced by video FPS if known
-    'mincutoff': 0.3,   # 1.0,   # Base smoothing
-    'beta': 0.1,        # 0.2,        # Responsiveness to motion
+    'mincutoff': 1.0,   # Base smoothing
+    'beta': 0.2,        # Responsiveness to motion
     'dcutoff': 1.0      # Derivative smoothing
 }
 
@@ -94,7 +93,16 @@ class Sam2ImagePoseMasker:
                     self._render_bounding_box(output_frame, current_bbox)
 
                 cropped_sub_image = self._prepare_estimation_input_frame(frame, mask, current_bbox)
-                pose_data = self._media_pipe_image_landmarker.compute_pose_data(cropped_sub_image)
+
+                pose_data = None
+                if video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_pose':
+                    pose_data = self._media_pipe_image_landmarker.compute_pose_data(cropped_sub_image)
+                elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_face':
+                    pose_data = self._media_pipe_image_landmarker.compute_face_data(cropped_sub_image)
+                elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_hand':
+                    pose_data = self._media_pipe_image_landmarker.compute_hand_data(cropped_sub_image)
+                else:
+                    raise Exception(f'Unknown overlay strategy, got {video_masking_data["overlayStrategies"][obj_id - 1]}')
 
                 if pose_data is None:
                     continue
@@ -106,7 +114,6 @@ class Sam2ImagePoseMasker:
                 )
 
                 pose_renderers[obj_id].render_keypoint_overlay(output_frame, adjusted_pose)
-
                 poses_file.write(json.dumps({ "frame": frame_idx, "object_id": obj_id, "keypoints": adjusted_pose }) + "\n")
 
             output_frame = cv2.cvtColor(output_frame, cv2.COLOR_RGB2BGR)
@@ -157,13 +164,25 @@ class Sam2ImagePoseMasker:
             'freq': sample_rate if sample_rate else ONE_EURO_CONFIG['freq'],
         }
 
-        return {
-            int(obj_id_0) + 1: [
-                (OneEuroFilter(**config), OneEuroFilter(**config))
-                for _ in range(NUM_KEYPOINTS)
-            ]
-            for obj_id_0 in range(len(video_masking_data['overlayStrategies']))
+        strategy_to_kp_count = {
+            'mp_pose': MediaPipeImageLandmarker.POSE_KEYPOINT_COUNT,
+            'mp_face': MediaPipeImageLandmarker.FACE_KEYPOINT_COUNT,
+            'mp_hand': MediaPipeImageLandmarker.HAND_KEYPOINT_COUNT,
         }
+
+        result = {}
+
+        for obj_id_0, strategy in enumerate(video_masking_data['overlayStrategies']):
+            if strategy not in strategy_to_kp_count:
+                raise ValueError(f"Unknown overlay strategy: '{strategy}' for object {obj_id_0 + 1}")
+
+            keypoint_count = strategy_to_kp_count[strategy]
+            result[int(obj_id_0) + 1] = [
+                (OneEuroFilter(**config), OneEuroFilter(**config))
+                for _ in range(keypoint_count)
+            ]
+
+        return result
 
     def _trigger_mask_generation(self, video_masking_data: dict):
         content = self._read_video_content()
@@ -228,7 +247,8 @@ class Sam2ImagePoseMasker:
         xmin, ymin, xmax, ymax = bbox
         adjusted_pose = []
         for i, keypoint in enumerate(pose_data):
-            if keypoint is not None and (keypoint.x > 0 or keypoint.y > 0) and keypoint.visibility > 0.05:
+            # TODO: and keypoint.visibility > 0.05 but only exists for pose, not face and hand
+            if keypoint is not None and (keypoint.x > 0 or keypoint.y > 0):
                 x = keypoint.x * (xmax - xmin) + xmin
                 y = keypoint.y * (ymax - ymin) + ymin
                 x_filt, y_filt = filters[i]
