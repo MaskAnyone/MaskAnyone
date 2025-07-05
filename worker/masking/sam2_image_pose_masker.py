@@ -101,6 +101,8 @@ class Sam2ImagePoseMasker:
                     pose_data = self._media_pipe_image_landmarker.compute_face_data(cropped_sub_image)
                 elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_hand':
                     pose_data = self._media_pipe_image_landmarker.compute_hand_data(cropped_sub_image)
+                elif video_masking_data['overlayStrategies'][obj_id - 1].startswith('openpose'):
+                    pose_data = self._compute_openpose_pose_data(video_masking_data['overlayStrategies'][obj_id - 1], cropped_sub_image)
                 else:
                     raise Exception(f'Unknown overlay strategy, got {video_masking_data["overlayStrategies"][obj_id - 1]}')
 
@@ -130,6 +132,22 @@ class Sam2ImagePoseMasker:
         poses_file.close()
 
         print("Elapsed time (total):", time.time() - start)
+
+    def _compute_openpose_pose_data(self, overlay_strategy, cropped_sub_image):
+        options = {
+            'model_pose': 'BODY_25',
+            'face': False,
+            'hand': False
+        }
+
+        if overlay_strategy == 'openpose_body25b':
+            options['model_pose'] = 'BODY_25B'
+        elif overlay_strategy == 'openpose_face':
+            options['face'] = True
+        elif overlay_strategy == 'openpose_body_135':
+            options['model_pose'] = 'BODY_135'
+
+        return self._openpose_client.estimate_pose_on_image(cropped_sub_image, options)
 
     def _read_video_content(self):
         with open(self._input_path, "rb") as file:
