@@ -56,6 +56,7 @@ class Sam2ImagePoseMasker:
     def mask(self, video_masking_data: dict):
         start = time.time()
 
+        print(video_masking_data, flush=True)
         chunk_generator = self._trigger_mask_generation(video_masking_data)
         mask_renderers = self._initialize_mask_renderers(video_masking_data)
         pose_renderers = self._initialize_pose_renderers(video_masking_data)
@@ -103,6 +104,7 @@ class Sam2ImagePoseMasker:
                     pose_data = self._media_pipe_image_landmarker.compute_hand_data(cropped_sub_image)
                 elif video_masking_data['overlayStrategies'][obj_id - 1].startswith('openpose'):
                     pose_data = self._compute_openpose_pose_data(video_masking_data['overlayStrategies'][obj_id - 1], cropped_sub_image)
+                    #print(pose_data, flush=True)
                 else:
                     raise Exception(f'Unknown overlay strategy, got {video_masking_data["overlayStrategies"][obj_id - 1]}')
 
@@ -112,8 +114,10 @@ class Sam2ImagePoseMasker:
                 xmin, ymin, xmax, ymax = current_bbox
                 obj_scale = max(xmax - xmin, ymax - ymin) / max(frame_width, frame_height)
                 adjusted_pose = self._adjust_and_filter_pose(
+                    video_masking_data['overlayStrategies'][obj_id - 1],
                     pose_data, current_bbox, keypoint_filters[obj_id], obj_scale, timestamp
                 )
+                #print(adjusted_pose, flush=True)
 
                 pose_renderers[obj_id].render_keypoint_overlay(output_frame, adjusted_pose)
                 poses_file.write(json.dumps({ "frame": frame_idx, "object_id": obj_id, "keypoints": adjusted_pose }) + "\n")
@@ -147,7 +151,8 @@ class Sam2ImagePoseMasker:
         elif overlay_strategy == 'openpose_body_135':
             options['model_pose'] = 'BODY_135'
 
-        return self._openpose_client.estimate_pose_on_image(cropped_sub_image, options)
+        _, encoded_img = cv2.imencode(".jpg", cropped_sub_image)
+        return self._openpose_client.estimate_pose_on_image(encoded_img.tobytes(), options)
 
     def _read_video_content(self):
         with open(self._input_path, "rb") as file:
@@ -186,6 +191,10 @@ class Sam2ImagePoseMasker:
             'mp_pose': MediaPipeImageLandmarker.POSE_KEYPOINT_COUNT,
             'mp_face': MediaPipeImageLandmarker.FACE_KEYPOINT_COUNT,
             'mp_hand': MediaPipeImageLandmarker.HAND_KEYPOINT_COUNT,
+            'openpose': 25,
+            'openpose_body25b': 25,
+            'openpose_face': 25 + 70,
+            'openpose_body_135': 135,
         }
 
         result = {}
@@ -261,23 +270,68 @@ class Sam2ImagePoseMasker:
         end_point = (current_bbox[2], current_bbox[3])
         cv2.rectangle(output_frame, start_point, end_point, (255, 0, 0), 2)
 
-    def _adjust_and_filter_pose(self, pose_data, bbox, filters, obj_scale, timestamp):
+    def _adjust_and_filter_pose(self, overlay_strategy, pose_data, bbox, filters, obj_scale, timestamp):
         xmin, ymin, xmax, ymax = bbox
-        adjusted_pose = []
-        for i, keypoint in enumerate(pose_data):
-            # TODO: and keypoint.visibility > 0.05 but only exists for pose, not face and hand
-            if keypoint is not None and (keypoint.x > 0 or keypoint.y > 0):
-                x = keypoint.x * (xmax - xmin) + xmin
-                y = keypoint.y * (ymax - ymin) + ymin
-                x_filt, y_filt = filters[i]
-                if obj_scale < MIN_ALLOWED_OBJECT_SCALE:
-                    x_filt(x, timestamp)
-                    y_filt(y, timestamp)
-                    adjusted_pose.append((x, y))
+
+        if overlay_strategy.startswith('openpose'):
+            confidence_threshold = 0.005  # 0.05
+            adjusted_pose = {
+                'pose_keypoints': [],
+                'face_keypoints': None,
+                'left_hand_keypoints': None,
+                'right_hand_keypoints': None
+            }
+
+            filter_index = 0  # To keep track of the filter per keypoint
+
+            def process_keypoints(keypoints):
+                nonlocal filter_index
+                adjusted = []
+                for keypoint in keypoints:
+                    if keypoint is not None and (keypoint[0] > 0 or keypoint[1] > 0) and keypoint[2] > confidence_threshold:
+                        x = keypoint[0] + xmin
+                        y = keypoint[1] + ymin
+                        x_filt, y_filt = filters[filter_index]
+                        if obj_scale < MIN_ALLOWED_OBJECT_SCALE:
+                            x_filt(x, timestamp)
+                            y_filt(y, timestamp)
+                            adjusted.append((x, y))
+                        else:
+                            x_smooth = x_filt(x, timestamp)
+                            y_smooth = y_filt(y, timestamp)
+                            adjusted.append((x_smooth, y_smooth))
+                    else:
+                        adjusted.append(None)
+                    filter_index += 1
+                return adjusted
+
+            adjusted_pose['pose_keypoints'] = process_keypoints(pose_data['pose_keypoints'])
+
+            if pose_data['face_keypoints'] is not None:
+                adjusted_pose['face_keypoints'] = process_keypoints(pose_data['face_keypoints'])
+
+            if pose_data['left_hand_keypoints'] is not None:
+                adjusted_pose['left_hand_keypoints'] = process_keypoints(pose_data['left_hand_keypoints'])
+
+            if pose_data['right_hand_keypoints'] is not None:
+                adjusted_pose['right_hand_keypoints'] = process_keypoints(pose_data['right_hand_keypoints'])
+        else:
+            adjusted_pose = []
+            for i, keypoint in enumerate(pose_data):
+                # TODO: and keypoint.visibility > 0.05 but only exists for pose, not face and hand
+                if keypoint is not None and (keypoint.x > 0 or keypoint.y > 0):
+                    x = keypoint.x * (xmax - xmin) + xmin
+                    y = keypoint.y * (ymax - ymin) + ymin
+                    x_filt, y_filt = filters[i]
+                    if obj_scale < MIN_ALLOWED_OBJECT_SCALE:
+                        x_filt(x, timestamp)
+                        y_filt(y, timestamp)
+                        adjusted_pose.append((x, y))
+                    else:
+                        x_smooth = x_filt(x, timestamp)
+                        y_smooth = y_filt(y, timestamp)
+                        adjusted_pose.append((x_smooth, y_smooth))
                 else:
-                    x_smooth = x_filt(x, timestamp)
-                    y_smooth = y_filt(y, timestamp)
-                    adjusted_pose.append((x_smooth, y_smooth))
-            else:
-                adjusted_pose.append(None)
+                    adjusted_pose.append(None)
+
         return adjusted_pose

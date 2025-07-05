@@ -8,6 +8,7 @@ import cv2
 
 from fastapi import FastAPI, APIRouter, File, Form, UploadFile, Response
 from src.pose_estimation import perform_openpose_pose_estimation
+from src.pose_estimation_image import perform_openpose_pose_estimation_on_image
 
 
 app = FastAPI()

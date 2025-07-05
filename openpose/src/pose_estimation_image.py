@@ -9,30 +9,35 @@ from openpose import pyopenpose as op
 OPENPOSE_MODEL_DIR = os.environ["OPENPOSE_MODEL_DIR"]
 
 _op_wrapper: Optional[op.WrapperPython] = None
-_op_initialized = False
+_last_op_config: Optional[dict] = None
+
+
+def _get_config_from_options(options: dict) -> dict:
+    config = {
+        "model_folder": f"{OPENPOSE_MODEL_DIR}/",
+        "number_people_max": 1,
+        "render_pose": 0,
+        "face": options.get("face", False),
+        "hand": options.get("hand", False),
+        "model_pose": options.get("model_pose", "BODY_25"),
+    }
+    return config
+
+
+def _configs_differ(config1: dict, config2: dict) -> bool:
+    return config1 != config2
 
 
 def perform_openpose_pose_estimation_on_image(image_np: np.ndarray, options: dict):
-    global _op_wrapper, _op_initialized
+    global _op_wrapper, _last_op_config
 
-    if not _op_initialized:
+    current_config = _get_config_from_options(options)
+
+    if _op_wrapper is None or _last_op_config is None or _configs_differ(_last_op_config, current_config):
         _op_wrapper = op.WrapperPython()
-        params = {
-            "model_folder": f"{OPENPOSE_MODEL_DIR}/",
-            "number_people_max": 1,
-            "render_pose": 0,
-        }
-
-        if options.get("face"):
-            params["face"] = True
-        if options.get("hand"):
-            params["hand"] = True
-        if "model_pose" in options:
-            params["model_pose"] = options["model_pose"]
-
-        _op_wrapper.configure(params)
+        _op_wrapper.configure(current_config)
         _op_wrapper.start()
-        _op_initialized = True
+        _last_op_config = current_config
 
     datum = op.Datum()
     datum.cvInputData = image_np
