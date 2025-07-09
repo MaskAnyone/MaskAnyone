@@ -28,7 +28,11 @@ async def segment_video(
             temp_video_file.write(video_content)
             temp_video_file_path = temp_video_file.name
 
-            pose_data = perform_openpose_pose_estimation(temp_video_file_path, options)
+            multi_person_detection = options.get("multi_person_detection", False)
+            if multi_person_detection:
+                pose_data = perform_openpose_pose_estimation(temp_video_file_path, options, multi_person_detection=True)
+            else:
+                pose_data = perform_openpose_pose_estimation(temp_video_file_path, options)  # default behaviour for maskanyone
     finally:
         os.remove(temp_video_file_path)
 
