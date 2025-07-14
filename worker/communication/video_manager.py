@@ -54,7 +54,7 @@ class VideoManager:
         path = self._get_result_data_path(video_id, data_type)
 
         if self.__local_data_manager.path_exists(path):
-            result_data = self.__local_data_manager.read_json(path) if data_type == 'poses' else self.__local_data_manager.read_binary(path)
+            result_data = self.__local_data_manager.read_binary(path)
 
             self.__backend_client.upload_result_data(
                 video_id, result_video_id, data_type, result_data

@@ -161,7 +161,10 @@ class PoseRenderer:
 
         face_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
         face_landmarks_proto.landmark.extend([
-            landmark_pb2.NormalizedLandmark(x=landmark[0] / image_width, y=landmark[1] / image_height, z=0.5) for
+            landmark_pb2.NormalizedLandmark(
+                x=(landmark[0] / image_width if landmark is not None else 0.0),
+                y=(landmark[1] / image_height if landmark is not None else 0.0),
+                z=0.5) for
             landmark in keypoint_data
         ])
 
@@ -192,7 +195,10 @@ class PoseRenderer:
 
         hand_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
         hand_landmarks_proto.landmark.extend([
-            landmark_pb2.NormalizedLandmark(x=landmark[0] / image_width, y=landmark[1] / image_height, z=0.5) for
+            landmark_pb2.NormalizedLandmark(
+                x=(landmark[0] / image_width if landmark is not None else 0.0),
+                y=(landmark[1] / image_height if landmark is not None else 0.0),
+                z=0.5) for
             landmark in keypoint_data
         ])
         solutions.drawing_utils.draw_landmarks(
