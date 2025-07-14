@@ -8,14 +8,12 @@ from openpose import pyopenpose as op
 OPENPOSE_MODEL_DIR = os.environ["OPENPOSE_MODEL_DIR"]
 
 
-def perform_openpose_pose_estimation(input_path: str, options: dict, multi_person_detection: bool = False):
+def perform_openpose_pose_estimation(input_path: str, options: dict):
     video_capture = cv2.VideoCapture(input_path)
     video_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    if multi_person_detection:
-        params = prepare_openpose_params(options, video_height, unknown_maximum_number_of_people=True)
-    else:
-        params = prepare_openpose_params(options, video_height) # default behaviour for maskanyone
+    multi_person_detection = options.get("multi_person_detection", False)
+    params = prepare_openpose_params(options, video_height, multi_person_detection)
     
     op_wrapper = initialize_open_pose(params)
     pose_data = []
@@ -32,8 +30,13 @@ def perform_openpose_pose_estimation(input_path: str, options: dict, multi_perso
         op_wrapper.emplaceAndPop(op.VectorDatum([datum]))
 
         if datum.poseKeypoints is not None and len(datum.poseKeypoints) > 0:
-            if multi_person_detection:
-                pose_data.append(datum.poseKeypoints) # we are only interested in pose_keypoints for all people in the frame
+            if multi_person_detection == True: # return keypoints for all persons
+                 pose_data.append({
+                    'pose_keypoints': datum.poseKeypoints,
+                    'face_keypoints': datum.faceKeypoints if datum.faceKeypoints is not None and len(datum.faceKeypoints) > 0 else None,
+                    'left_hand_keypoints': datum.handKeypoints[0] if datum.handKeypoints is not None and len(datum.handKeypoints) > 0 and datum.handKeypoints[0] is not None and len(datum.handKeypoints[0]) > 0 else None,
+                    'right_hand_keypoints': datum.handKeypoints[1] if datum.handKeypoints is not None and len(datum.handKeypoints) > 1 and datum.handKeypoints[1] is not None and len(datum.handKeypoints[1]) > 0 else None,
+                })
             else: # default behaviour for maskanyone
                 pose_data.append({
                     'pose_keypoints': datum.poseKeypoints[0],
@@ -50,12 +53,12 @@ def perform_openpose_pose_estimation(input_path: str, options: dict, multi_perso
     return pose_data
 
 
-def prepare_openpose_params(options: dict, video_height: int, unknown_maximum_number_of_people: bool = False) -> dict:
+def prepare_openpose_params(options: dict, video_height: int, multi_person_detection: bool) -> dict:
     params = dict()
     params["model_folder"] = f"{OPENPOSE_MODEL_DIR}/"
     params["render_pose"] = 0
 
-    if not unknown_maximum_number_of_people:
+    if multi_person_detection == False:
         params["number_people_max"] = 1 # 1 is set by default for maskanyone. Openpose will detect all persons if this is not set
 
     optimal_openpose_input_height = video_height - (video_height % 16)
