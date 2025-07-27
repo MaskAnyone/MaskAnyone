@@ -14,7 +14,7 @@ from masking.image_masker.media_pipe_image_landmarker import MediaPipeImageLandm
 from masking.image_masker.async_video_writer import AsyncVideoWriter
 from OneEuroFilter import OneEuroFilter
 
-DEBUG = True
+DEBUG = False
 MIN_ALLOWED_OBJECT_SCALE = 0.01 # 1% of frame height or width
 
 ONE_EURO_CONFIG = {
@@ -266,9 +266,12 @@ class Sam2ImagePoseMasker:
         return cropped_frame
 
     def _render_bounding_box(self, output_frame, current_bbox):
-        start_point = (current_bbox[0], current_bbox[1])
-        end_point = (current_bbox[2], current_bbox[3])
-        cv2.rectangle(output_frame, start_point, end_point, (255, 0, 0), 2)
+        try:
+            start_point = (int(current_bbox[0]), int(current_bbox[1]))
+            end_point = (int(current_bbox[2]), int(current_bbox[3]))
+            cv2.rectangle(output_frame, start_point, end_point, (255, 0, 0), 2)
+        except Exception as e:
+            print(f"Failed to draw debug bounding box rectangle with bbox={current_bbox}: {e}")
 
     def _adjust_and_filter_pose(self, overlay_strategy, pose_data, bbox, filters, obj_scale, timestamp):
         xmin, ymin, xmax, ymax = bbox
