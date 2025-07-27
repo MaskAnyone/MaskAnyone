@@ -12,12 +12,18 @@ SAM2_OFFLOAD_STATE_TO_CPU = os.environ["SAM2_OFFLOAD_STATE_TO_CPU"] == "true"
 
 
 def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
+    video_segments = {}
+    for frame_idx, frame_masks in perform_sam2_segmentation_yielding(frame_dir_path, pose_prompts):
+        video_segments[frame_idx] = frame_masks
+    return video_segments
+
+
+def perform_sam2_segmentation_yielding(video_path: str, pose_prompts):
     global predictor
 
+    configure_torch()
+    torch.cuda.empty_cache()
     if predictor is None:
-        configure_torch()
-        torch.cuda.empty_cache()
-
         sam2_checkpoint = "/workspace/sam2/checkpoints/sam2.1_hiera_small.pt"
         model_cfg = "configs/sam2.1/sam2.1_hiera_s.yaml"
         predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint)
@@ -26,8 +32,9 @@ def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
           f"offload_video_to_cpu={SAM2_OFFLOAD_VIDEO_TO_CPU}, "
           f"offload_state_to_cpu={SAM2_OFFLOAD_STATE_TO_CPU}, "
           f"async_loading_frames=True")
+
     inference_state = predictor.init_state(
-        video_path=frame_dir_path,
+        video_path=video_path,
         offload_video_to_cpu=SAM2_OFFLOAD_VIDEO_TO_CPU,
         offload_state_to_cpu=SAM2_OFFLOAD_STATE_TO_CPU,
         async_loading_frames=True,
@@ -48,17 +55,15 @@ def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
                 labels=labels,
             )
 
-    video_segments = {}
     for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state):
-        video_segments[out_frame_idx] = {
+        frame_masks = {
             out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy()
             for i, out_obj_id in enumerate(out_obj_ids)
         }
+        yield out_frame_idx, frame_masks
 
     predictor.reset_state(inference_state)
     torch.cuda.empty_cache()
-
-    return video_segments
 
 
 def configure_torch():

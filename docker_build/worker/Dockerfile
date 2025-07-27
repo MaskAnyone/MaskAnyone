@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 libpq-dev ffmpeg wget mesa-common-dev libegl1-mesa-dev libgles2-mesa-dev mesa-utils \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir mediapipe==0.10.14 requests opencv-python-headless
+RUN pip install --no-cache-dir mediapipe==0.10.14 requests opencv-python-headless OneEuroFilter
 
 RUN mkdir /worker_models \
     && wget https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/latest/pose_landmarker_heavy.task \
