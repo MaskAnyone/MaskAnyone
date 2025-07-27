@@ -28,7 +28,7 @@ CMD ["python3", "/app/worker.py"]
 
 FROM base AS video-masker-core
 RUN pip install --no-cache-dir ultralytics==8.3.78 --no-deps
-RUN pip install --no-cache-dir psutil matplotlib pandas tqdm pyyaml
+RUN pip install --no-cache-dir psutil matplotlib pandas tqdm pyyaml OneEuroFilter
 RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 RUN wget https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11x-pose.pt -O /worker_models/yolo11x-pose.pt
 
