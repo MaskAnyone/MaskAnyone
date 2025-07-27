@@ -241,7 +241,7 @@ class Sam2ImagePoseMasker:
         x_max = min(frame_width - 1, x_max + x_margin)
         y_max = min(frame_height - 1, y_max + y_margin)
 
-        return [x_min, y_min, x_max, y_max]
+        return [int(x_min), int(y_min), int(x_max), int(y_max)]
 
     def _prepare_estimation_input_frame(self, frame, mask, bbox):
         crop_alpha = 1.0
@@ -267,8 +267,8 @@ class Sam2ImagePoseMasker:
 
     def _render_bounding_box(self, output_frame, current_bbox):
         try:
-            start_point = (int(current_bbox[0]), int(current_bbox[1]))
-            end_point = (int(current_bbox[2]), int(current_bbox[3]))
+            start_point = (current_bbox[0], current_bbox[1])
+            end_point = (current_bbox[2], current_bbox[3])
             cv2.rectangle(output_frame, start_point, end_point, (255, 0, 0), 2)
         except Exception as e:
             print(f"Failed to draw debug bounding box rectangle with bbox={current_bbox}: {e}")
