@@ -8,6 +8,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6+PTX"
 
+RUN apt-get update && apt-get install -y libgl1 ffmpeg
+
 RUN apt-get update \
     && apt-get install -y \
         build-essential \
@@ -28,7 +30,6 @@ RUN apt-get update \
         python3-pip \
         python-is-python3 \
         libopencv-dev \
-        python3-opencv \
         unzip \
     && rm -rf /var/lib/apt/lists/*
 
@@ -38,6 +39,7 @@ RUN pip3 install --no-cache-dir \
     uvicorn[standard] \
     python-multipart \
     gunicorn \
+    opencv-python \
     gdown
 
 # Clone OpenPose repository
