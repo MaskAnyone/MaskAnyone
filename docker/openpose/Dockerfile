@@ -8,13 +8,13 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6+PTX"
 
-RUN apt-get update && apt-get install -y libgl1 ffmpeg
-
 RUN apt-get update \
     && apt-get install -y \
         build-essential \
         cmake \
         git \
+        libgl1 \
+        ffmpeg \
         wget \
         libatlas-base-dev \
         libprotobuf-dev \
