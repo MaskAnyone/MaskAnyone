@@ -13,6 +13,8 @@ RUN apt-get update \
         build-essential \
         cmake \
         git \
+        libgl1 \
+        ffmpeg \
         wget \
         libatlas-base-dev \
         libprotobuf-dev \
@@ -28,7 +30,6 @@ RUN apt-get update \
         python3-pip \
         python-is-python3 \
         libopencv-dev \
-        python3-opencv \
         unzip \
     && rm -rf /var/lib/apt/lists/*
 
@@ -38,6 +39,7 @@ RUN pip3 install --no-cache-dir \
     uvicorn[standard] \
     python-multipart \
     gunicorn \
+    opencv-python \
     gdown
 
 # Clone OpenPose repository
