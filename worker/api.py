@@ -17,11 +17,11 @@ app = FastAPI()
 
 SAM2_HOST = os.environ.get("SAM2_HOST", "sam2")
 SAM2_PORT = os.environ.get("SAM2_PORT", "8000")
-WORKER_SAM2_BASE_PATH = f"http://{SAM2_HOST}:{SAM2_PORT}/sam2/"
+WORKER_SAM2_BASE_PATH = f"http://{SAM2_HOST}:{SAM2_PORT}/sam2"
 
 OPENPOSE_HOST = os.environ.get("OPENPOSE_HOST", "openpose")
 OPENPOSE_PORT = os.environ.get("OPENPOSE_PORT", "8000")
-WORKER_OPENPOSE_BASE_PATH = f"http://{OPENPOSE_HOST}:{OPENPOSE_PORT}/openpose/"
+WORKER_OPENPOSE_BASE_PATH = f"http://{OPENPOSE_HOST}:{OPENPOSE_PORT}/openpose"
 
 
 @app.post("/mask-video")

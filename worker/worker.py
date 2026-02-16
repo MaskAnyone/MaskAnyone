@@ -11,15 +11,15 @@ from processing.worker_process import WorkerProcess
 
 WORKER_HOST = os.environ.get("WORKER_HOST", "python")
 WORKER_PORT = os.environ.get("WORKER_PORT", "8000")
-WORKER_BACKEND_BASE_PATH = f"http://{WORKER_HOST}:{WORKER_PORT}/_worker/"
+WORKER_BACKEND_BASE_PATH = f"http://{WORKER_HOST}:{WORKER_PORT}/_worker"
 
 SAM2_HOST = os.environ.get("SAM2_HOST", "sam2")
 SAM2_PORT = os.environ.get("SAM2_PORT", "8000")
-WORKER_SAM2_BASE_PATH = f"http://{SAM2_HOST}:{SAM2_PORT}/sam2/"
+WORKER_SAM2_BASE_PATH = f"http://{SAM2_HOST}:{SAM2_PORT}/sam2"
 
 OPENPOSE_HOST = os.environ.get("OPENPOSE_HOST", "openpose")
 OPENPOSE_PORT = os.environ.get("OPENPOSE_PORT", "8000")
-WORKER_OPENPOSE_BASE_PATH = f"http://{OPENPOSE_HOST}:{OPENPOSE_PORT}/openpose/"
+WORKER_OPENPOSE_BASE_PATH = f"http://{OPENPOSE_HOST}:{OPENPOSE_PORT}/openpose"
 
 WORKER_LOCAL_DATA_DIR = os.environ["WORKER_LOCAL_DATA_DIR"]
 
