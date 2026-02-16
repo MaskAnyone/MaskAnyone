@@ -34,8 +34,10 @@ RUN wget https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11x-
 
 # API image
 FROM video-masker-core AS api
-RUN pip install --no-cache-dir fastapi uvicorn[standard] python-multipart 
-CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+RUN pip install --no-cache-dir fastapi uvicorn[standard] python-multipart
+
+ENV WORKER_PORT=8000
+CMD ["sh", "-c", "uvicorn api:app --host 0.0.0.0 --port $WORKER_PORT"]
 
 # CLI image
 FROM video-masker-core AS cli

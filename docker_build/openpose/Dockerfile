@@ -66,4 +66,5 @@ WORKDIR /app
 
 COPY ./openpose /app
 
-CMD ["gunicorn", "-k", "uvicorn_prod_worker.UvicornProdWorker", "main:app", "--bind=0.0.0.0:8000", "--timeout", "3600"]
+ENV OPENPOSE_PORT=8000
+CMD ["sh", "-c", "gunicorn -k uvicorn_prod_worker.UvicornProdWorker main:app --bind 0.0.0.0:$OPENPOSE_PORT --timeout 3600"]

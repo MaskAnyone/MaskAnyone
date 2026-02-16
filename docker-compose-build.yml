@@ -42,12 +42,16 @@ services:
     build:
       context: .
       dockerfile: docker_build/sam2/Dockerfile
+    environment:
+      - SAM2_PORT: ${SAM2_PORT:-8000}
 
   openpose:
     image: ${DOCKER_REGISTRY}openpose:${DOCKER_TAG}
     build:
       context: .
       dockerfile: docker_build/openpose/Dockerfile
+    environment:
+      - OPENPOSE_PORT: ${OPENPOSE_PORT:-8000}
 
   cli:
     image: ${DOCKER_REGISTRY}cli:${DOCKER_TAG}
@@ -62,3 +66,6 @@ services:
       context: .
       dockerfile: docker_build/worker/Dockerfile
       target: api
+    environment:
+      - WORKER_PORT: ${WORKER_PORT:-8000}
+
