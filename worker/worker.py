@@ -9,11 +9,19 @@ from communication.video_manager import VideoManager
 from background_process import BackgroundProcess
 from processing.worker_process import WorkerProcess
 
-WORKER_BACKEND_BASE_PATH = os.environ["WORKER_BACKEND_BASE_PATH"]
-WORKER_SAM2_BASE_PATH = 'http://sam2:8000/sam2'
-WORKER_OPENPOSE_BASE_PATH = 'http://openpose:8000/openpose'
-WORKER_LOCAL_DATA_DIR = os.environ["WORKER_LOCAL_DATA_DIR"]
+WORKER_HOST = os.environ.get("WORKER_HOST", "python")
+WORKER_PORT = os.environ.get("WORKER_PORT", "8000")
+WORKER_BACKEND_BASE_PATH = f"http://{WORKER_HOST}:{WORKER_PORT}/_worker/"
 
+SAM2_HOST = os.environ.get("SAM2_HOST", "sam2")
+SAM2_PORT = os.environ.get("SAM2_PORT", "8000")
+WORKER_SAM2_BASE_PATH = f"http://{SAM2_HOST}:{SAM2_PORT}/sam2/"
+
+OPENPOSE_HOST = os.environ.get("OPENPOSE_HOST", "openpose")
+OPENPOSE_PORT = os.environ.get("OPENPOSE_PORT", "8000")
+WORKER_OPENPOSE_BASE_PATH = f"http://{OPENPOSE_HOST}:{OPENPOSE_PORT}/openpose/"
+
+WORKER_LOCAL_DATA_DIR = os.environ["WORKER_LOCAL_DATA_DIR"]
 
 def main():
     worker_id = str(uuid.uuid4())
