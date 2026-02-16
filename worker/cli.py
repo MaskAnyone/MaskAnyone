@@ -9,8 +9,14 @@ from communication.sam2_client import Sam2Client
 from communication.openpose_client import OpenposeClient
 from masking.sam2_pose_masker import Sam2PoseMasker
 
-WORKER_SAM2_BASE_PATH = 'http://sam2:8000/sam2'
-WORKER_OPENPOSE_BASE_PATH = 'http://openpose:8000/openpose'
+SAM2_HOST = os.environ.get("SAM2_HOST", "sam2")
+SAM2_PORT = os.environ.get("SAM2_PORT", "8000")
+WORKER_SAM2_BASE_PATH = f"http://{SAM2_HOST}:{SAM2_PORT}/sam2/"
+
+OPENPOSE_HOST = os.environ.get("OPENPOSE_HOST", "openpose")
+OPENPOSE_PORT = os.environ.get("OPENPOSE_PORT", "8000")
+WORKER_OPENPOSE_BASE_PATH = f"http://{OPENPOSE_HOST}:{OPENPOSE_PORT}/openpose/"
+
 
 model = YOLO('/worker_models/yolo11x-pose.pt')
 
