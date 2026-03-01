@@ -3,7 +3,7 @@ services:
   nginx:
     build: ./docker/nginx
     ports:
-      - "443:443"
+      - "${NGINX_PORT:-443}:443"
     restart: "on-failure"
 
   python:
@@ -33,7 +33,7 @@ services:
     build:
       context: ./docker/pgadmin
     ports:
-      - "5433:443"
+      - "${PGADMIN_PORT:-5443}:443"
     environment:
       PGADMIN_ENABLE_TLS: "True"
       PGADMIN_DEFAULT_EMAIL: "dev@dev.dev"
@@ -58,7 +58,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: dev
     command: "start-dev"
     ports:
-      - "8080:8080"
+      - "${KEY_CLOAK_PORT:-8080}:8080"
     depends_on:
       - postgres
 
