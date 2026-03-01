@@ -5,7 +5,7 @@ services:
       context: ./docker/worker
     command: "python cli.py"
     env_file:
-      - ./app.env
+      - ./.env
     volumes:
       - ./worker:/app
       - ./data/backend:/data
@@ -17,9 +17,9 @@ services:
   sam2:
     build:
       context: ./docker/sam2
-    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --port ${SAM2_PORT:-8000} --root-path /api/"
     env_file:
-      - ./app.env
+      - ./.env
     volumes:
       - ./sam2:/app
     restart: on-failure
@@ -39,9 +39,9 @@ services:
   openpose:
     build:
       context: ./docker/openpose
-    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --port ${OPENPOSE_PORT:-8000} --root-path /api/"
     env_file:
-      - ./app.env
+      - ./.env
     volumes:
       - ./openpose:/app
       - ./docker/openpose/models:/models

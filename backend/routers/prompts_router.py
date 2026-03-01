@@ -86,8 +86,13 @@ def test(sam2_params: Sam2Params, video_id: str, frame_index: int, token_payload
     print(data)
 
     # Send the image along with the JSON data in a multipart request
+
+    SAM2_HOST = os.environ.get("SAM2_HOST", "sam2")
+    SAM2_PORT = os.environ.get("SAM2_PORT", "8000")
+    WORKER_SAM2_BASE_PATH = f"http://{SAM2_HOST}:{SAM2_PORT}/sam2"
+
     response = requests.post(
-        'http://sam2:8000/sam2/segment-image',
+        f"{WORKER_SAM2_BASE_PATH}/segment-image",
         files=files,
         data=data,
     )

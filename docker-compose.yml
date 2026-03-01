@@ -3,17 +3,17 @@ services:
   nginx:
     build: ./docker/nginx
     ports:
-      - "443:443"
+      - "${NGINX_PORT:-443}:443"
     restart: "on-failure"
 
   python:
     build:
       context: ./docker/backend
-    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --port ${WORKER_PORT:-8000} --root-path /api/"
     environment:
       - TIMEOUT=600
     env_file:
-      - ./app.env
+      - ./.env
     volumes:
       - ./backend:/app
       - ./data/backend:/var/lib/maskanyone/data
@@ -24,7 +24,7 @@ services:
     build:
       context: ./docker/postgres
     env_file:
-      - ./app.env
+      - ./.env
     volumes:
       - ./docker/postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
       - ./data/postgres:/var/lib/postgresql/data
@@ -33,7 +33,7 @@ services:
     build:
       context: ./docker/pgadmin
     ports:
-      - "5433:443"
+      - "${PGADMIN_PORT:-5443}:443"
     environment:
       PGADMIN_ENABLE_TLS: "True"
       PGADMIN_DEFAULT_EMAIL: "dev@dev.dev"
@@ -58,7 +58,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: dev
     command: "start-dev"
     ports:
-      - "8080:8080"
+      - "${KEY_CLOAK_PORT:-8080}:8080"
     depends_on:
       - postgres
 
@@ -67,7 +67,7 @@ services:
       context: ./docker/worker
     command: "python worker.py"
     env_file:
-      - ./app.env
+      - ./.env
     volumes:
       - ./worker:/app
     depends_on:
@@ -77,9 +77,9 @@ services:
   sam2:
     build:
       context: ./docker/sam2
-    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --port ${SAM2_PORT:-8000} --root-path /api/"
     env_file:
-      - ./app.env
+      - ./.env
     volumes:
       - ./sam2:/app
     restart: on-failure
@@ -99,9 +99,9 @@ services:
   openpose:
     build:
       context: ./docker/openpose
-    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0  --port ${OPENPOSE_PORT:-8000} --root-path /api/"
     env_file:
-      - ./app.env
+      - ./.env
     volumes:
       - ./openpose:/app
       - ./docker/openpose/models:/models
