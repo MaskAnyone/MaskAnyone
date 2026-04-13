@@ -28,6 +28,7 @@ const VideoMaskingEditorPage = () => {
     const [posePrompts, setPosePrompts] = useState<[number, number, number][][]>([]);
     const [hidingStrategies, setHidingStrategies] = useState<string[]>([]);
     const [overlayStrategies, setOverlayStrategories] = useState<string[]>([]);
+    const [samModel, setSamModel] = useState<string>('sam2.1_hiera_small');
     const [bounds, setBounds] = useState({ left: 0, top: 0, right: 0, bottom: 0 });
     const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
     const [segmentationImageUrl, setSegmentationImageUrl] = useState<string | null>(null);
@@ -54,6 +55,7 @@ const VideoMaskingEditorPage = () => {
             setPosePrompts((resultVideoJob.data as any)['videoMasking']['posePrompts'][0]);
             setOverlayStrategories((resultVideoJob.data as any)['videoMasking']['overlayStrategies']);
             setHidingStrategies((resultVideoJob.data as any)['videoMasking']['hidingStrategies'] || []);
+            setSamModel((resultVideoJob.data as any)['videoMasking']['samModel'] || 'sam2.1_hiera_small');
         } else {
             Api.fetchPosePrompt(videoId, currentFrame).then(posePrompts => {
                 setPosePrompts(posePrompts);
@@ -239,11 +241,12 @@ const VideoMaskingEditorPage = () => {
             resultVideoId: uuidv4(),
             runData: {
                 videoMasking: {
-                    posePrompts: posePrompts.some(prompt => prompt.length > 0) 
-                        ? { ...videoPosePrompts, [currentFrame]: posePrompts } 
+                    posePrompts: posePrompts.some(prompt => prompt.length > 0)
+                        ? { ...videoPosePrompts, [currentFrame]: posePrompts }
                         : videoPosePrompts,
                     overlayStrategies,
                     hidingStrategies,
+                    samModel,
                 } as any,
                 voiceMasking: {
                     strategy: 'remove',
@@ -262,7 +265,7 @@ const VideoMaskingEditorPage = () => {
             return;
         }
 
-        Api.fetchPosePromptSegmentation(videoId!, currentFrame, posePrompts).then((segmentationImage) => {
+        Api.fetchPosePromptSegmentation(videoId!, currentFrame, posePrompts, samModel).then((segmentationImage) => {
             // Create a Blob from the binary data
             const blob = new Blob([segmentationImage], { type: 'image/jpeg' }); // Adjust the MIME type if needed
             // Create a URL for the Blob
@@ -287,8 +290,25 @@ const VideoMaskingEditorPage = () => {
     return (
         <Box component="div" sx={{ display: 'flex' }}>
             <Box component='div' sx={{ width: 320 }}>
-                <Button onClick={maskVideo} variant={'contained'} color={'secondary'} startIcon={<ShieldLogoIcon />}>Mask</Button>
-                <Button onClick={segmentPrompt} variant={'contained'} color={'primary'} sx={{ marginLeft: 1 }}>Test Prompt</Button>
+                <Box component="div" sx={{ mb: 1 }}>
+                    <Box component="div" sx={{ fontSize: '0.75rem', color: 'text.secondary', mb: 0.5 }}>Segmentation model</Box>
+                    <Select
+                        value={samModel}
+                        onChange={e => setSamModel(e.target.value as string)}
+                        size="small"
+                        fullWidth
+                    >
+                        <MenuItem value="sam2.1_hiera_tiny">SAM2.1 Tiny (fastest)</MenuItem>
+                        <MenuItem value="sam2.1_hiera_small">SAM2.1 Small</MenuItem>
+                        <MenuItem value="sam2.1_hiera_base_plus">SAM2.1 Base+</MenuItem>
+                        <MenuItem value="sam2.1_hiera_large">SAM2.1 Large (most accurate)</MenuItem>
+                    </Select>
+                </Box>
+
+                <Box component="div" sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                    <Button onClick={maskVideo} variant={'contained'} color={'secondary'} startIcon={<ShieldLogoIcon />} size="small">Mask</Button>
+                    <Button onClick={segmentPrompt} variant={'contained'} color={'primary'} size="small">Test Prompt</Button>
+                </Box>
 
                 <Box component="div" sx={{ display: 'flex', gap: 1, mt: 1 }}>
                     <Button
@@ -346,6 +366,10 @@ const VideoMaskingEditorPage = () => {
                             <MenuItem value={'openpose_body25b'}>Openpose (BODY_25B)</MenuItem>
                             <MenuItem value={'openpose_face'}>Openpose + Face</MenuItem>
                             <MenuItem value={'openpose_body_135'}>Openpose (BODY_135)</MenuItem>
+                            <MenuItem value={'rtmpose_s'}>RTMPose Small (CPU)</MenuItem>
+                            <MenuItem value={'rtmpose_m'}>RTMPose Medium (CPU)</MenuItem>
+                            <MenuItem value={'rtmpose_l'}>RTMPose Large (CPU)</MenuItem>
+                            <MenuItem value={'rtmpose_ap10k'}>RTMPose AP-10K (Animals, CPU)</MenuItem>
                         </Select>
                         <br />
                         <Select 

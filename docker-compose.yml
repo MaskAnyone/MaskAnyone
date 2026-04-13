@@ -96,25 +96,41 @@ services:
     #   - /dev/nvidia-uvm:/dev/nvidia-uvm
     #   - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
 
-  openpose:
+  # openpose: disabled — not needed for animal/primate workflow
+  # openpose:
+  #   build:
+  #     context: ./docker/openpose
+  #   command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+  #   env_file:
+  #     - ./app.env
+  #   volumes:
+  #     - ./openpose:/app
+  #     - ./docker/openpose/models:/models
+  #   restart: on-failure
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             device_ids: ["${MASKANYONE_GPU_ID:-0}"]
+  #             capabilities: [ gpu ]
+
+  rtmpose:
     build:
-      context: ./docker/openpose
+      context: ./docker/rtmpose
     command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
     env_file:
       - ./app.env
     volumes:
-      - ./openpose:/app
-      - ./docker/openpose/models:/models
+      - ./rtmpose:/app
+      - ./data/rtmpose_model_cache:/root/.cache
     restart: on-failure
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ["${MASKANYONE_GPU_ID:-0}"]
-              capabilities: [ gpu ]
-    # devices: # use in case the new resource reservation with GPU IDs is not working, uses GPU 0 by default
-    #   - /dev/nvidia0:/dev/nvidia0
-    #   - /dev/nvidiactl:/dev/nvidiactl
-    #   - /dev/nvidia-uvm:/dev/nvidia-uvm
-    #   - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+    networks:
+      default:
+      maskanyone_default:
+        aliases:
+          - rtmpose
+
+networks:
+  maskanyone_default:
+    external: true

@@ -115,6 +115,34 @@ HAND_PAIRS = [
     (0, 17), (17, 18), (18, 19), (19, 20)  # Pinky
 ]
 
+# COCO-17 keypoints: nose, left_eye, right_eye, left_ear, right_ear,
+# left_shoulder, right_shoulder, left_elbow, right_elbow, left_wrist, right_wrist,
+# left_hip, right_hip, left_knee, right_knee, left_ankle, right_ankle
+COCO17_PAIRS = [
+    (0, 1), (0, 2), (1, 3), (2, 4),  # Head
+    (5, 6),  # Shoulders
+    (5, 7), (7, 9),  # Left arm
+    (6, 8), (8, 10),  # Right arm
+    (5, 11), (6, 12),  # Torso
+    (11, 12),  # Hips
+    (11, 13), (13, 15),  # Left leg
+    (12, 14), (14, 16),  # Right leg
+]
+
+# AP-10K keypoints: 0:left_eye, 1:right_eye, 2:nose, 3:neck, 4:root_of_tail,
+# 5:left_shoulder, 6:left_elbow, 7:left_front_paw,
+# 8:right_shoulder, 9:right_elbow, 10:right_front_paw,
+# 11:left_hip, 12:left_knee, 13:left_back_paw,
+# 14:right_hip, 15:right_knee, 16:right_back_paw
+AP10K_PAIRS = [
+    (0, 2), (1, 2), (2, 3),           # head
+    (3, 5), (5, 6), (6, 7),           # left front limb
+    (3, 8), (8, 9), (9, 10),          # right front limb
+    (3, 4),                            # spine
+    (4, 11), (11, 12), (12, 13),      # left hind limb
+    (4, 14), (14, 15), (15, 16),      # right hind limb
+]
+
 
 class PoseRenderer:
     _type: str
@@ -134,6 +162,10 @@ class PoseRenderer:
             self._render_mp_pose_overlay(rgb_image, keypoint_data)
         elif self._type.startswith('openpose'):
             self._render_openpose_overlay(self._type, rgb_image, keypoint_data)
+        elif self._type == 'rtmpose_ap10k':
+            self._render_ap10k_overlay(rgb_image, keypoint_data)
+        elif self._type.startswith('rtmpose'):
+            self._render_rtmpose_overlay(rgb_image, keypoint_data)
 
     def _render_mp_pose_overlay(self, rgb_image, keypoint_data):
         for i in range(len(keypoint_data)):
@@ -330,4 +362,48 @@ class PoseRenderer:
                 pointA = tuple(map(int, right_hand_keypoints[partA]))
                 pointB = tuple(map(int, right_hand_keypoints[partB]))
                 cv2.line(rgb_image, pointA, pointB, (0, 0, 255), 2)
+
+    def _render_rtmpose_overlay(self, rgb_image, keypoint_data):
+        pose_keypoints = keypoint_data.get('pose_keypoints') if isinstance(keypoint_data, dict) else None
+        if pose_keypoints is None:
+            return
+
+        for kp in pose_keypoints:
+            if kp is None or (kp[0] < 1 and kp[1] < 1):
+                continue
+            point = (int(kp[0]), int(kp[1]))
+            cv2.circle(rgb_image, point, 4, (0, 255, 0), -1)
+
+        for partA, partB in COCO17_PAIRS:
+            if partA >= len(pose_keypoints) or partB >= len(pose_keypoints):
+                continue
+            kpA = pose_keypoints[partA]
+            kpB = pose_keypoints[partB]
+            if kpA is None or kpB is None:
+                continue
+            if kpA[0] < 1 and kpA[1] < 1 or kpB[0] < 1 and kpB[1] < 1:
+                continue
+            cv2.line(rgb_image, (int(kpA[0]), int(kpA[1])), (int(kpB[0]), int(kpB[1])), (0, 255, 0), 2)
+
+    def _render_ap10k_overlay(self, rgb_image, keypoint_data):
+        pose_keypoints = keypoint_data.get('pose_keypoints') if isinstance(keypoint_data, dict) else None
+        if pose_keypoints is None:
+            return
+
+        for kp in pose_keypoints:
+            if kp is None or (kp[0] < 1 and kp[1] < 1):
+                continue
+            point = (int(kp[0]), int(kp[1]))
+            cv2.circle(rgb_image, point, 4, (0, 255, 128), -1)
+
+        for partA, partB in AP10K_PAIRS:
+            if partA >= len(pose_keypoints) or partB >= len(pose_keypoints):
+                continue
+            kpA = pose_keypoints[partA]
+            kpB = pose_keypoints[partB]
+            if kpA is None or kpB is None:
+                continue
+            if kpA[0] < 1 and kpA[1] < 1 or kpB[0] < 1 and kpB[1] < 1:
+                continue
+            cv2.line(rgb_image, (int(kpA[0]), int(kpA[1])), (int(kpB[0]), int(kpB[1])), (0, 255, 128), 2)
 

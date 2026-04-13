@@ -8,6 +8,7 @@ import time
 from typing import Callable
 from communication.sam2_client import Sam2Client
 from communication.openpose_client import OpenposeClient
+from communication.rtmpose_client import RtmposeClient
 from masking.mask_renderer import MaskRenderer
 from masking.pose_renderer import PoseRenderer
 from masking.media_pipe_landmarker import MediaPipeLandmarker
@@ -20,6 +21,7 @@ APPLY_CLAHE = False
 class Sam2PoseMasker:
     _sam2_client: Sam2Client
     _openpose_client: OpenposeClient
+    _rtmpose_client: RtmposeClient
     _input_path: str
     _output_path: str
     _sam2_masks_path: str
@@ -32,6 +34,7 @@ class Sam2PoseMasker:
             self,
             sam2_client: Sam2Client,
             openpose_client: OpenposeClient,
+            rtmpose_client: RtmposeClient,
             input_path: str,
             output_path: str,
             sam2_masks_path: str,
@@ -40,6 +43,7 @@ class Sam2PoseMasker:
     ):
         self._sam2_client = sam2_client
         self._openpose_client = openpose_client
+        self._rtmpose_client = rtmpose_client
         self._input_path = input_path
         self._output_path = output_path
         self._sam2_masks_path = sam2_masks_path
@@ -54,7 +58,8 @@ class Sam2PoseMasker:
 
         content = self._read_video_content()
         self._progress_callback(5)
-        raw_mask_content = self._sam2_client.segment_video(video_masking_data['posePrompts'], content)
+        model_variant = video_masking_data.get('samModel', 'sam2.1_hiera_small')
+        raw_mask_content = self._sam2_client.segment_video(video_masking_data['posePrompts'], content, model_variant)
         del content
         self._progress_callback(30)
 
@@ -420,12 +425,25 @@ class Sam2PoseMasker:
                     data = self._compute_mp_hand_data(sub_video_path)
                 elif video_masking_data['overlayStrategies'][obj_id - 1].startswith('openpose'):
                     data = self._compute_openpose_pose_data(video_masking_data['overlayStrategies'][obj_id - 1], content)
+                elif video_masking_data['overlayStrategies'][obj_id - 1].startswith('rtmpose'):
+                    data = self._compute_rtmpose_pose_data(video_masking_data['overlayStrategies'][obj_id - 1], content)
                 else:
                     raise Exception(f'Unknown overlay strategy, got {video_masking_data["overlayStrategies"][obj_id - 1]}')
 
                 pose_data_dict[obj_id][start_frame:start_frame + len(data)] = data
 
         return pose_data_dict
+
+    def _compute_rtmpose_pose_data(self, overlay_strategy, content):
+        model_map = {
+            'rtmpose_s': 'rtmpose-s_8xb256-420e_coco-256x192',
+            'rtmpose_m': 'rtmpose-m_8xb256-420e_coco-256x192',
+            'rtmpose_l': 'rtmpose-l_8xb256-420e_coco-256x192',
+            'rtmpose_ap10k': 'td-hm_hrnet-w32_8xb64-210e_ap10k-256x256',
+        }
+        model = model_map.get(overlay_strategy, 'rtmpose-m_8xb256-420e_coco-256x192')
+        options = {'model': model}
+        return self._rtmpose_client.estimate_pose_on_video(content, options)
 
     def _compute_openpose_pose_data(self, overlay_strategy, content):
         options = {
