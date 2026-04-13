@@ -209,12 +209,13 @@ const Api = {
 
         return result.data.pose_prompts;
     },
-    fetchPosePromptSegmentation: async (videoId: string, frameIndex: number, posePrompts: [number, number, number][][]): Promise<any> => {
+    fetchPosePromptSegmentation: async (videoId: string, frameIndex: number, posePrompts: [number, number, number][][], modelVariant: string = 'sam2.1_hiera_small'): Promise<any> => {
         const result = await sendApiRequest({
             url: `prompts/${videoId}/frames/${frameIndex}/sam2`,
             method: 'post',
             data: {
                 pose_prompts: posePrompts,
+                model_variant: modelVariant,
             },
             responseType: 'blob',
         });

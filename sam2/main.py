@@ -9,7 +9,7 @@ import gc
 import time
 
 from fastapi import FastAPI, APIRouter, File, Form, UploadFile, HTTPException, Response
-from src.segmentation import perform_sam2_segmentation
+from src.segmentation import perform_sam2_segmentation, MODEL_CONFIGS
 
 app = FastAPI()
 
@@ -32,8 +32,12 @@ colors = [
 @router.post("/segment-image")
 async def segment_image(
     pose_prompts = Form(...),
-    image: UploadFile = File(...)
+    image: UploadFile = File(...),
+    model_variant: str = Form("sam2.1_hiera_small"),
 ):
+    if model_variant not in MODEL_CONFIGS:
+        raise HTTPException(status_code=400, detail=f"Unknown model_variant '{model_variant}'. Valid options: {list(MODEL_CONFIGS.keys())}")
+
     image_content = await image.read()
 
     pose_prompts = json.loads(pose_prompts)
@@ -47,7 +51,7 @@ async def segment_image(
             f.write(image_content)
 
         video_pose_prompts = { 0: pose_prompts }
-        masks = perform_sam2_segmentation(temp_dir, video_pose_prompts)[0]
+        masks = perform_sam2_segmentation(temp_dir, video_pose_prompts, model_variant)[0]
 
         output_image = cv2.imread(frame_file_path)
         for object_id, mask in masks.items():
@@ -71,8 +75,12 @@ async def segment_image(
 @router.post("/segment-video")
 async def segment_video(
     pose_prompts = Form(...),
-    video: UploadFile = File(...)
+    video: UploadFile = File(...),
+    model_variant: str = Form("sam2.1_hiera_small"),
 ):
+    if model_variant not in MODEL_CONFIGS:
+        raise HTTPException(status_code=400, detail=f"Unknown model_variant '{model_variant}'. Valid options: {list(MODEL_CONFIGS.keys())}")
+
     try:
         video_content = await video.read()
         pose_prompts = json.loads(pose_prompts)
@@ -83,7 +91,7 @@ async def segment_video(
         file.write(video_content)
         file.close()
 
-        masks = perform_sam2_segmentation(video_path, pose_prompts)
+        masks = perform_sam2_segmentation(video_path, pose_prompts, model_variant)
 
         flattened_masks = {
             f"frame{frame}_mask{mask}": mask_array

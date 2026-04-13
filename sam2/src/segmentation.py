@@ -5,22 +5,47 @@ import os
 sys.path.append('/workspace/segment-anything-2')
 from sam2.build_sam import build_sam2_video_predictor
 
-predictor = None
+predictors = {}
 
 SAM2_OFFLOAD_VIDEO_TO_CPU = os.environ["SAM2_OFFLOAD_VIDEO_TO_CPU"] == "true"
 SAM2_OFFLOAD_STATE_TO_CPU = os.environ["SAM2_OFFLOAD_STATE_TO_CPU"] == "true"
 
+MODEL_CONFIGS = {
+    "sam2.1_hiera_tiny": {
+        "checkpoint": "/workspace/sam2/checkpoints/sam2.1_hiera_tiny.pt",
+        "config": "configs/sam2.1/sam2.1_hiera_t.yaml",
+    },
+    "sam2.1_hiera_small": {
+        "checkpoint": "/workspace/sam2/checkpoints/sam2.1_hiera_small.pt",
+        "config": "configs/sam2.1/sam2.1_hiera_s.yaml",
+    },
+    "sam2.1_hiera_base_plus": {
+        "checkpoint": "/workspace/sam2/checkpoints/sam2.1_hiera_base_plus.pt",
+        "config": "configs/sam2.1/sam2.1_hiera_b+.yaml",
+    },
+    "sam2.1_hiera_large": {
+        "checkpoint": "/workspace/sam2/checkpoints/sam2.1_hiera_large.pt",
+        "config": "configs/sam2.1/sam2.1_hiera_l.yaml",
+    },
+}
 
-def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
-    global predictor
+DEFAULT_MODEL = "sam2.1_hiera_small"
 
-    if predictor is None:
+
+def perform_sam2_segmentation(frame_dir_path: str, pose_prompts, model_variant: str = DEFAULT_MODEL):
+    global predictors
+
+    if model_variant not in MODEL_CONFIGS:
+        raise ValueError(f"Unknown model variant '{model_variant}'. Choose from: {list(MODEL_CONFIGS.keys())}")
+
+    if model_variant not in predictors:
         configure_torch()
         torch.cuda.empty_cache()
 
-        sam2_checkpoint = "/workspace/sam2/checkpoints/sam2.1_hiera_small.pt"
-        model_cfg = "configs/sam2.1/sam2.1_hiera_s.yaml"
-        predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint)
+        cfg = MODEL_CONFIGS[model_variant]
+        predictors[model_variant] = build_sam2_video_predictor(cfg["config"], cfg["checkpoint"])
+
+    predictor = predictors[model_variant]
 
     print(f"Initializing SAM2 predictor with flags: "
           f"offload_video_to_cpu={SAM2_OFFLOAD_VIDEO_TO_CPU}, "

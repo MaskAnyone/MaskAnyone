@@ -30,7 +30,11 @@ RUN git clone https://github.com/facebookresearch/sam2.git && \
     #sed -i 's/self.thread.start()/# self.thread.start()/g' ./sam2/utils/misc.py && \
     SAM2_BUILD_ALLOW_ERRORS=0 pip install -e .
 
-RUN wget -P /workspace/sam2/checkpoints https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt
+RUN wget -P /workspace/sam2/checkpoints \
+    https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_tiny.pt \
+    https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt \
+    https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_base_plus.pt \
+    https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt
 
 # === Runtime Stage (Slimmer image) ===
 FROM pytorch/pytorch:2.7.1-cuda12.6-cudnn9-runtime

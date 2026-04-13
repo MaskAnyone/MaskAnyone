@@ -209,15 +209,15 @@ const JobDurationCell = ({ job, videoInfo }: { job: Job; videoInfo: VideoInfo | 
 
     if (job.status === 'open') {
         return (
-            <Box component="div" sx={{ minWidth: 100 }}>
-                <Typography variant="body2" color="text.secondary">
-                    Queued
-                </Typography>
-                {initialEstimate && (
-                    <Typography variant="caption" color="text.secondary">
-                        Est. ~{formatDuration(initialEstimate)}
-                    </Typography>
-                )}
+            <Box component="div" sx={{ width: 100 }}>
+                <Typography variant="body2" color="text.secondary">—</Typography>
+                <Box component="div" sx={{ minHeight: 18 }}>
+                    {initialEstimate && (
+                        <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                            ~{formatDuration(initialEstimate)}
+                        </Typography>
+                    )}
+                </Box>
             </Box>
         );
     }
@@ -236,30 +236,24 @@ const JobDurationCell = ({ job, videoInfo }: { job: Job; videoInfo: VideoInfo | 
     const accuracyLabel = getAccuracyLabel();
 
     return (
-        <Box component="div" sx={{ minWidth: 100 }}>
+        <Box component="div" sx={{ width: 100 }}>
             {elapsed !== null && (
-                <Typography variant="body2" sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '0.8125rem' }}>
+                <Typography variant="body2" sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '0.8125rem', whiteSpace: 'nowrap' }}>
                     {formatDuration(elapsed)}
                 </Typography>
             )}
-            {/* Fixed height for status line to prevent layout shift */}
             <Box component="div" sx={{ minHeight: 18 }}>
                 {remaining !== null && job.status === 'running' && (
                     <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
-                        ~{formatDuration(remaining)} left
+                        ~{formatDuration(remaining)}
                     </Typography>
                 )}
                 {job.status === 'finished' && job.startedAt && job.finishedAt && (
-                    <Tooltip title={initialEstimate ? `Initial estimate: ~${formatDuration(initialEstimate)}` : ''}>
-                        <Typography variant="caption" color={accuracyLabel ? 'success.main' : 'text.secondary'}>
-                            {accuracyLabel ?? 'Completed'}
+                    <Tooltip title={initialEstimate ? `Est. was ~${formatDuration(initialEstimate)}` : ''}>
+                        <Typography variant="caption" color={accuracyLabel ? 'success.main' : 'text.secondary'} sx={{ whiteSpace: 'nowrap' }}>
+                            {accuracyLabel ?? 'Done'}
                         </Typography>
                     </Tooltip>
-                )}
-                {job.status === 'failed' && (
-                    <Typography variant="caption" color="error">
-                        Failed
-                    </Typography>
                 )}
             </Box>
         </Box>
@@ -271,26 +265,27 @@ const pulse = keyframes`
     50% { opacity: 0.5; }
 `;
 
-const getProgressPhase = (progress: number, status: string): { label: string; color: string } => {
-    if (status === 'finished') return { label: 'Done', color: 'success.main' };
-    if (status === 'failed') return { label: 'Failed', color: 'error.main' };
-    if (status === 'open') return { label: 'Queued', color: 'text.secondary' };
-    if (progress <= 5) return { label: 'Loading', color: 'info.main' };
-    if (progress <= 30) return { label: 'Segmenting', color: 'warning.main' };
-    if (progress <= 45) return { label: 'Processing', color: 'info.main' };
-    if (progress <= 55) return { label: 'Pose estimation', color: 'info.main' };
-    return { label: 'Rendering', color: 'success.main' };
+const getProgressPhase = (progress: number, status: string): { label: string; color: string; detail: string } => {
+    if (status === 'finished') return { label: 'Done', color: 'success.main', detail: 'Processing complete' };
+    if (status === 'failed') return { label: 'Failed', color: 'error.main', detail: 'Job failed — check worker logs' };
+    if (status === 'open') return { label: 'Queued', color: 'text.secondary', detail: 'Waiting for a worker to pick up the job' };
+    if (progress <= 5) return { label: 'Reading', color: 'info.main', detail: 'Reading video into memory' };
+    if (progress <= 30) return { label: 'SAM2', color: 'warning.main', detail: 'SAM2 propagating masks frame-by-frame — longest step, depends on video length' };
+    if (progress <= 35) return { label: 'Decoding', color: 'info.main', detail: 'Decoding SAM2 mask output' };
+    if (progress <= 45) return { label: 'Sub-videos', color: 'info.main', detail: 'Cropping per-object sub-videos for pose estimation' };
+    if (progress <= 55) return { label: 'Pose est.', color: 'info.main', detail: 'Running pose estimation on each tracked object (RTMPose / OpenPose / MediaPipe)' };
+    return { label: 'Rendering', color: 'success.main', detail: `Compositing frame ${progress - 55}/44 — applying masks and pose overlays` };
 };
 
 const JobProgressCell = ({ job }: { job: Job }) => {
     if (job.status === 'open') {
         return (
             <Tooltip title="Waiting for available worker">
-                <Box component="div" sx={{ minWidth: 160 }}>
+                <Box component="div" sx={{ width: 180 }}>
                     <LinearProgress variant="indeterminate" sx={{ height: 6, borderRadius: 3 }} />
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                        Queued
-                    </Typography>
+                    <Box component="div" sx={{ minHeight: 18, mt: 0.5 }}>
+                        <Typography variant="caption" color="text.secondary">Queued</Typography>
+                    </Box>
                 </Box>
             </Tooltip>
         );
@@ -300,7 +295,7 @@ const JobProgressCell = ({ job }: { job: Job }) => {
     const isSegmenting = job.status === 'running' && job.progress > 5 && job.progress <= 30;
 
     return (
-        <Box component="div" sx={{ minWidth: 160 }}>
+        <Box component="div" sx={{ width: 180 }}>
             <Box component="div" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <LinearProgress
                     variant="determinate"
@@ -318,26 +313,33 @@ const JobProgressCell = ({ job }: { job: Job }) => {
                 />
                 <Typography
                     variant="body2"
-                    sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '0.8125rem', minWidth: 40, textAlign: 'right' }}
+                    sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '0.8125rem', width: 38, textAlign: 'right', flexShrink: 0 }}
                 >
                     {Math.round(job.progress)}%
                 </Typography>
             </Box>
-            {/* Fixed height container to prevent layout shift when phase changes */}
-            <Box component="div" sx={{ minHeight: 18 }}>
+            {/* Fixed height + width to prevent any layout shift when phase label changes */}
+            <Box component="div" sx={{ minHeight: 18, mt: 0.5 }}>
                 {job.status === 'running' && (
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            mt: 0.5,
-                            display: 'block',
-                            color: phase.color,
-                            fontFamily: '"IBM Plex Mono", monospace',
-                            fontSize: '0.6875rem',
-                            animation: isSegmenting ? `${pulse} 2s ease-in-out infinite` : 'none',
-                        }}
-                    >
-                        {phase.label}...
+                    <Tooltip title={phase.detail} placement="bottom-start">
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                display: 'block',
+                                color: phase.color,
+                                fontFamily: '"IBM Plex Mono", monospace',
+                                fontSize: '0.6875rem',
+                                animation: isSegmenting ? `${pulse} 2s ease-in-out infinite` : 'none',
+                                cursor: 'help',
+                            }}
+                        >
+                            {phase.label}…
+                        </Typography>
+                    </Tooltip>
+                )}
+                {(job.status === 'finished' || job.status === 'failed') && (
+                    <Typography variant="caption" sx={{ display: 'block', color: phase.color, fontFamily: '"IBM Plex Mono", monospace', fontSize: '0.6875rem' }}>
+                        {phase.label}
                     </Typography>
                 )}
             </Box>

@@ -8,6 +8,7 @@ import time
 from typing import Callable
 from communication.sam2_client import Sam2Client
 from communication.openpose_client import OpenposeClient
+from communication.rtmpose_client import RtmposeClient
 from masking.mask_renderer import MaskRenderer
 from masking.pose_renderer import PoseRenderer
 from masking.media_pipe_landmarker import MediaPipeLandmarker
@@ -20,6 +21,7 @@ APPLY_CLAHE = False
 class Sam2PoseMasker:
     _sam2_client: Sam2Client
     _openpose_client: OpenposeClient
+    _rtmpose_client: RtmposeClient
     _input_path: str
     _output_path: str
     _sam2_masks_path: str
@@ -32,6 +34,7 @@ class Sam2PoseMasker:
             self,
             sam2_client: Sam2Client,
             openpose_client: OpenposeClient,
+            rtmpose_client: RtmposeClient,
             input_path: str,
             output_path: str,
             sam2_masks_path: str,
@@ -40,6 +43,7 @@ class Sam2PoseMasker:
     ):
         self._sam2_client = sam2_client
         self._openpose_client = openpose_client
+        self._rtmpose_client = rtmpose_client
         self._input_path = input_path
         self._output_path = output_path
         self._sam2_masks_path = sam2_masks_path
@@ -54,7 +58,9 @@ class Sam2PoseMasker:
 
         content = self._read_video_content()
         self._progress_callback(5)
-        raw_mask_content = self._sam2_client.segment_video(video_masking_data['posePrompts'], content)
+        model_variant = video_masking_data.get('samModel', 'sam2.1_hiera_small')
+        self._progress_callback(10)  # SAM2 running — stays here until segmentation completes
+        raw_mask_content = self._sam2_client.segment_video(video_masking_data['posePrompts'], content, model_variant)
         del content
         self._progress_callback(30)
 
@@ -66,25 +72,30 @@ class Sam2PoseMasker:
         del raw_mask_content
         self._progress_callback(35)
 
-        print("Elapsed time (sam2):", time.time() - start)
+        t_sam2 = time.time()
+        print(f"[timing] sam2_segmentation: {t_sam2 - start:.1f}s")
 
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
         total_frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
+        print(f"[timing] video: {total_frames} frames at {sample_rate:.1f}fps")
 
         bounding_boxes = self._calculate_full_object_bounding_boxes(masks)
         estimation_input_bounding_boxes = self._calculate_estimation_input_bounding_boxes(bounding_boxes, frame_width, frame_height)
         self._progress_callback(38)
 
         subvideo_output_dir = '/app/subvideos'
-        sub_video_paths = self._create_sub_videos(video_capture, estimation_input_bounding_boxes, masks, subvideo_output_dir)
-        video_capture.release()
+        t_subvideo_start = time.time()
+        sub_videos = self._create_sub_videos(video_capture, estimation_input_bounding_boxes, masks, subvideo_output_dir)
+        print(f"[timing] sub_video_creation: {time.time() - t_subvideo_start:.1f}s")
         self._progress_callback(45)
 
-        pose_data_dict = self._compute_pose_data(video_masking_data, sub_video_paths, total_frames)
+        t_pose_start = time.time()
+        pose_data_dict = self._compute_pose_data(video_masking_data, sub_videos, total_frames)
         self._pose_postprocessor.postprocess(pose_data_dict, video_masking_data['overlayStrategies'], total_frames, sample_rate, estimation_input_bounding_boxes)
+        print(f"[timing] pose_estimation: {time.time() - t_pose_start:.1f}s")
         self._progress_callback(55)
 
-        shutil.rmtree(subvideo_output_dir)
+        shutil.rmtree(subvideo_output_dir, ignore_errors=True)
 
 
 
@@ -157,7 +168,10 @@ class Sam2PoseMasker:
         video_capture.release()
         video_writer.release()
 
-        print("Elapsed time (total):", time.time() - start)
+        t_total = time.time() - start
+        t_render = t_total - (t_pose_start - start) - (t_sam2 - start)
+        print(f"[timing] render: {t_render:.1f}s")
+        print(f"[timing] total: {t_total:.1f}s")
 
     def _open_video(self):
         video_capture = cv2.VideoCapture(self._input_path)
@@ -290,37 +304,32 @@ class Sam2PoseMasker:
         return iou
 
     def _create_sub_videos(self, video_capture, estimation_input_bounding_boxes, masks, subvideo_output_dir):
-        sub_video_paths = []
+        """Returns list of (obj_id, start_frame, path, content_bytes) tuples.
+
+        content_bytes is the encoded mp4 in memory — no disk read needed for RTMPose/OpenPose.
+        path is written to disk only so MediaPipe (which requires a file path) can read it.
+        """
+        sub_videos = []
 
         fps = video_capture.get(cv2.CAP_PROP_FPS)
         total_frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
 
-        # Iterate through each object in estimation_input_bounding_boxes
         for obj_id, bbox_dict in estimation_input_bounding_boxes.items():
             sorted_frames = sorted(bbox_dict.keys())
 
             for i, start_frame in enumerate(sorted_frames):
-                bbox = bbox_dict[start_frame]  # bbox in (xmin, ymin, xmax, ymax) format
+                bbox = bbox_dict[start_frame]
                 width = bbox[2] - bbox[0]
                 height = bbox[3] - bbox[1]
 
-                # Determine the end frame for this sub-video
-                if i < len(sorted_frames) - 1:
-                    end_frame = sorted_frames[i + 1] - 1
-                else:
-                    end_frame = total_frames - 1
+                end_frame = sorted_frames[i + 1] - 1 if i < len(sorted_frames) - 1 else total_frames - 1
 
-                # Define the output video filename
                 os.makedirs(subvideo_output_dir, exist_ok=True)
-
                 output_filename = f"{subvideo_output_dir}/object_{obj_id}_frame_{start_frame}.mp4"
-                sub_video_paths.append(output_filename)
 
                 out = cv2.VideoWriter(output_filename, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
 
-                # Seek to the start_frame
                 video_capture.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
-
                 clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
 
                 for frame_num in range(start_frame, end_frame + 1):
@@ -338,15 +347,19 @@ class Sam2PoseMasker:
                         merged_frame = cv2.merge((l_channel, a_channel, b_channel))
                         cropped_frame = cv2.cvtColor(merged_frame, cv2.COLOR_LAB2BGR)
 
-                    # Write the cropped frame to the output video
                     out.write(cropped_frame)
 
-                # Release the writer for this sub-video
                 out.release()
 
-        # Release the video capture object
+                # Read back into memory once — callers that need bytes (RTMPose, OpenPose) use
+                # content directly; MediaPipe uses the path. No second disk read needed.
+                with open(output_filename, 'rb') as f:
+                    content = f.read()
+
+                sub_videos.append((obj_id, start_frame, output_filename, content))
+
         video_capture.release()
-        return sub_video_paths
+        return sub_videos
 
     def _render_bounding_boxes(self, output_frame, bounding_boxes, current_frame_idx, color):
         for object_id, bboxes in bounding_boxes.items():
@@ -398,34 +411,46 @@ class Sam2PoseMasker:
             mask = masks[frame_idx][object_id][0]
             mask_renderers[object_id].apply_to_image(image, mask, object_id)
 
-    def _compute_pose_data(self, video_masking_data, sub_video_paths, frame_count):
+    def _compute_pose_data(self, video_masking_data, sub_videos, frame_count):
         pose_data_dict = {}
 
-        for sub_video_path in sub_video_paths:
-            if os.path.exists(sub_video_path):
-                obj_id, start_frame, content = self._read_sub_video(sub_video_path)
+        for obj_id, start_frame, path, content in sub_videos:
+            strategy = video_masking_data['overlayStrategies'][obj_id - 1]
 
-                if video_masking_data['overlayStrategies'][obj_id - 1] == 'none':
-                    pose_data_dict[obj_id] = [None] * frame_count
-                    continue
+            if strategy == 'none':
+                pose_data_dict[obj_id] = [None] * frame_count
+                continue
 
-                if obj_id not in pose_data_dict:
-                    pose_data_dict[obj_id] = [None] * frame_count
+            if obj_id not in pose_data_dict:
+                pose_data_dict[obj_id] = [None] * frame_count
 
-                if video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_pose':
-                    data = self._compute_mp_pose_data(sub_video_path)
-                elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_face':
-                    data = self._compute_mp_face_data(sub_video_path)
-                elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mp_hand':
-                    data = self._compute_mp_hand_data(sub_video_path)
-                elif video_masking_data['overlayStrategies'][obj_id - 1].startswith('openpose'):
-                    data = self._compute_openpose_pose_data(video_masking_data['overlayStrategies'][obj_id - 1], content)
-                else:
-                    raise Exception(f'Unknown overlay strategy, got {video_masking_data["overlayStrategies"][obj_id - 1]}')
+            if strategy == 'mp_pose':
+                data = self._compute_mp_pose_data(path)
+            elif strategy == 'mp_face':
+                data = self._compute_mp_face_data(path)
+            elif strategy == 'mp_hand':
+                data = self._compute_mp_hand_data(path)
+            elif strategy.startswith('openpose'):
+                data = self._compute_openpose_pose_data(strategy, content)
+            elif strategy.startswith('rtmpose'):
+                data = self._compute_rtmpose_pose_data(strategy, content)
+            else:
+                raise Exception(f'Unknown overlay strategy, got {strategy}')
 
-                pose_data_dict[obj_id][start_frame:start_frame + len(data)] = data
+            pose_data_dict[obj_id][start_frame:start_frame + len(data)] = data
 
         return pose_data_dict
+
+    def _compute_rtmpose_pose_data(self, overlay_strategy, content):
+        model_map = {
+            'rtmpose_s': 'rtmpose-s_8xb256-420e_coco-256x192',
+            'rtmpose_m': 'rtmpose-m_8xb256-420e_coco-256x192',
+            'rtmpose_l': 'rtmpose-l_8xb256-420e_coco-256x192',
+            'rtmpose_ap10k': 'td-hm_hrnet-w32_8xb64-210e_ap10k-256x256',
+        }
+        model = model_map.get(overlay_strategy, 'rtmpose-m_8xb256-420e_coco-256x192')
+        options = {'model': model}
+        return self._rtmpose_client.estimate_pose_on_video(content, options)
 
     def _compute_openpose_pose_data(self, overlay_strategy, content):
         options = {
@@ -452,13 +477,3 @@ class Sam2PoseMasker:
     def _compute_mp_hand_data(self, sub_video_path):
         return self._media_pipe_landmarker.compute_hand_data(sub_video_path)
 
-    def _read_sub_video(self, sub_video_path):
-        basename = os.path.basename(sub_video_path)
-        parts = basename.split('_')
-        obj_id = int(parts[1])
-        start_frame = int(parts[3].split('.')[0])
-
-        # Read the sub-video content
-        with open(sub_video_path, 'rb') as video_file:
-            content = video_file.read()
-            return obj_id, start_frame, content

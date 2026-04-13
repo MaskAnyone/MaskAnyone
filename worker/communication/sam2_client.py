@@ -10,13 +10,14 @@ class Sam2Client:
     def __init__(self, base_path: str):
         self._base_path = base_path
 
-    def segment_video(self, pose_prompts, video_content):
+    def segment_video(self, pose_prompts, video_content, model_variant: str = "sam2.1_hiera_small"):
         files = {
             'video': ('video.mp4', video_content, 'video/mp4'),
         }
 
         data = {
             'pose_prompts': json.dumps(pose_prompts),
+            'model_variant': model_variant,
         }
 
         response = requests.post(
@@ -25,6 +26,7 @@ class Sam2Client:
             data=data,
         )
 
+        response.raise_for_status()
         return response.content
 
     def decode_mask_npz_content(self, content):

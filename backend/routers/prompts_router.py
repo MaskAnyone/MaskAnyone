@@ -1,19 +1,26 @@
 import json
-import logging
 import os
+import re
 
 import cv2
 import numpy as np
 import requests
-from fastapi import APIRouter, Request, Depends, Response, HTTPException
+from fastapi import APIRouter, Depends, Response, HTTPException
 from pydantic import BaseModel
 
 from auth.jwt_bearer import JWTBearer
 from config import VIDEOS_BASE_PATH
-from utils.path_validation import validate_resource_id
 from ultralytics import YOLO
 
-logger = logging.getLogger(__name__)
+_UUID_PATTERN = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
+
+def validate_resource_id(resource_id: str) -> str:
+    if not resource_id or not _UUID_PATTERN.match(resource_id):
+        raise HTTPException(status_code=400, detail=f"Invalid resource ID: {resource_id}")
+    return resource_id
 
 router = APIRouter(
     prefix="/prompts",
@@ -68,6 +75,7 @@ def fetch_pose_prompts(video_id: str, frame_index: int, token_payload: dict = De
 
 class Sam2Params(BaseModel):
     pose_prompts: list[list[list[int]]]
+    model_variant: str = "sam2.1_hiera_small"
 
 
 @router.post("/{video_id}/frames/{frame_index}/sam2")
@@ -92,9 +100,8 @@ def segment_frame_with_sam2(sam2_params: Sam2Params, video_id: str, frame_index:
 
     data = {
         'pose_prompts': json.dumps(sam2_params.pose_prompts),
+        'model_variant': sam2_params.model_variant,
     }
-
-    logger.debug(f"SAM2 segmentation request for video {video_id}, frame {frame_index}")
 
     response = requests.post(
         'http://sam2:8000/sam2/segment-image',
@@ -102,6 +109,7 @@ def segment_frame_with_sam2(sam2_params: Sam2Params, video_id: str, frame_index:
         data=data,
     )
 
+    response.raise_for_status()
     return Response(content=response.content, media_type="image/jpeg")
 
 
