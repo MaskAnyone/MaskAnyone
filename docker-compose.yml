@@ -19,6 +19,13 @@ services:
       - ./data/backend:/var/lib/maskanyone/data
     depends_on:
       - postgres
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${MASKANYONE_GPU_ID:-0}"]
+              capabilities: [ gpu ]
 
   postgres:
     build:
