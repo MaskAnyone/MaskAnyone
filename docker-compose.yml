@@ -5,6 +5,9 @@ services:
     ports:
       - "443:443"
     restart: "on-failure"
+    depends_on:
+      - python
+      - yarn
 
   python:
     build:

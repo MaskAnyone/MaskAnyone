@@ -183,7 +183,7 @@ for i in $(seq 1 30); do
 done
 
 info "Starting all services..."
-UP_OUT=$(docker compose $COMPOSE_PROFILES up -d --no-build 2>&1) || true
+UP_OUT=$(docker compose $COMPOSE_PROFILES up -d --no-build --force-recreate nginx 2>&1) || true
 if echo "$UP_OUT" | grep -qi "error\|failed"; then
     warn "Some services had issues starting:"
     echo "$UP_OUT" | grep -i "error\|failed" | while read -r line; do warn "  $line"; done
