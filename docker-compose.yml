@@ -130,6 +130,8 @@ services:
     build:
       context: ./docker/rtmpose
     command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+    env_file:
+      - ./app.env
     volumes:
       - ./rtmpose:/app
       - ./data/rtmpose_model_cache:/root/.cache
