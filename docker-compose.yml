@@ -60,6 +60,7 @@ services:
   keycloak:
     build:
       context: ./docker/keycloak
+    profiles: [auth]
     environment:
       KEYCLOAK_ADMIN: dev
       KEYCLOAK_ADMIN_PASSWORD: dev

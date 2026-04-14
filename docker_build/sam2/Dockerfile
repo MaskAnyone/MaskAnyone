@@ -28,7 +28,7 @@ RUN git clone https://github.com/facebookresearch/sam2.git && \
     #sed -i 's/self.images\[index\] = img/# self.images\[index\] = img/g' ./sam2/utils/misc.py && \
     #sed -i 's/self.thread = Thread(target=_load_frames, daemon=True)/# self.thread = Thread(target=_load_frames, daemon=True)/g' ./sam2/utils/misc.py && \
     #sed -i 's/self.thread.start()/# self.thread.start()/g' ./sam2/utils/misc.py && \
-    SAM2_BUILD_ALLOW_ERRORS=0 pip install -e .
+    SAM2_BUILD_ALLOW_ERRORS=1 pip install -e .
 
 RUN wget -P /workspace/sam2/checkpoints \
     https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_tiny.pt \

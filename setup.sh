@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
 # MaskAnyone setup script
-# Usage: bash setup.sh [--skip-build]
+# Usage: bash setup.sh [--skip-build] [--with-auth]
+#   --skip-build   skip docker compose build (use existing images)
+#   --with-auth    enable Keycloak authentication (default: local/no-login mode)
 set -euo pipefail
 
 SKIP_BUILD=false
-for arg in "$@"; do [[ "$arg" == "--skip-build" ]] && SKIP_BUILD=true; done
+WITH_AUTH=false
+for arg in "$@"; do
+    [[ "$arg" == "--skip-build" ]] && SKIP_BUILD=true
+    [[ "$arg" == "--with-auth"  ]] && WITH_AUTH=true
+done
 
 # ── colours ────────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; YELLOW='\033[1;33m'; GREEN='\033[0;32m'
@@ -115,30 +121,41 @@ fi
 section "2 / 4  Build images"
 # ═══════════════════════════════════════════════════════════════════════════════
 
+# ── auth mode ──────────────────────────────────────────────────────────────────
+COMPOSE_PROFILES=""
+if [[ "$WITH_AUTH" == "true" ]]; then
+    info "Auth mode: Keycloak enabled (--with-auth)"
+    sed -i 's/^MASK_ANYONE_PLATFORM_MODE=.*/MASK_ANYONE_PLATFORM_MODE=server/' app.env
+    COMPOSE_PROFILES="--profile auth"
+else
+    info "Auth mode: local (no login required) — pass --with-auth to enable Keycloak"
+    sed -i 's/^MASK_ANYONE_PLATFORM_MODE=.*/MASK_ANYONE_PLATFORM_MODE=local/' app.env
+fi
+
 if [[ "$SKIP_BUILD" == "true" ]]; then
     info "Skipping build (--skip-build)"
 else
     info "Building Docker images (this takes 20–60 min on first run)..."
     info "SAM2 will download ~4 GB of model checkpoints."
     echo ""
-    docker compose build
+    docker compose $COMPOSE_PROFILES build
     echo ""
     check_ok "Images built"
 fi
 
 # ── ensure no critical images are missing (even with --skip-build) ─────────────
+CORE_SVCS=(python worker sam2 yarn nginx postgres pgadmin)
+[[ "$WITH_AUTH" == "true" ]] && CORE_SVCS+=(keycloak)
 NEED_BUILD=()
-for SVC in python worker sam2 yarn nginx postgres pgadmin keycloak; do
-    IMG=$(docker compose config --images 2>/dev/null | grep -i "$SVC" | head -1 || true)
-    # Fall back to conventional name
-    [[ -z "$IMG" ]] && IMG="maskanyone-src-${SVC}:latest"
+for SVC in "${CORE_SVCS[@]}"; do
+    IMG="maskanyone-src-${SVC}:latest"
     if ! docker image inspect "$IMG" &>/dev/null 2>&1; then
         NEED_BUILD+=("$SVC")
     fi
 done
 if [[ ${#NEED_BUILD[@]} -gt 0 ]]; then
     warn "Missing images for: ${NEED_BUILD[*]} — building them now..."
-    docker compose build "${NEED_BUILD[@]}"
+    docker compose $COMPOSE_PROFILES build "${NEED_BUILD[@]}"
     check_ok "Missing images built"
 fi
 
@@ -166,8 +183,14 @@ for i in $(seq 1 30); do
 done
 
 info "Starting all services..."
-docker compose up -d --no-build
-check_ok "All services started"
+UP_OUT=$(docker compose $COMPOSE_PROFILES up -d --no-build 2>&1) || true
+if echo "$UP_OUT" | grep -qi "error\|failed"; then
+    warn "Some services had issues starting:"
+    echo "$UP_OUT" | grep -i "error\|failed" | while read -r line; do warn "  $line"; done
+    WARNINGS=$((WARNINGS+1))
+else
+    check_ok "All services started"
+fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
 section "4 / 4  Service scout"

@@ -55,6 +55,12 @@ cd MaskAnyone
 bash setup.sh
 ```
 
+This runs in **local mode** (no login required) by default. To enable multi-user authentication via Keycloak:
+
+```bash
+bash setup.sh --with-auth
+```
+
 It will report GPU availability, RAM, disk space, and whether each service (SAM2, RTMPose, OpenPose) came online. On subsequent runs you can skip the build step:
 
 ```bash
