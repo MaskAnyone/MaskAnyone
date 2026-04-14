@@ -198,7 +198,7 @@ section "4 / 4  Service scout"
 
 info "Waiting for backend to be ready..."
 for i in $(seq 1 30); do
-    STATUS=$(curl -sk -o /dev/null -w "%{http_code}" https://localhost/api/platform/mode 2>/dev/null || echo "000")
+    STATUS=$(curl -4sk --max-time 5 -o /dev/null -w "%{http_code}" https://localhost/api/platform/mode 2>/dev/null || echo "000")
     if [[ "$STATUS" == "200" ]]; then
         check_ok "Backend reachable"
         break
@@ -210,7 +210,7 @@ for i in $(seq 1 30); do
 done
 
 # Query /platform/resources
-RESOURCES=$(curl -sk https://localhost/api/platform/resources 2>/dev/null || echo "{}")
+RESOURCES=$(curl -4sk --max-time 10 https://localhost/api/platform/resources 2>/dev/null || echo "{}")
 
 GPU=$(echo "$RESOURCES" | python3 -c "import sys,json; d=json.load(sys.stdin); g=d.get('gpu'); print(f\"{g['name']} ({g['vram_gb']} GB VRAM)\" if g else 'Not detected')" 2>/dev/null || echo "unknown")
 RAM=$(echo "$RESOURCES" | python3 -c "import sys,json; d=json.load(sys.stdin); print(f\"{d.get('ram_total_gb','?')} GB\")" 2>/dev/null || echo "?")
