@@ -80,7 +80,7 @@ const VideoTrimDialog = (props: VideoTrimDialogProps) => {
                 <Box component="div" sx={{ mt: 1 }}>
                     <Box
                         component="video"
-                        src={`${Config.api.baseUrl}/videos/${props.videoId}/stream?token=${KeycloakAuth.getToken()}`}
+                        src={`${Config.api.baseUrl}/videos/${props.videoId}?token=${KeycloakAuth.getToken()}`}
                         controls
                         sx={{ width: '100%', borderRadius: 0, border: 1, borderColor: 'divider' }}
                     />

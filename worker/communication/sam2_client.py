@@ -10,10 +10,28 @@ class Sam2Client:
     def __init__(self, base_path: str):
         self._base_path = base_path
 
-    def segment_video(self, pose_prompts, video_content, model_variant: str = "sam2.1_hiera_small"):
+    def segment_video(
+        self,
+        pose_prompts,
+        video_content,
+        model_variant: str = "sam2.1_hiera_small",
+        initial_masks: dict = None,
+    ):
+        """Call /segment-video.
+
+        initial_masks: optional {obj_id: bool_array} — when provided the masks
+        are serialised as .npz and sent as the `initial_masks` multipart field so
+        the SAM2 service uses mask-prompt continuation instead of point prompts.
+        """
         files = {
             'video': ('video.mp4', video_content, 'video/mp4'),
         }
+
+        if initial_masks is not None:
+            buf = io.BytesIO()
+            np.savez_compressed(buf, **{str(obj_id): arr for obj_id, arr in initial_masks.items()})
+            buf.seek(0)
+            files['initial_masks'] = ('initial_masks.npz', buf.read(), 'application/octet-stream')
 
         data = {
             'pose_prompts': json.dumps(pose_prompts),

@@ -7,6 +7,34 @@ MaskAnyone is a **de-identification toolbox for videos** that allows you to remo
 
 MaskAnyone is a docker-packaged modern web app that is built with React, MaterialUI, FastAPI and PostgreSQL. It is designed to be easily extensible with new algorithms and to be scalable with multiple docker workers. It is also designed to be easily usable by non-technical users.
 
+## What's new on this branch
+
+### Long video support (chunked streaming)
+Videos of any length can now be processed without running out of memory. The masking editor automatically recommends a chunk size based on video duration:
+- < 30 s → single pass (no chunking)
+- 30–120 s → 30 s chunks
+- \> 120 s → 60 s chunks
+
+Each chunk is segmented, posed, and rendered sequentially. Only one chunk's masks are ever held in RAM at once. Boundary masks from the last frame of each chunk are fed as prompts into the next chunk to ensure continuity.
+
+### SAM2 model selection
+Choose between four SAM2 model sizes directly in the masking editor:
+- **Tiny** — fastest, lowest memory
+- **Small** — default, good balance (was the only option before)
+- **Base+** — higher quality
+- **Large** — best quality, most memory
+
+All four model checkpoints are now bundled in the SAM2 Docker image.
+
+### Object detection prompts
+The "Detect Objects" button in the masking editor runs YOLO object detection on the current frame and auto-places prompts — useful for non-person targets.
+
+### Video trim & FPS conversion
+Videos can now be trimmed (with a preview slider) or converted to a different frame rate directly from the video list, without leaving the app.
+
+### RTMPose integration
+RTMPose is now available as a pose overlay strategy alongside MediaPipe and OpenPose.
+
 ## Demo
 
 https://github.com/user-attachments/assets/92dac144-9f15-4665-8d19-5e978d4bf4ba

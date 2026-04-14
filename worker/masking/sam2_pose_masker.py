@@ -1,8 +1,10 @@
 import cv2
+import math
 import numpy as np
 import os
 import shutil
 import json
+import tempfile
 import time
 
 from typing import Callable
@@ -56,20 +58,40 @@ class Sam2PoseMasker:
         start = time.time()
         self._progress_callback(1)
 
-        content = self._read_video_content()
         self._progress_callback(5)
         model_variant = video_masking_data.get('samModel', 'sam2.1_hiera_small')
+        chunk_size_seconds = video_masking_data.get('chunkSizeSeconds', None)
         self._progress_callback(10)  # SAM2 running — stays here until segmentation completes
-        raw_mask_content = self._sam2_client.segment_video(video_masking_data['posePrompts'], content, model_variant)
-        del content
+
+        if chunk_size_seconds is not None:
+            chunk_overlap_seconds = video_masking_data.get('chunkOverlapSeconds', 2)
+            total_frames_tmp, fps_tmp = self._get_video_info()
+            chunk_size_frames = max(1, int(chunk_size_seconds * fps_tmp))
+            overlap_frames = max(0, min(int(chunk_overlap_seconds * fps_tmp), chunk_size_frames - 1))
+            # Streaming: each chunk is processed end-to-end; masks never accumulate in RAM.
+            self._mask_streaming(
+                video_masking_data=video_masking_data,
+                model_variant=model_variant,
+                chunk_size_frames=chunk_size_frames,
+                overlap_frames=overlap_frames,
+                total_frames=total_frames_tmp,
+                fps=fps_tmp,
+                start_time=start,
+            )
+            return  # streaming handles rendering and all downstream steps
+        else:
+            content = self._read_video_content()
+            raw_mask_content = self._sam2_client.segment_video(
+                video_masking_data['posePrompts'], content, model_variant
+            )
+            del content
+            sam2_masks_file = open(self._sam2_masks_path, "wb")
+            sam2_masks_file.write(raw_mask_content)
+            sam2_masks_file.close()
+            masks = self._sam2_client.decode_mask_npz_content(raw_mask_content)
+            del raw_mask_content
+
         self._progress_callback(30)
-
-        sam2_masks_file = open(self._sam2_masks_path, "wb")
-        sam2_masks_file.write(raw_mask_content)
-        sam2_masks_file.close()
-
-        masks = self._sam2_client.decode_mask_npz_content(raw_mask_content)
-        del raw_mask_content
         self._progress_callback(35)
 
         t_sam2 = time.time()
@@ -99,23 +121,8 @@ class Sam2PoseMasker:
 
 
 
-        def convert_numpy_to_native(obj):
-            if isinstance(obj, np.ndarray):
-                return obj.tolist()  # Convert numpy arrays to lists
-            elif isinstance(obj, np.float64):
-                return float(obj)  # Convert np.float64 to Python float
-            elif isinstance(obj, dict):
-                return {convert_numpy_to_native(k): convert_numpy_to_native(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [convert_numpy_to_native(i) for i in obj]
-            else:
-                return obj
-
-        poses_file = open(self._poses_path, "w")
-        data_converted = convert_numpy_to_native(pose_data_dict)
-        json_data = json.dumps(data_converted)
-        poses_file.write(json_data)
-        poses_file.close()
+        with open(self._poses_path, 'w') as poses_file:
+            poses_file.write(json.dumps(self._convert_numpy_to_native(pose_data_dict)))
 
 
 
@@ -172,6 +179,353 @@ class Sam2PoseMasker:
         t_render = t_total - (t_pose_start - start) - (t_sam2 - start)
         print(f"[timing] render: {t_render:.1f}s")
         print(f"[timing] total: {t_total:.1f}s")
+
+    # ------------------------------------------------------------------
+    # Streaming (chunk-by-chunk) pipeline
+    # ------------------------------------------------------------------
+
+    def _segment_one_chunk(self, chunk_global_start, chunk_global_end, fps,
+                           pose_prompts, model_variant, initial_masks):
+        """Segment a single video chunk and return local masks dict.
+
+        Returns {local_frame_idx: {obj_id: np.array(1,H,W)}} where
+        local_frame_idx 0 == global frame chunk_global_start.
+        """
+        chunk_bytes = self._extract_frames_as_bytes(chunk_global_start, chunk_global_end, fps)
+        raw = self._sam2_client.segment_video(
+            pose_prompts=pose_prompts,
+            video_content=chunk_bytes,
+            model_variant=model_variant,
+            initial_masks=initial_masks,
+        )
+        return self._sam2_client.decode_mask_npz_content(raw)
+
+    def _mask_streaming(self, video_masking_data, model_variant,
+                        chunk_size_frames, overlap_frames,
+                        total_frames, fps, start_time):
+        """Process a long video in chunks so mask RAM never exceeds one chunk.
+
+        Two phases:
+          1. For each chunk: segment → bboxes → sub-videos → pose → save masks
+             to compressed npz on disk → discard from RAM.
+          2. Postprocess accumulated pose data (small) once, then for each chunk:
+             load masks from disk → render frames → discard → delete file.
+
+        Peak mask RAM = one chunk's masks (e.g. 60 s at 720 p ≈ 800 MB).
+        """
+        stride = max(1, chunk_size_frames - overlap_frames)
+        n_chunks = max(1, math.ceil(max(0, total_frames - overlap_frames) / stride))
+
+        # Dimensions needed for writer and bbox clipping
+        cap_tmp, frame_width, frame_height, sample_rate = self._open_video()
+        cap_tmp.release()
+
+        subvideo_dir = '/app/subvideos'
+        tmp_dir = tempfile.mkdtemp(prefix='maskanyone_chunks_')
+
+        # Accumulated (small) state across chunks
+        all_pose_data = {}   # {obj_id: [None] * total_frames}
+        all_est_bboxes = {}  # {obj_id: {global_frame_start: bbox}}
+        chunk_files = []     # [(global_keep_start, global_keep_end, npz_path)]
+        boundary_masks = None
+
+        try:
+            # ---- Phase 1: segment + pose, save masks to disk ----
+            chunk_idx = 0
+            chunk_global_start = 0
+
+            while chunk_global_start < total_frames:
+                chunk_global_end = min(chunk_global_start + chunk_size_frames, total_frames)
+                local_keep_start = overlap_frames if chunk_idx > 0 else 0
+                global_keep_start = chunk_global_start + local_keep_start
+
+                print(f"[streaming] chunk {chunk_idx + 1}/{n_chunks}: "
+                      f"global [{chunk_global_start}, {chunk_global_end}), "
+                      f"keep [{global_keep_start}, {chunk_global_end})")
+                self._progress_callback(10 + round((chunk_idx / n_chunks) * 40))  # 10→50%
+
+                # Build local pose prompts (chunk 0 only; rest use initial_masks)
+                if chunk_idx == 0:
+                    local_pose_prompts = {
+                        int(frame_idx) - chunk_global_start: prompts
+                        for frame_idx, prompts in video_masking_data['posePrompts'].items()
+                        if chunk_global_start <= int(frame_idx) < chunk_global_end
+                    }
+                    chunk_initial_masks = None
+                else:
+                    local_pose_prompts = {}
+                    chunk_initial_masks = boundary_masks
+
+                local_masks = self._segment_one_chunk(
+                    chunk_global_start, chunk_global_end, fps,
+                    local_pose_prompts, model_variant, chunk_initial_masks,
+                )
+
+                # Extract boundary mask from the last local frame (before keep filtering)
+                if local_masks:
+                    last_local = max(local_masks.keys())
+                    boundary_masks = {
+                        obj_id: arr[0].astype(bool)
+                        for obj_id, arr in local_masks[last_local].items()
+                    }
+
+                # Remap to global indices, keeping only non-overlap frames
+                global_kept = {
+                    chunk_global_start + lf: obj_masks
+                    for lf, obj_masks in local_masks.items()
+                    if lf >= local_keep_start and chunk_global_start + lf < total_frames
+                }
+                del local_masks
+
+                if global_kept:
+                    # Bounding boxes using global frame indices
+                    bboxes = self._calculate_full_object_bounding_boxes(global_kept)
+                    est_bboxes = self._calculate_estimation_input_bounding_boxes(
+                        bboxes, frame_width, frame_height)
+                    for obj_id, bbox_dict in est_bboxes.items():
+                        all_est_bboxes.setdefault(obj_id, {}).update(bbox_dict)
+
+                    # Sub-videos and pose estimation
+                    cap = cv2.VideoCapture(self._input_path)
+                    sub_videos = self._create_sub_videos(cap, est_bboxes, global_kept, subvideo_dir)
+                    chunk_pose = self._compute_pose_data(video_masking_data, sub_videos, total_frames)
+                    shutil.rmtree(subvideo_dir, ignore_errors=True)
+
+                    # Merge pose into global accumulator
+                    for obj_id, poses in chunk_pose.items():
+                        all_pose_data.setdefault(obj_id, [None] * total_frames)
+                        for gf, pose in enumerate(poses):
+                            if pose is not None and gf < total_frames:
+                                all_pose_data[obj_id][gf] = pose
+
+                    # Save this chunk's masks to disk (compressed)
+                    npz_path = os.path.join(tmp_dir, f'chunk_{chunk_idx}.npz')
+                    flat = {
+                        f'frame{gf}_obj{obj_id}': arr
+                        for gf, obj_masks in global_kept.items()
+                        for obj_id, arr in obj_masks.items()
+                    }
+                    np.savez_compressed(npz_path, **flat)
+                    chunk_files.append((global_keep_start, chunk_global_end, npz_path))
+
+                del global_kept
+
+                chunk_idx += 1
+                chunk_global_start += stride
+                if chunk_global_end >= total_frames:
+                    break
+
+            print(f"[timing] streaming_seg+pose: {time.time() - start_time:.1f}s")
+            self._progress_callback(50)
+
+            # Postprocess all pose data at once (temporal smoothing, coord remap)
+            self._pose_postprocessor.postprocess(
+                all_pose_data,
+                video_masking_data['overlayStrategies'],
+                total_frames,
+                sample_rate,
+                all_est_bboxes,
+            )
+
+            # Save poses JSON
+            with open(self._poses_path, 'w') as f:
+                json.dump(self._convert_numpy_to_native(all_pose_data), f)
+
+            self._progress_callback(55)
+
+            # ---- Phase 2: render chunk by chunk ----
+            n_objects = len(video_masking_data['overlayStrategies'])
+            obj_ids = list(range(1, n_objects + 1))
+
+            mask_renderers = {
+                obj_id: MaskRenderer(
+                    video_masking_data['hidingStrategies'][obj_id - 1],
+                    {'level': 4, 'object_borders': True, 'averageColor': True},
+                )
+                for obj_id in obj_ids
+            }
+            pose_renderers = {
+                obj_id: PoseRenderer(video_masking_data['overlayStrategies'][obj_id - 1])
+                for obj_id in obj_ids
+            }
+
+            video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)
+            rendered_frames = 0
+
+            for global_keep_start, global_keep_end, npz_path in chunk_files:
+                # Load this chunk's masks from disk (context manager closes file handle
+                # immediately so os.unlink works on Windows too)
+                chunk_masks = {}
+                with np.load(npz_path) as loaded:
+                    for key in loaded.files:
+                        gf_part, obj_part = key.split('_obj')
+                        gf = int(gf_part.replace('frame', ''))
+                        obj_id = int(obj_part)
+                        chunk_masks.setdefault(gf, {})[obj_id] = loaded[key].copy()
+
+                cap = cv2.VideoCapture(self._input_path)
+                cap.set(cv2.CAP_PROP_POS_FRAMES, global_keep_start)
+
+                for gf in range(global_keep_start, global_keep_end):
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    output_frame = frame.copy()
+
+                    self._render_all_masks_on_image(output_frame, mask_renderers, gf, chunk_masks)
+
+                    for obj_id, poses in all_pose_data.items():
+                        if gf < len(poses) and poses[gf] is not None:
+                            pose_renderers[obj_id].render_keypoint_overlay(output_frame, poses[gf])
+
+                    output_frame = cv2.cvtColor(output_frame, cv2.COLOR_RGB2BGR)
+                    video_writer.write(output_frame)
+                    rendered_frames += 1
+
+                    if total_frames > 0:
+                        render_progress = 55 + round((rendered_frames / total_frames) * 44)
+                        self._progress_callback(min(render_progress, 99))
+
+                cap.release()
+                del chunk_masks
+                os.unlink(npz_path)
+
+            video_writer.release()
+            print(f"[timing] streaming_total: {time.time() - start_time:.1f}s")
+
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    @staticmethod
+    def _convert_numpy_to_native(obj):
+        """Recursively convert numpy types to JSON-serialisable Python types."""
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, np.float64):
+            return float(obj)
+        if isinstance(obj, dict):
+            return {Sam2PoseMasker._convert_numpy_to_native(k): Sam2PoseMasker._convert_numpy_to_native(v)
+                    for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [Sam2PoseMasker._convert_numpy_to_native(i) for i in obj]
+        return obj
+
+    def _get_video_info(self):
+        """Return (total_frames, fps) without holding the capture open."""
+        cap = cv2.VideoCapture(self._input_path)
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        cap.release()
+        return total_frames, fps
+
+    def _extract_frames_as_bytes(self, start_frame: int, end_frame: int, fps: float) -> bytes:
+        """Extract frames [start_frame, end_frame) as an in-memory mp4 (temp file roundtrip)."""
+        cap = cv2.VideoCapture(self._input_path)
+        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+        tmp_path = tempfile.mktemp(suffix='.mp4')
+        writer = cv2.VideoWriter(
+            tmp_path,
+            cv2.VideoWriter_fourcc(*'mp4v'),
+            fps,
+            (frame_width, frame_height),
+        )
+
+        cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+        for _ in range(end_frame - start_frame):
+            ret, frame = cap.read()
+            if not ret:
+                break
+            writer.write(frame)
+
+        cap.release()
+        writer.release()
+
+        with open(tmp_path, 'rb') as f:
+            content = f.read()
+        os.unlink(tmp_path)
+        return content
+
+    def _segment_in_chunks(
+        self,
+        pose_prompts: dict,
+        model_variant: str,
+        chunk_size_frames: int,
+        overlap_frames: int,
+    ) -> dict:
+        """Segment a long video by splitting into overlapping chunks.
+
+        Chunk 0 uses user-supplied point prompts. Subsequent chunks are seeded
+        from the boundary mask of the previous chunk's last kept frame.
+
+        stride = chunk_size_frames - overlap_frames
+
+        Chunk i covers global frames [i*stride, i*stride + chunk_size_frames).
+        - Chunk 0 keeps all frames [0, chunk_size_frames).
+        - Chunk i>0 discards the first overlap_frames (warm-up) and keeps the rest.
+        """
+        total_frames, fps = self._get_video_info()
+        if total_frames == 0:
+            return {}
+
+        stride = max(1, chunk_size_frames - overlap_frames)
+        all_masks = {}
+        boundary_masks = None  # {obj_id: bool (H,W) array} after each chunk
+
+        chunk_idx = 0
+        chunk_global_start = 0
+
+        while chunk_global_start < total_frames:
+            chunk_global_end = min(chunk_global_start + chunk_size_frames, total_frames)
+
+            print(f"[chunking] chunk {chunk_idx}: global [{chunk_global_start}, {chunk_global_end}) "
+                  f"({'point-prompt' if chunk_idx == 0 else 'mask-prompt'})")
+
+            if chunk_idx == 0:
+                local_pose_prompts = {
+                    frame_idx - chunk_global_start: prompts
+                    for frame_idx, prompts in pose_prompts.items()
+                    if chunk_global_start <= frame_idx < chunk_global_end
+                }
+                chunk_initial_masks = None
+            else:
+                local_pose_prompts = {}
+                chunk_initial_masks = boundary_masks
+
+            local_masks = self._segment_one_chunk(
+                chunk_global_start, chunk_global_end, fps,
+                local_pose_prompts, model_variant, chunk_initial_masks,
+            )
+
+            # Which local frames to keep (discard warm-up overlap for chunks > 0)
+            local_keep_start = overlap_frames if chunk_idx > 0 else 0
+
+            # Extract boundary mask from last kept local frame for the next chunk
+            kept_frames = sorted(lf for lf in local_masks if lf >= local_keep_start)
+            if kept_frames:
+                last_local = kept_frames[-1]
+                boundary_masks = {
+                    obj_id: mask_arr[0].astype(bool)  # (1,H,W) → (H,W)
+                    for obj_id, mask_arr in local_masks[last_local].items()
+                }
+
+            # Merge into global mask dict
+            for local_frame, obj_masks in local_masks.items():
+                if local_frame < local_keep_start:
+                    continue
+                global_frame = chunk_global_start + local_frame
+                if global_frame < total_frames:
+                    all_masks[global_frame] = obj_masks
+
+            chunk_idx += 1
+            chunk_global_start += stride
+
+            if chunk_global_end >= total_frames:
+                break
+
+        return all_masks
 
     def _open_video(self):
         video_capture = cv2.VideoCapture(self._input_path)
@@ -312,7 +666,7 @@ class Sam2PoseMasker:
         sub_videos = []
 
         fps = video_capture.get(cv2.CAP_PROP_FPS)
-        total_frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
+        last_mask_frame = max(masks.keys()) if masks else 0
 
         for obj_id, bbox_dict in estimation_input_bounding_boxes.items():
             sorted_frames = sorted(bbox_dict.keys())
@@ -322,7 +676,7 @@ class Sam2PoseMasker:
                 width = bbox[2] - bbox[0]
                 height = bbox[3] - bbox[1]
 
-                end_frame = sorted_frames[i + 1] - 1 if i < len(sorted_frames) - 1 else total_frames - 1
+                end_frame = sorted_frames[i + 1] - 1 if i < len(sorted_frames) - 1 else last_mask_frame
 
                 os.makedirs(subvideo_output_dir, exist_ok=True)
                 output_filename = f"{subvideo_output_dir}/object_{obj_id}_frame_{start_frame}.mp4"

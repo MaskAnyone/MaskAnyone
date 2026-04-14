@@ -1,6 +1,6 @@
 import React, {Fragment, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useParams} from "react-router";
-import {Box, Button, Divider, IconButton, MenuItem, Select, Slider} from "@mui/material";
+import {Box, Button, Divider, IconButton, MenuItem, Select, Slider, TextField, Tooltip, Typography} from "@mui/material";
 import {useDispatch, useSelector} from "react-redux";
 import Selector from "../state/selector";
 import Api from "../api";
@@ -17,6 +17,12 @@ import ShieldLogoIcon from "../components/common/ShieldLogoIcon";
 import { debounce } from 'lodash';
 import { ReduxState } from "../state/reducer";
 
+function recommendChunkSize(durationSeconds: number): number | null {
+    if (durationSeconds < 30) return null;          // short video — single pass
+    if (durationSeconds < 120) return 30;            // medium — 30 s chunks
+    return 60;                                        // long — 60 s chunks
+}
+
 const VideoMaskingEditorPage = () => {
     const dispatch = useDispatch();
     const videoList = useSelector(Selector.Video.videoList);
@@ -32,6 +38,9 @@ const VideoMaskingEditorPage = () => {
     const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
     const [segmentationImageUrl, setSegmentationImageUrl] = useState<string | null>(null);
     const [videoPosePrompts, setVideoPosePrompts] = useState<Record<string, [number, number, number][][]>>({});
+    const [samModel, setSamModel] = useState<string>('sam2.1_hiera_small');
+    const [chunkSizeSeconds, setChunkSizeSeconds] = useState<number | null>(null);
+    const [chunkOverlapSeconds, setChunkOverlapSeconds] = useState<number>(2);
 
     const resultVideoLists = useSelector(Selector.Video.resultVideoLists);
     const resultVideos = resultVideoLists[videoId || ''] || [];
@@ -215,12 +224,20 @@ const VideoMaskingEditorPage = () => {
         setSegmentationImageUrl(null);
     };
 
+    const video = videoList.find(videoListItem => videoListItem.id === videoId);
+    const frameCount = video?.videoInfo.frameCount || 0;
+
+    // Set chunk-size recommendation once the video loads (runs once per videoId)
+    useEffect(() => {
+        if (video?.videoInfo.duration) {
+            setChunkSizeSeconds(recommendChunkSize(video.videoInfo.duration));
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [video?.videoInfo.duration]);
+
     if (!videoId && videoList.length > 0) {
         return null;
     }
-
-    const video = videoList.find(videoListItem => videoListItem.id === videoId)!;
-    const frameCount = video?.videoInfo.frameCount || 0;
 
     const maskVideo = () => {
         if (!posePrompts.some(prompt => prompt.length > 0) && Object.entries(videoPosePrompts).length < 1) {
@@ -239,11 +256,13 @@ const VideoMaskingEditorPage = () => {
             resultVideoId: uuidv4(),
             runData: {
                 videoMasking: {
-                    posePrompts: posePrompts.some(prompt => prompt.length > 0) 
-                        ? { ...videoPosePrompts, [currentFrame]: posePrompts } 
+                    posePrompts: posePrompts.some(prompt => prompt.length > 0)
+                        ? { ...videoPosePrompts, [currentFrame]: posePrompts }
                         : videoPosePrompts,
                     overlayStrategies,
                     hidingStrategies,
+                    samModel,
+                    ...(chunkSizeSeconds !== null ? { chunkSizeSeconds, chunkOverlapSeconds } : {}),
                 } as any,
                 voiceMasking: {
                     strategy: 'remove',
@@ -365,6 +384,62 @@ const VideoMaskingEditorPage = () => {
 
                 <Box component='div' sx={{ marginTop: 3}}>
                     <Button variant={'contained'} onClick={addNewTarget}>Add New Target</Button>
+                </Box>
+
+                <Divider sx={{ marginTop: 2 }} />
+
+                <Box component='div' sx={{ marginTop: 2 }}>
+                    <Typography variant="caption" color="text.secondary">SAM2 Model</Typography>
+                    <Select
+                        value={samModel}
+                        onChange={e => setSamModel(e.target.value)}
+                        size="small"
+                        fullWidth
+                        sx={{ mt: 0.5 }}
+                    >
+                        <MenuItem value="sam2.1_hiera_tiny">Tiny (fastest)</MenuItem>
+                        <MenuItem value="sam2.1_hiera_small">Small (default)</MenuItem>
+                        <MenuItem value="sam2.1_hiera_base_plus">Base+</MenuItem>
+                        <MenuItem value="sam2.1_hiera_large">Large (best quality)</MenuItem>
+                    </Select>
+                </Box>
+
+                <Box component='div' sx={{ marginTop: 2 }}>
+                    <Tooltip title="Split long videos into chunks so SAM2 doesn't run out of memory. Recommended automatically based on video length." placement="right">
+                        <Typography variant="caption" color="text.secondary">
+                            Chunk size (s) — {chunkSizeSeconds === null ? 'single pass' : `${chunkSizeSeconds}s chunks`}
+                            {video?.videoInfo.duration
+                                ? ` · recommended: ${recommendChunkSize(video.videoInfo.duration) ?? 'single pass'}`
+                                : ''}
+                        </Typography>
+                    </Tooltip>
+                    <Select
+                        value={chunkSizeSeconds === null ? 'none' : String(chunkSizeSeconds)}
+                        onChange={e => setChunkSizeSeconds(e.target.value === 'none' ? null : Number(e.target.value))}
+                        size="small"
+                        fullWidth
+                        sx={{ mt: 0.5 }}
+                    >
+                        <MenuItem value="none">Single pass (no chunking)</MenuItem>
+                        <MenuItem value="10">10 s</MenuItem>
+                        <MenuItem value="20">20 s</MenuItem>
+                        <MenuItem value="30">30 s</MenuItem>
+                        <MenuItem value="60">60 s</MenuItem>
+                        <MenuItem value="120">120 s</MenuItem>
+                    </Select>
+                    {chunkSizeSeconds !== null && (
+                        <Box component='div' sx={{ mt: 1 }}>
+                            <Typography variant="caption" color="text.secondary">Overlap (s)</Typography>
+                            <TextField
+                                type="number"
+                                size="small"
+                                value={chunkOverlapSeconds}
+                                onChange={e => setChunkOverlapSeconds(Math.max(0, Number(e.target.value)))}
+                                inputProps={{ min: 0, max: chunkSizeSeconds - 1 }}
+                                sx={{ mt: 0.5, width: '100%' }}
+                            />
+                        </Box>
+                    )}
                 </Box>
 
                 <Divider sx={{ marginTop: 2 }} />

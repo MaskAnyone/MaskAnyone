@@ -77,7 +77,13 @@ async def segment_video(
     pose_prompts = Form(...),
     video: UploadFile = File(...),
     model_variant: str = Form("sam2.1_hiera_small"),
+    initial_masks: UploadFile = File(None),
 ):
+    """Segment a video with SAM2.
+
+    initial_masks is an optional .npz file encoding {str(obj_id): bool_array} —
+    when present, mask prompts are used instead of point prompts (chunk continuation).
+    """
     if model_variant not in MODEL_CONFIGS:
         raise HTTPException(status_code=400, detail=f"Unknown model_variant '{model_variant}'. Valid options: {list(MODEL_CONFIGS.keys())}")
 
@@ -85,13 +91,24 @@ async def segment_video(
         video_content = await video.read()
         pose_prompts = json.loads(pose_prompts)
 
+        decoded_initial_masks = None
+        if initial_masks is not None:
+            masks_content = await initial_masks.read()
+            if masks_content:
+                buf = io.BytesIO(masks_content)
+                loaded = np.load(buf)
+                decoded_initial_masks = {
+                    int(key): loaded[key].astype(bool)
+                    for key in loaded.files
+                }
+
         temp_dir = tempfile.mkdtemp()
         video_path = os.path.join(temp_dir, f"video_{int(time.time())}.mp4")
         file = open(video_path, "wb")
         file.write(video_content)
         file.close()
 
-        masks = perform_sam2_segmentation(video_path, pose_prompts, model_variant)
+        masks = perform_sam2_segmentation(video_path, pose_prompts, model_variant, initial_masks=decoded_initial_masks)
 
         flattened_masks = {
             f"frame{frame}_mask{mask}": mask_array

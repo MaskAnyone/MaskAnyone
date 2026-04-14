@@ -32,7 +32,25 @@ MODEL_CONFIGS = {
 DEFAULT_MODEL = "sam2.1_hiera_small"
 
 
-def perform_sam2_segmentation(frame_dir_path: str, pose_prompts, model_variant: str = DEFAULT_MODEL):
+def perform_sam2_segmentation(
+    frame_dir_path: str,
+    pose_prompts,
+    model_variant: str = DEFAULT_MODEL,
+    initial_masks: dict = None,
+):
+    """Segment a video (or chunk) using SAM2.
+
+    Args:
+        frame_dir_path: Path to the video file.
+        pose_prompts: Dict of {frame_idx: [[x, y, label], ...]} point prompts.
+                      Used for the first chunk (or single-pass jobs).
+        model_variant: Which SAM2 model to use.
+        initial_masks: Optional dict of {obj_id: numpy_bool_array} mask prompts.
+                       When provided, these are injected at frame 0 instead of
+                       point prompts — used for chunk N+1 onwards to maintain
+                       tracking continuity from the previous chunk's last frame.
+                       Must be 2D boolean arrays matching the video frame dimensions.
+    """
     global predictors
 
     if model_variant not in MODEL_CONFIGS:
@@ -50,7 +68,9 @@ def perform_sam2_segmentation(frame_dir_path: str, pose_prompts, model_variant: 
     print(f"Initializing SAM2 predictor with flags: "
           f"offload_video_to_cpu={SAM2_OFFLOAD_VIDEO_TO_CPU}, "
           f"offload_state_to_cpu={SAM2_OFFLOAD_STATE_TO_CPU}, "
-          f"async_loading_frames=True")
+          f"async_loading_frames=True"
+          f"{' [mask-prompt chunk]' if initial_masks else ' [point-prompt]'}")
+
     inference_state = predictor.init_state(
         video_path=frame_dir_path,
         offload_video_to_cpu=SAM2_OFFLOAD_VIDEO_TO_CPU,
@@ -61,17 +81,33 @@ def perform_sam2_segmentation(frame_dir_path: str, pose_prompts, model_variant: 
     predictor.reset_state(inference_state)
     torch.cuda.empty_cache()
 
-    for frame_idx, frame_pose_prompts in pose_prompts.items():
-        obj_id_list, points_list, labels_list = extract_points_and_labels(frame_pose_prompts)
-
-        for obj_id, points, labels in zip(obj_id_list, points_list, labels_list):
-            _, out_obj_ids, out_mask_logits = predictor.add_new_points(
-                inference_state=inference_state,
-                frame_idx=int(frame_idx),
-                obj_id=obj_id,
-                points=points,
-                labels=labels,
+    if initial_masks:
+        # Chunk continuation: seed each object from its previous-chunk boundary mask.
+        # add_new_mask() requires a 2D boolean numpy array at frame 0.
+        for obj_id, mask_array in initial_masks.items():
+            assert mask_array.ndim == 2 and mask_array.dtype == bool, (
+                f"initial_masks[{obj_id}] must be a 2D boolean numpy array, "
+                f"got shape={mask_array.shape} dtype={mask_array.dtype}"
             )
+            predictor.add_new_mask(
+                inference_state=inference_state,
+                frame_idx=0,
+                obj_id=int(obj_id),
+                mask=mask_array,
+            )
+    else:
+        # First chunk (or single-pass): use user-supplied point prompts.
+        for frame_idx, frame_pose_prompts in pose_prompts.items():
+            obj_id_list, points_list, labels_list = extract_points_and_labels(frame_pose_prompts)
+
+            for obj_id, points, labels in zip(obj_id_list, points_list, labels_list):
+                predictor.add_new_points(
+                    inference_state=inference_state,
+                    frame_idx=int(frame_idx),
+                    obj_id=obj_id,
+                    points=points,
+                    labels=labels,
+                )
 
     video_segments = {}
     for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state):
