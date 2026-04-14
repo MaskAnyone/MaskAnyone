@@ -45,6 +45,22 @@ We have evaluated this approach against other approaches on various videos which
 
 ## Getting Started
 
+### Quick setup (recommended)
+
+The `setup.sh` script checks prerequisites, builds images, starts services, and scouts your environment — all in one step:
+
+```bash
+git clone https://github.com/MaskAnyone/MaskAnyone.git -b samhack
+cd MaskAnyone
+bash setup.sh
+```
+
+It will report GPU availability, RAM, disk space, and whether each service (SAM2, RTMPose, OpenPose) came online. On subsequent runs you can skip the build step:
+
+```bash
+bash setup.sh --skip-build
+```
+
 ### Upgrading from a previous version
 
 If you already have MaskAnyone running and are switching to this branch:
