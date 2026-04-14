@@ -129,11 +129,12 @@ COCO17_PAIRS = [
     (12, 14), (14, 16),  # Right leg
 ]
 
-# AP-10K keypoints: 0:left_eye, 1:right_eye, 2:nose, 3:neck, 4:root_of_tail,
-# 5:left_shoulder, 6:left_elbow, 7:left_front_paw,
-# 8:right_shoulder, 9:right_elbow, 10:right_front_paw,
-# 11:left_hip, 12:left_knee, 13:left_back_paw,
-# 14:right_hip, 15:right_knee, 16:right_back_paw
+# AP-10K — 17 keypoints, animal topology
+# 0:left_eye  1:right_eye  2:nose  3:neck  4:root_of_tail
+# 5:left_shoulder  6:left_elbow  7:left_front_paw
+# 8:right_shoulder  9:right_elbow  10:right_front_paw
+# 11:left_hip  12:left_knee  13:left_back_paw
+# 14:right_hip  15:right_knee  16:right_back_paw
 AP10K_PAIRS = [
     (0, 2), (1, 2), (2, 3),           # head
     (3, 5), (5, 6), (6, 7),           # left front limb

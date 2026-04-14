@@ -436,10 +436,15 @@ class Sam2PoseMasker:
 
     def _compute_rtmpose_pose_data(self, overlay_strategy, content):
         model_map = {
+            # Human
             'rtmpose_s': 'rtmpose-s_8xb256-420e_coco-256x192',
             'rtmpose_m': 'rtmpose-m_8xb256-420e_coco-256x192',
             'rtmpose_l': 'rtmpose-l_8xb256-420e_coco-256x192',
-            'rtmpose_ap10k': 'td-hm_hrnet-w32_8xb64-210e_ap10k-256x256',
+            # Animal
+            'rtmpose_ap10k':   'td-hm_hrnet-w32_8xb64-210e_ap10k-256x256',
+            'rtmpose_apt36k':  'td-hm_hrnet-w32_8xb64-210e_apt36k-256x256',
+            'rtmpose_macaque': 'td-hm_hrnet-w32_8xb64-210e_macaque-160x160',
+            'rtmpose_animal5': 'td-hm_hrnet-w32_8xb64-210e_animalpose-256x256',
         }
         model = model_map.get(overlay_strategy, 'rtmpose-m_8xb256-420e_coco-256x192')
         options = {'model': model}

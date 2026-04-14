@@ -359,6 +359,16 @@ const VideoMaskingEditorPage = () => {
                             size='small'
                         >
                             <MenuItem value={'none'}>No Overlay</MenuItem>
+                            <MenuItem disabled sx={{ fontSize: 11, opacity: 0.5 }}>— Animal (RTMPose) —</MenuItem>
+                            <MenuItem value={'rtmpose_ap10k'}>AP-10K · 54 species · 17 kp</MenuItem>
+                            <MenuItem value={'rtmpose_apt36k'}>APT-36K · 30 categories · 17 kp</MenuItem>
+                            <MenuItem value={'rtmpose_macaque'}>MacaquePose · macaque · 17 kp</MenuItem>
+                            <MenuItem value={'rtmpose_animal5'}>Animal-Pose · cat/dog/cow/horse/sheep · 20 kp</MenuItem>
+                            <MenuItem disabled sx={{ fontSize: 11, opacity: 0.5 }}>— Human (RTMPose) —</MenuItem>
+                            <MenuItem value={'rtmpose_s'}>RTMPose-S · COCO-17</MenuItem>
+                            <MenuItem value={'rtmpose_m'}>RTMPose-M · COCO-17</MenuItem>
+                            <MenuItem value={'rtmpose_l'}>RTMPose-L · COCO-17</MenuItem>
+                            <MenuItem disabled sx={{ fontSize: 11, opacity: 0.5 }}>— Human (other) —</MenuItem>
                             <MenuItem value={'mp_pose'}>MediaPipe Pose</MenuItem>
                             <MenuItem value={'mp_face'}>MediaPipe Face</MenuItem>
                             <MenuItem value={'mp_hand'}>MediaPipe Hands</MenuItem>
