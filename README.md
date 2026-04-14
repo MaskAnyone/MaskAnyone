@@ -45,6 +45,20 @@ We have evaluated this approach against other approaches on various videos which
 
 ## Getting Started
 
+### Upgrading from a previous version
+
+If you already have MaskAnyone running and are switching to this branch:
+
+```bash
+git checkout samhack
+docker compose build sam2 rtmpose   # sam2 now bundles all 4 model sizes; rtmpose is new
+docker compose up -d
+```
+
+Your postgres data and uploaded videos are preserved. No port changes.
+
+> **Note:** The SAM2 build now downloads ~3 GB of additional model checkpoints (Tiny, Base+, Large). This is a one-time cost.
+
 ### Installation
 
 > If you want to set up MaskAnyone to use and / or experiment with it, consider using the [MaskAnyoneProdInfrastructure](https://github.com/MaskAnyone/MaskAnyoneProdInfrastructure) which uses pre-built docker images for easier and optimized setup. For development purposes, continue here.

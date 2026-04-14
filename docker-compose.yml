@@ -118,3 +118,12 @@ services:
     #   - /dev/nvidiactl:/dev/nvidiactl
     #   - /dev/nvidia-uvm:/dev/nvidia-uvm
     #   - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+
+  rtmpose:
+    build:
+      context: ./docker/rtmpose
+    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+    volumes:
+      - ./rtmpose:/app
+      - ./data/rtmpose_model_cache:/root/.cache
+    restart: on-failure
