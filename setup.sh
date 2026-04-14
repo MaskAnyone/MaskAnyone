@@ -126,12 +126,28 @@ else
     check_ok "Images built"
 fi
 
+# ── ensure no critical images are missing (even with --skip-build) ─────────────
+NEED_BUILD=()
+for SVC in python worker sam2 yarn nginx postgres pgadmin keycloak; do
+    IMG=$(docker compose config --images 2>/dev/null | grep -i "$SVC" | head -1 || true)
+    # Fall back to conventional name
+    [[ -z "$IMG" ]] && IMG="maskanyone-src-${SVC}:latest"
+    if ! docker image inspect "$IMG" &>/dev/null 2>&1; then
+        NEED_BUILD+=("$SVC")
+    fi
+done
+if [[ ${#NEED_BUILD[@]} -gt 0 ]]; then
+    warn "Missing images for: ${NEED_BUILD[*]} — building them now..."
+    docker compose build "${NEED_BUILD[@]}"
+    check_ok "Missing images built"
+fi
+
 # ═══════════════════════════════════════════════════════════════════════════════
 section "3 / 4  Start services"
 # ═══════════════════════════════════════════════════════════════════════════════
 
 info "Installing frontend dependencies..."
-docker compose run --rm yarn yarn install --silent
+docker compose run --rm yarn yarn install --silent 2>&1 | grep -v "^warning" || true
 check_ok "Frontend dependencies installed"
 
 info "Starting database..."
@@ -150,7 +166,7 @@ for i in $(seq 1 30); do
 done
 
 info "Starting all services..."
-docker compose up -d
+docker compose up -d --no-build
 check_ok "All services started"
 
 # ═══════════════════════════════════════════════════════════════════════════════
