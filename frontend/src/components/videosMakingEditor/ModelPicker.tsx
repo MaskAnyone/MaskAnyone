@@ -1,13 +1,13 @@
+import { CSSProperties } from 'react';
 import { useState } from 'react';
 import { Box, Button, Chip, Popover, Tooltip, Typography } from '@mui/material';
-import { SxProps, Theme } from '@mui/material/styles';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
-const styles: Record<string, SxProps<Theme>> = {
-    popoverBox: { p: 2, maxWidth: 320 },
-    groupBox: { mb: 1.5 },
-    groupLabel: { display: 'block', mb: 0.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 },
-    chipRow: { display: 'flex', flexWrap: 'wrap', gap: 0.5 },
+const sx = {
+    popoverBox: { p: 2, maxWidth: 320 } as CSSProperties,
+    groupBox: { marginBottom: 12 } as CSSProperties,
+    groupLabel: { display: 'block', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 0.5, fontSize: 11 } as CSSProperties,
+    chipRow: { display: 'flex', flexWrap: 'wrap' as const, gap: 4 } as CSSProperties,
 };
 
 interface ModelOption {
@@ -93,13 +93,13 @@ const ModelPicker = ({ value, onChange }: ModelPickerProps) => {
                 onClose={() => setAnchor(null)}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
             >
-                <Box sx={styles.popoverBox}>
+                <Box style={sx.popoverBox}>
                     {MODEL_GROUPS.map(group => (
-                        <Box key={group.label} sx={styles.groupBox}>
-                            <Typography variant="caption" color="text.secondary" sx={styles.groupLabel}>
+                        <Box key={group.label} style={sx.groupBox}>
+                            <Typography variant="caption" color="text.secondary" style={sx.groupLabel}>
                                 {group.label}
                             </Typography>
-                            <Box sx={styles.chipRow}>
+                            <Box style={sx.chipRow}>
                                 {group.options.map(opt => (
                                     <Tooltip key={opt.value} title={opt.hint} placement="top" arrow>
                                         <Chip
