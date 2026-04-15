@@ -1,0 +1,116 @@
+import { useState } from 'react';
+import { Box, Button, Chip, Popover, Tooltip, Typography } from '@mui/material';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+
+interface ModelOption {
+    value: string;
+    label: string;
+    hint: string;
+}
+
+interface ModelGroup {
+    label: string;
+    options: ModelOption[];
+}
+
+const MODEL_GROUPS: ModelGroup[] = [
+    {
+        label: 'No overlay',
+        options: [
+            { value: 'none', label: 'None', hint: 'No pose overlay.' },
+        ],
+    },
+    {
+        label: 'Human — RTMPose',
+        options: [
+            { value: 'rtmpose_s', label: 'S', hint: 'Fastest, least accurate. Good for quick previews.' },
+            { value: 'rtmpose_m', label: 'M', hint: 'Balanced speed and accuracy. Recommended default for humans.' },
+            { value: 'rtmpose_l', label: 'L', hint: 'Most accurate for humans, slowest of the three.' },
+        ],
+    },
+    {
+        label: 'Animal',
+        options: [
+            { value: 'rtmpose_ap10k', label: 'AP-10K', hint: '10K images, 54 species. Use APT-36K if results are poor.' },
+            { value: 'rtmpose_apt36k', label: 'APT-36K', hint: '36K images, broader species coverage. Better than AP-10K.' },
+            { value: 'rtmpose_apt36k_w48', label: 'APT-36K W48', hint: 'Best animal pose quality. Larger backbone, slower inference.' },
+        ],
+    },
+    {
+        label: 'Human — MediaPipe',
+        options: [
+            { value: 'mp_pose', label: 'Pose', hint: 'Full-body pose. Fast, CPU-friendly, good for single person.' },
+            { value: 'mp_face', label: 'Face', hint: 'Face mesh — 468 facial landmarks.' },
+            { value: 'mp_hand', label: 'Hands', hint: 'Hand landmarks — 21 keypoints per hand.' },
+        ],
+    },
+    {
+        label: 'Human — OpenPose',
+        options: [
+            { value: 'openpose', label: 'Body', hint: 'Classic BODY_25 keypoints. Good multi-person support.' },
+            { value: 'openpose_body25b', label: 'BODY_25B', hint: 'Improved 25-keypoint model with better foot detection.' },
+            { value: 'openpose_face', label: '+ Face', hint: 'Body keypoints plus facial detail. Heavier.' },
+            { value: 'openpose_body_135', label: 'BODY_135', hint: 'Full body including hands and face. Most detailed, slowest.' },
+        ],
+    },
+];
+
+const ALL_OPTIONS = MODEL_GROUPS.flatMap(g => g.options);
+
+interface ModelPickerProps {
+    value: string;
+    onChange: (value: string) => void;
+}
+
+const ModelPicker = ({ value, onChange }: ModelPickerProps) => {
+    const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
+
+    const selected = ALL_OPTIONS.find(o => o.value === value) ?? ALL_OPTIONS[0];
+
+    return (
+        <>
+            <Button
+                size="small"
+                variant="outlined"
+                endIcon={<KeyboardArrowDownIcon />}
+                onClick={e => setAnchor(e.currentTarget)}
+                sx={{ textTransform: 'none', minWidth: 130, justifyContent: 'space-between' }}
+            >
+                {selected.label}
+            </Button>
+
+            <Popover
+                open={Boolean(anchor)}
+                anchorEl={anchor}
+                onClose={() => setAnchor(null)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+            >
+                <Box sx={{ p: 2, maxWidth: 320 }}>
+                    {MODEL_GROUPS.map(group => (
+                        <Box key={group.label} sx={{ mb: 1.5 }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                {group.label}
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                {group.options.map(opt => (
+                                    <Tooltip key={opt.value} title={opt.hint} placement="top" arrow>
+                                        <Chip
+                                            label={opt.label}
+                                            size="small"
+                                            onClick={() => { onChange(opt.value); setAnchor(null); }}
+                                            color={opt.value === value ? 'primary' : 'default'}
+                                            variant={opt.value === value ? 'filled' : 'outlined'}
+                                            sx={{ cursor: 'pointer' }}
+                                        />
+                                    </Tooltip>
+                                ))}
+                            </Box>
+                        </Box>
+                    ))}
+                </Box>
+            </Popover>
+        </>
+    );
+};
+
+export default ModelPicker;
