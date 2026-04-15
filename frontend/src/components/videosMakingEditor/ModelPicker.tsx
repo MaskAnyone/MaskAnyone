@@ -1,14 +1,6 @@
-import { CSSProperties } from 'react';
 import { useState } from 'react';
-import { Box, Button, Chip, Popover, Tooltip, Typography } from '@mui/material';
+import { Button, Chip, Popover, Tooltip, Typography } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-
-const sx = {
-    popoverBox: { p: 2, maxWidth: 320 } as CSSProperties,
-    groupBox: { marginBottom: 12 } as CSSProperties,
-    groupLabel: { display: 'block', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 0.5, fontSize: 11 } as CSSProperties,
-    chipRow: { display: 'flex', flexWrap: 'wrap' as const, gap: 4 } as CSSProperties,
-};
 
 interface ModelOption {
     value: string;
@@ -95,13 +87,13 @@ const ModelPicker = ({ value, onChange }: ModelPickerProps) => {
                 onClose={() => setAnchor(null)}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
             >
-                <Box style={sx.popoverBox}>
+                <div style={{ padding: 16, maxWidth: 320 }}>
                     {MODEL_GROUPS.map(group => (
-                        <Box key={group.label} style={sx.groupBox}>
-                            <Typography variant="caption" color="text.secondary" style={sx.groupLabel}>
+                        <div key={group.label} style={{ marginBottom: 12 }}>
+                            <Typography variant="caption" color="text.secondary" style={{ display: 'block', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11 }}>
                                 {group.label}
                             </Typography>
-                            <Box style={sx.chipRow}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                                 {group.options.map(opt => (
                                     <Tooltip key={opt.value} title={opt.hint} placement="top" arrow>
                                         <Chip
@@ -114,10 +106,10 @@ const ModelPicker = ({ value, onChange }: ModelPickerProps) => {
                                         />
                                     </Tooltip>
                                 ))}
-                            </Box>
-                        </Box>
+                            </div>
+                        </div>
                     ))}
-                </Box>
+                </div>
             </Popover>
         </>
     );
