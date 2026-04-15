@@ -12,6 +12,28 @@ for arg in "$@"; do
     [[ "$arg" == "--with-auth"  ]] && WITH_AUTH=true
 done
 
+# Cross-platform helpers
+# sed -i behaves differently on macOS (BSD) vs Linux/Git Bash
+if [[ "$(uname)" == "Darwin" ]]; then
+    sedi() { sed -i '' "$@"; }
+    disk_free_gb() { df -g . | awk 'NR==2{print $4}' 2>/dev/null || echo "0"; }
+else
+    sedi() { sed -i "$@"; }
+    disk_free_gb() { df -BG . | awk 'NR==2{gsub("G","",$4); print $4}' 2>/dev/null || echo "0"; }
+fi
+
+# Detect GPU early — used to choose compose files and in the service scout.
+# COMPOSE_GPU_OVERRIDE is appended to every docker compose invocation.
+HAS_GPU=false
+if command -v nvidia-smi &>/dev/null && nvidia-smi --query-gpu=name --format=csv,noheader &>/dev/null 2>&1; then
+    HAS_GPU=true
+fi
+if [[ "$HAS_GPU" == "true" ]]; then
+    COMPOSE_BASE="-f docker-compose.yml"
+else
+    COMPOSE_BASE="-f docker-compose.yml -f docker-compose-cpu.yml"
+fi
+
 # ── colours ────────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; YELLOW='\033[1;33m'; GREEN='\033[0;32m'
 CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'
@@ -64,16 +86,16 @@ else
 fi
 
 # NVIDIA GPU
-if command -v nvidia-smi &>/dev/null; then
+if [[ "$HAS_GPU" == "true" ]]; then
     GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 || echo "")
     GPU_MEM=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader 2>/dev/null | head -1 | tr -d ' ' || echo "")
     if [[ -n "$GPU_NAME" ]]; then
-        check_ok "GPU: $GPU_NAME ($GPU_MEM)"
+        check_ok "GPU: $GPU_NAME ($GPU_MEM) — running in GPU mode"
     else
-        check_warn "nvidia-smi found but no GPU detected"
+        check_warn "nvidia-smi found but no GPU detected — falling back to CPU mode"
     fi
 else
-    check_warn "No NVIDIA GPU detected — SAM2 will run on CPU (very slow for long videos)"
+    check_warn "No NVIDIA GPU detected — running in CPU mode (SAM2 will be slow for long videos)"
 fi
 
 # NVIDIA Container Toolkit
@@ -86,7 +108,7 @@ else
 fi
 
 # Disk space (need ≥ 30 GB free)
-DISK_FREE_GB=$(df -BG . | awk 'NR==2{gsub("G","",$4); print $4}' 2>/dev/null || echo "0")
+DISK_FREE_GB=$(disk_free_gb)
 if [[ "$DISK_FREE_GB" -ge 30 ]]; then
     check_ok "Disk: ${DISK_FREE_GB} GB free"
 elif [[ "$DISK_FREE_GB" -ge 15 ]]; then
@@ -125,11 +147,11 @@ section "2 / 4  Build images"
 COMPOSE_PROFILES=""
 if [[ "$WITH_AUTH" == "true" ]]; then
     info "Auth mode: Keycloak enabled (--with-auth)"
-    sed -i 's/^MASK_ANYONE_PLATFORM_MODE=.*/MASK_ANYONE_PLATFORM_MODE=server/' app.env
+    sedi 's/^MASK_ANYONE_PLATFORM_MODE=.*/MASK_ANYONE_PLATFORM_MODE=server/' app.env
     COMPOSE_PROFILES="--profile auth"
 else
     info "Auth mode: local (no login required) — pass --with-auth to enable Keycloak"
-    sed -i 's/^MASK_ANYONE_PLATFORM_MODE=.*/MASK_ANYONE_PLATFORM_MODE=local/' app.env
+    sedi 's/^MASK_ANYONE_PLATFORM_MODE=.*/MASK_ANYONE_PLATFORM_MODE=local/' app.env
 fi
 
 if [[ "$SKIP_BUILD" == "true" ]]; then
@@ -138,13 +160,13 @@ else
     info "Building Docker images (this takes 20–60 min on first run)..."
     info "SAM2 will download ~4 GB of model checkpoints."
     echo ""
-    docker compose $COMPOSE_PROFILES build
+    docker compose $COMPOSE_BASE $COMPOSE_PROFILES build
     echo ""
     check_ok "Images built"
 fi
 
 # ── ensure no critical images are missing (even with --skip-build) ─────────────
-CORE_SVCS=(python worker sam2 yarn nginx postgres pgadmin)
+CORE_SVCS=(python worker sam2 yarn nginx postgres pgadmin rtmpose openpose)
 [[ "$WITH_AUTH" == "true" ]] && CORE_SVCS+=(keycloak)
 NEED_BUILD=()
 for SVC in "${CORE_SVCS[@]}"; do
@@ -155,7 +177,7 @@ for SVC in "${CORE_SVCS[@]}"; do
 done
 if [[ ${#NEED_BUILD[@]} -gt 0 ]]; then
     warn "Missing images for: ${NEED_BUILD[*]} — building them now..."
-    docker compose $COMPOSE_PROFILES build "${NEED_BUILD[@]}"
+    docker compose $COMPOSE_BASE $COMPOSE_PROFILES build "${NEED_BUILD[@]}"
     check_ok "Missing images built"
 fi
 
@@ -164,14 +186,14 @@ section "3 / 4  Start services"
 # ═══════════════════════════════════════════════════════════════════════════════
 
 info "Installing frontend dependencies..."
-docker compose run --rm yarn yarn install --silent 2>&1 | grep -v "^warning" || true
+docker compose $COMPOSE_BASE run --rm yarn yarn install --silent 2>&1 | grep -v "^warning" || true
 check_ok "Frontend dependencies installed"
 
 info "Starting database..."
-docker compose up -d postgres
+docker compose $COMPOSE_BASE up -d postgres
 info "Waiting for PostgreSQL to be ready..."
 for i in $(seq 1 30); do
-    if docker compose exec -T postgres pg_isready -U dev &>/dev/null 2>&1; then
+    if docker compose $COMPOSE_BASE exec -T postgres pg_isready -U dev &>/dev/null 2>&1; then
         check_ok "PostgreSQL ready"
         break
     fi
@@ -183,7 +205,7 @@ for i in $(seq 1 30); do
 done
 
 info "Starting all services..."
-UP_OUT=$(docker compose $COMPOSE_PROFILES up -d --no-build --force-recreate nginx 2>&1) || true
+UP_OUT=$(docker compose $COMPOSE_BASE $COMPOSE_PROFILES up -d --no-build 2>&1) || true
 if echo "$UP_OUT" | grep -qi "error\|failed"; then
     warn "Some services had issues starting:"
     echo "$UP_OUT" | grep -i "error\|failed" | while read -r line; do warn "  $line"; done
@@ -192,22 +214,32 @@ else
     check_ok "All services started"
 fi
 
+# Restart python and worker after postgres is confirmed ready.
+# On a cold start they race postgres and crash; restart ensures a clean connect.
+info "Restarting backend and worker against live database..."
+docker compose $COMPOSE_BASE restart python worker &>/dev/null || true
+check_ok "Backend and worker restarted"
+
 # ═══════════════════════════════════════════════════════════════════════════════
 section "4 / 4  Service scout"
 # ═══════════════════════════════════════════════════════════════════════════════
 
-info "Waiting for backend to be ready..."
-for i in $(seq 1 30); do
+info "Waiting for backend to be ready (up to 5 min)..."
+BACKEND_UP=false
+for i in $(seq 1 60); do
     STATUS=$(curl -4sk --max-time 5 -o /dev/null -w "%{http_code}" https://localhost/api/platform/mode 2>/dev/null || echo "000")
     if [[ "$STATUS" == "200" ]]; then
         check_ok "Backend reachable"
+        BACKEND_UP=true
         break
     fi
-    sleep 3
-    if [[ "$i" -eq 30 ]]; then
-        check_warn "Backend not reachable yet — try opening https://localhost in a minute"
-    fi
+    echo -ne "  ${CYAN}→${RESET}  Still starting... (${i}/60)\r"
+    sleep 5
 done
+echo ""
+if [[ "$BACKEND_UP" == "false" ]]; then
+    check_warn "Backend not reachable yet — try opening https://localhost in a minute"
+fi
 
 # Query /platform/resources
 RESOURCES=$(curl -4sk --max-time 10 https://localhost/api/platform/resources 2>/dev/null || echo "{}")
@@ -245,6 +277,7 @@ else
 fi
 echo ""
 echo -e "  Open ${CYAN}https://localhost${RESET} in your browser."
+echo -e "  ${YELLOW}Note: your browser will warn about a self-signed certificate — click 'Advanced' and proceed.${RESET}"
 if [[ "$WARNINGS" -gt 0 && "$GPU" == "Not detected" ]]; then
     echo -e "  ${YELLOW}Tip: No GPU detected. Use 30–60 s chunk sizes for videos longer than 2 min.${RESET}"
 fi

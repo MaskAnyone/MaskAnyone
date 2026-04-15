@@ -1,6 +1,7 @@
 import {useEffect, useState} from "react";
 import {AppBar, Badge, Box, Button, Chip, IconButton, Toolbar, Tooltip, Typography} from "@mui/material";
 import MenuIcon from '@mui/icons-material/Menu';
+import MemoryIcon from '@mui/icons-material/Memory';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import { Link } from "react-router-dom";
@@ -13,8 +14,6 @@ import KeycloakAuth from "../keycloakAuth";
 import PersonIcon from '@mui/icons-material/Person';
 import Api from "../api";
 import {useThemeMode} from "../mui/ThemeContext";
-import { Activity32, Warning32 } from '@carbon/icons-react';
-import SystemStatusPopover from "../components/system/SystemStatusPopover";
 
 const styles = {
     appBar: {
@@ -64,15 +63,12 @@ interface SystemResources {
     ram_total_gb: number | null;
     cpu_model: string | null;
     cpu_count: number | null;
-    disk_free_gb: number | null;
-    services: Record<string, boolean>;
 }
 
 const TopBar = (props: TopBarProps) => {
     const user = useSelector(Selector.Auth.user);
     const activeJobCount = useSelector(Selector.Job.openAndRunningJobCount);
     const [resources, setResources] = useState<SystemResources | null>(null);
-    const [statusAnchor, setStatusAnchor] = useState<HTMLElement | null>(null);
     const {mode, toggleMode} = useThemeMode();
 
     useEffect(() => {
@@ -81,11 +77,17 @@ const TopBar = (props: TopBarProps) => {
             .catch(() => {});
     }, []);
 
-    const hasWarning = resources && (
-        !resources.gpu ||
-        Object.values(resources.services ?? {}).some(up => !up)
-    );
-    const hasResources = resources !== null;
+    const resourceTooltip = resources
+        ? [
+            resources.gpu ? `GPU: ${resources.gpu.name} (${resources.gpu.vram_gb} GB VRAM)` : 'GPU: Not detected',
+            resources.ram_total_gb ? `RAM: ${resources.ram_total_gb} GB` : null,
+            resources.cpu_model ? `CPU: ${resources.cpu_model}` : null,
+            resources.cpu_count ? `Cores: ${resources.cpu_count}` : null,
+        ].filter(Boolean).join('\n')
+        : '';
+
+    // Show "Resources" if any system info is available
+    const hasResources = resources && (resources.gpu || resources.ram_total_gb);
 
     return (
         <AppBar position={'fixed'} sx={{...styles.appBar, backgroundColor: '#161616'}}>
@@ -96,37 +98,29 @@ const TopBar = (props: TopBarProps) => {
 
                 <Box component="div" sx={styles.navigationContainer}>
                     {hasResources && (
-                        <>
+                        <Tooltip title={<span style={{ whiteSpace: 'pre-line' }}>{resourceTooltip}</span>}>
                             <Chip
-                                icon={hasWarning
-                                    ? <Warning32 size={14} style={{ color: '#f1c21b' }} />
-                                    : <Activity32 size={14} style={{ color: 'rgba(255,255,255,0.4)' }} />
-                                }
-                                label={hasWarning ? 'Check system' : 'System OK'}
+                                icon={<MemoryIcon sx={{ fontSize: '1rem !important' }} />}
+                                label="Resources"
                                 size="small"
-                                onClick={(e) => setStatusAnchor(e.currentTarget)}
                                 sx={{
                                     alignSelf: 'center',
                                     ml: 1,
-                                    cursor: 'pointer',
                                     backgroundColor: 'transparent',
-                                    color: hasWarning ? '#f1c21b' : 'rgba(255,255,255,0.5)',
+                                    color: 'rgba(255,255,255,0.5)',
                                     border: 'none',
+                                    '& .MuiChip-icon': { color: 'rgba(255,255,255,0.4)' },
                                     fontFamily: '"IBM Plex Mono", monospace',
                                     fontSize: '0.65rem',
                                     height: '24px',
                                     '&:hover': {
                                         backgroundColor: 'rgba(255,255,255,0.1)',
-                                        color: hasWarning ? '#f1c21b' : 'rgba(255,255,255,0.8)',
+                                        color: 'rgba(255,255,255,0.8)',
+                                        '& .MuiChip-icon': { color: 'rgba(255,255,255,0.7)' },
                                     },
                                 }}
                             />
-                            <SystemStatusPopover
-                                anchorEl={statusAnchor}
-                                onClose={() => setStatusAnchor(null)}
-                                resources={resources}
-                            />
-                        </>
+                        </Tooltip>
                     )}
                 </Box>
                 <Button

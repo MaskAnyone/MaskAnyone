@@ -57,6 +57,9 @@ services:
     build:
       context: ./docker/yarn
     command: "yarn start"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
     volumes:
       - ./frontend:/app
 
