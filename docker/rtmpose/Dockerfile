@@ -46,6 +46,8 @@ models = [ \
     'rtmpose-m_8xb256-420e_coco-256x192', \
     'rtmpose-l_8xb256-420e_coco-256x192', \
     'td-hm_hrnet-w32_8xb64-210e_ap10k-256x256', \
+    'td-hm_hrnet-w32_8xb64-210e_apt36k-256x256', \
+    'td-hm_hrnet-w48_8xb64-210e_apt36k-256x256', \
 ]; \
 [MMPoseInferencer(m, device='cpu')([dummy], return_vis=False) for m in models]; \
 print('All RTMPose models downloaded.')"

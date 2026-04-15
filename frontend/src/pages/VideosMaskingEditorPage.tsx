@@ -362,6 +362,8 @@ const VideoMaskingEditorPage = () => {
                             <MenuItem value={'rtmpose_m'}>RTMPose M</MenuItem>
                             <MenuItem value={'rtmpose_l'}>RTMPose L</MenuItem>
                             <MenuItem value={'rtmpose_ap10k'}>RTMPose AP-10K (animals)</MenuItem>
+                            <MenuItem value={'rtmpose_apt36k'}>RTMPose APT-36K (animals, better)</MenuItem>
+                            <MenuItem value={'rtmpose_apt36k_w48'}>RTMPose APT-36K W48 (animals, best)</MenuItem>
                             <MenuItem value={'mp_pose'}>MediaPipe Pose</MenuItem>
                             <MenuItem value={'mp_face'}>MediaPipe Face</MenuItem>
                             <MenuItem value={'mp_hand'}>MediaPipe Hands</MenuItem>
