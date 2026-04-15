@@ -37,19 +37,7 @@ ENV PYTHONPATH=/app:$PYTHONPATH
 
 # Pre-download all RTMPose model checkpoints so first inference is instant.
 # Models are baked into the image — no runtime download needed.
-RUN python3 -c "\
-from mmpose.apis import MMPoseInferencer; \
-import numpy as np; \
-dummy = np.zeros((64, 64, 3), dtype=np.uint8); \
-models = [ \
-    'rtmpose-s_8xb256-420e_coco-256x192', \
-    'rtmpose-m_8xb256-420e_coco-256x192', \
-    'rtmpose-l_8xb256-420e_coco-256x192', \
-    'td-hm_hrnet-w32_8xb64-210e_ap10k-256x256', \
-    'td-hm_hrnet-w32_8xb64-210e_apt36k-256x256', \
-    'td-hm_hrnet-w48_8xb64-210e_apt36k-256x256', \
-]; \
-[MMPoseInferencer(m, device='cpu')([dummy], return_vis=False) for m in models]; \
-print('All RTMPose models downloaded.')"
+COPY download_models.py /tmp/download_models.py
+RUN python3 /tmp/download_models.py && rm /tmp/download_models.py
 
 WORKDIR /app
