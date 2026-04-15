@@ -33,7 +33,7 @@ const MODEL_GROUPS: ModelGroup[] = [
         options: [
             { value: 'rtmpose_ap10k', label: 'AP-10K', hint: 'HRNet-W32 trained on AP-10K (54 species). Baseline animal model.' },
             { value: 'rtmpose_ap10k_w48', label: 'AP-10K W48', hint: 'Larger HRNet-W48 backbone on AP-10K. More accurate, slower.' },
-            { value: 'rtmpose_ap10k_rtm', label: 'AP-10K RTMPose', hint: 'RTMPose backbone on AP-10K. Faster inference than HRNet.' },
+            { value: 'rtmpose_ap10k_rtm', label: 'AP-10K RTMPose ★', hint: 'RTMPose backbone on AP-10K. Best confidence for primates in benchmarks. Recommended for animal use.' },
             { value: 'rtmpose_animalpose', label: 'AnimalPose', hint: 'Trained on cat, dog, horse, sheep, cow. Good for domestic animals.' },
             { value: 'rtmpose_ak_mammal', label: 'Animal Kingdom (mammal)', hint: 'Mammal-specific model from Animal Kingdom dataset. Best option for primates.' },
         ],
