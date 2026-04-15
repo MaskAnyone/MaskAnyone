@@ -801,8 +801,10 @@ class Sam2PoseMasker:
             'rtmpose_m': 'rtmpose-m_8xb256-420e_coco-256x192',
             'rtmpose_l': 'rtmpose-l_8xb256-420e_coco-256x192',
             'rtmpose_ap10k': 'td-hm_hrnet-w32_8xb64-210e_ap10k-256x256',
-            'rtmpose_apt36k': 'td-hm_hrnet-w32_8xb64-210e_apt36k-256x256',
-            'rtmpose_apt36k_w48': 'td-hm_hrnet-w48_8xb64-210e_apt36k-256x256',
+            'rtmpose_ap10k_w48': 'td-hm_hrnet-w48_8xb64-210e_ap10k-256x256',
+            'rtmpose_ap10k_rtm': 'rtmpose-m_8xb64-210e_ap10k-256x256',
+            'rtmpose_animalpose': 'td-hm_hrnet-w32_8xb64-210e_animalpose-256x256',
+            'rtmpose_ak_mammal': 'td-hm_hrnet-w32_8xb32-300e_animalkingdom_P3_mammal-256x256',
         }
         model = model_map.get(overlay_strategy, 'rtmpose-m_8xb256-420e_coco-256x192')
         options = {'model': model}
