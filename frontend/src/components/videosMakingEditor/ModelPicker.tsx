@@ -1,6 +1,14 @@
 import { useState } from 'react';
 import { Box, Button, Chip, Popover, Tooltip, Typography } from '@mui/material';
+import { SxProps, Theme } from '@mui/material/styles';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+
+const styles: Record<string, SxProps<Theme>> = {
+    popoverBox: { p: 2, maxWidth: 320 },
+    groupBox: { mb: 1.5 },
+    groupLabel: { display: 'block', mb: 0.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 },
+    chipRow: { display: 'flex', flexWrap: 'wrap', gap: 0.5 },
+};
 
 interface ModelOption {
     value: string;
@@ -85,13 +93,13 @@ const ModelPicker = ({ value, onChange }: ModelPickerProps) => {
                 onClose={() => setAnchor(null)}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
             >
-                <Box sx={{ p: 2, maxWidth: 320 }}>
+                <Box sx={styles.popoverBox}>
                     {MODEL_GROUPS.map(group => (
-                        <Box key={group.label} sx={{ mb: 1.5 }}>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        <Box key={group.label} sx={styles.groupBox}>
+                            <Typography variant="caption" color="text.secondary" sx={styles.groupLabel}>
                                 {group.label}
                             </Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            <Box sx={styles.chipRow}>
                                 {group.options.map(opt => (
                                     <Tooltip key={opt.value} title={opt.hint} placement="top" arrow>
                                         <Chip
