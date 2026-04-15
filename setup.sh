@@ -158,11 +158,34 @@ if [[ "$SKIP_BUILD" == "true" ]]; then
     info "Skipping build (--skip-build)"
 else
     info "Building Docker images (this takes 20–60 min on first run)..."
-    info "SAM2 will download ~4 GB of model checkpoints."
+    info "SAM2 will download ~4 GB of model checkpoints. RTMPose will download ~1 GB."
     echo ""
-    docker compose $COMPOSE_BASE $COMPOSE_PROFILES build
-    echo ""
-    check_ok "Images built"
+
+    BUILD_SVCS=(nginx postgres pgadmin yarn python worker sam2 rtmpose openpose)
+    [[ "$WITH_AUTH" == "true" ]] && BUILD_SVCS+=(keycloak)
+    BUILD_TOTAL=${#BUILD_SVCS[@]}
+    BUILD_IDX=0
+    BUILD_ERRORS=0
+
+    for SVC in "${BUILD_SVCS[@]}"; do
+        BUILD_IDX=$((BUILD_IDX + 1))
+        echo -e "  ${CYAN}→${RESET}  [${BUILD_IDX}/${BUILD_TOTAL}] Building ${BOLD}${SVC}${RESET}..."
+        BUILD_START=$SECONDS
+        if docker compose $COMPOSE_BASE build "$SVC" 2>&1; then
+            BUILD_ELAPSED=$((SECONDS - BUILD_START))
+            ok "[${BUILD_IDX}/${BUILD_TOTAL}] ${SVC} built (${BUILD_ELAPSED}s)"
+        else
+            fail "[${BUILD_IDX}/${BUILD_TOTAL}] ${SVC} build FAILED"
+            BUILD_ERRORS=$((BUILD_ERRORS + 1))
+        fi
+        echo ""
+    done
+
+    if [[ "$BUILD_ERRORS" -gt 0 ]]; then
+        fail "$BUILD_ERRORS image(s) failed to build — see output above."
+        exit 1
+    fi
+    check_ok "All images built"
 fi
 
 # ── ensure no critical images are missing (even with --skip-build) ─────────────
@@ -176,8 +199,17 @@ for SVC in "${CORE_SVCS[@]}"; do
     fi
 done
 if [[ ${#NEED_BUILD[@]} -gt 0 ]]; then
-    warn "Missing images for: ${NEED_BUILD[*]} — building them now..."
-    docker compose $COMPOSE_BASE $COMPOSE_PROFILES build "${NEED_BUILD[@]}"
+    warn "Missing images: ${NEED_BUILD[*]} — building them now..."
+    NB_TOTAL=${#NEED_BUILD[@]}
+    NB_IDX=0
+    for SVC in "${NEED_BUILD[@]}"; do
+        NB_IDX=$((NB_IDX + 1))
+        echo -e "  ${CYAN}→${RESET}  [${NB_IDX}/${NB_TOTAL}] Building ${BOLD}${SVC}${RESET}..."
+        BUILD_START=$SECONDS
+        docker compose $COMPOSE_BASE build "$SVC" 2>&1
+        ok "[${NB_IDX}/${NB_TOTAL}] ${SVC} built ($((SECONDS - BUILD_START))s)"
+        echo ""
+    done
     check_ok "Missing images built"
 fi
 

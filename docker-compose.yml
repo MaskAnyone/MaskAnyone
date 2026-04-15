@@ -141,5 +141,4 @@ services:
       - ./app.env
     volumes:
       - ./rtmpose:/app
-      - ./data/rtmpose_model_cache:/root/.cache
     restart: on-failure
