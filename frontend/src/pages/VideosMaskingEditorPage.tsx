@@ -1,6 +1,6 @@
 import React, {Fragment, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useParams} from "react-router";
-import {Box, Button, Divider, IconButton, MenuItem, Select, Slider, TextField, Tooltip, Typography} from "@mui/material";
+import {Box, Button, Divider, IconButton, ListSubheader, MenuItem, Select, Slider, TextField, Tooltip, Typography} from "@mui/material";
 import {useDispatch, useSelector} from "react-redux";
 import Selector from "../state/selector";
 import Api from "../api";
@@ -358,19 +358,23 @@ const VideoMaskingEditorPage = () => {
                             size='small'
                         >
                             <MenuItem value={'none'}>No Overlay</MenuItem>
-                            <MenuItem value={'rtmpose_s'}>RTMPose S</MenuItem>
-                            <MenuItem value={'rtmpose_m'}>RTMPose M</MenuItem>
-                            <MenuItem value={'rtmpose_l'}>RTMPose L</MenuItem>
-                            <MenuItem value={'rtmpose_ap10k'}>RTMPose AP-10K (animals)</MenuItem>
-                            <MenuItem value={'rtmpose_apt36k'}>RTMPose APT-36K (animals, better)</MenuItem>
-                            <MenuItem value={'rtmpose_apt36k_w48'}>RTMPose APT-36K W48 (animals, best)</MenuItem>
-                            <MenuItem value={'mp_pose'}>MediaPipe Pose</MenuItem>
-                            <MenuItem value={'mp_face'}>MediaPipe Face</MenuItem>
-                            <MenuItem value={'mp_hand'}>MediaPipe Hands</MenuItem>
-                            <MenuItem value={'openpose'}>Openpose</MenuItem>
-                            <MenuItem value={'openpose_body25b'}>Openpose (BODY_25B)</MenuItem>
-                            <MenuItem value={'openpose_face'}>Openpose + Face</MenuItem>
-                            <MenuItem value={'openpose_body_135'}>Openpose (BODY_135)</MenuItem>
+                            <ListSubheader>Human pose — RTMPose</ListSubheader>
+                            <Tooltip title="Fastest, least accurate. Good for quick previews." placement="right"><MenuItem value={'rtmpose_s'}>RTMPose S</MenuItem></Tooltip>
+                            <Tooltip title="Balanced speed and accuracy. Recommended default for humans." placement="right"><MenuItem value={'rtmpose_m'}>RTMPose M</MenuItem></Tooltip>
+                            <Tooltip title="Most accurate for humans, slowest of the three." placement="right"><MenuItem value={'rtmpose_l'}>RTMPose L</MenuItem></Tooltip>
+                            <ListSubheader>Animal pose</ListSubheader>
+                            <Tooltip title="Trained on AP-10K (10K images, 54 species). Basic animal keypoints — use APT-36K if results are poor." placement="right"><MenuItem value={'rtmpose_ap10k'}>AP-10K</MenuItem></Tooltip>
+                            <Tooltip title="Trained on APT-36K (36K images, broader species coverage). Better keypoint accuracy than AP-10K." placement="right"><MenuItem value={'rtmpose_apt36k'}>APT-36K</MenuItem></Tooltip>
+                            <Tooltip title="APT-36K with a larger backbone (W48). Best animal pose quality, slower inference." placement="right"><MenuItem value={'rtmpose_apt36k_w48'}>APT-36K W48 (best)</MenuItem></Tooltip>
+                            <ListSubheader>Human pose — MediaPipe</ListSubheader>
+                            <Tooltip title="Google MediaPipe full-body pose. Fast, runs on CPU, good for single person." placement="right"><MenuItem value={'mp_pose'}>MediaPipe Pose</MenuItem></Tooltip>
+                            <Tooltip title="MediaPipe face mesh — 468 facial landmarks." placement="right"><MenuItem value={'mp_face'}>MediaPipe Face</MenuItem></Tooltip>
+                            <Tooltip title="MediaPipe hand landmarks — 21 keypoints per hand." placement="right"><MenuItem value={'mp_hand'}>MediaPipe Hands</MenuItem></Tooltip>
+                            <ListSubheader>Human pose — OpenPose</ListSubheader>
+                            <Tooltip title="Classic OpenPose body keypoints (BODY_25). Good multi-person support." placement="right"><MenuItem value={'openpose'}>OpenPose</MenuItem></Tooltip>
+                            <Tooltip title="BODY_25B — improved 25-keypoint model with better foot detection." placement="right"><MenuItem value={'openpose_body25b'}>OpenPose BODY_25B</MenuItem></Tooltip>
+                            <Tooltip title="OpenPose with face keypoints. Heavier but captures facial detail." placement="right"><MenuItem value={'openpose_face'}>OpenPose + Face</MenuItem></Tooltip>
+                            <Tooltip title="BODY_135 — full body including hands and face. Most detailed, slowest." placement="right"><MenuItem value={'openpose_body_135'}>OpenPose BODY_135</MenuItem></Tooltip>
                         </Select>
                         <br />
                         <Select 
