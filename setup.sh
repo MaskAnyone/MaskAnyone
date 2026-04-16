@@ -1,15 +1,21 @@
 #!/usr/bin/env bash
 # MaskAnyone setup script
-# Usage: bash setup.sh [--skip-build] [--with-auth]
+# Usage: bash setup.sh [--skip-build] [--with-auth] [--clean] [--clean-all]
 #   --skip-build   skip docker compose build (use existing images)
 #   --with-auth    enable Keycloak authentication (default: local/no-login mode)
+#   --clean        stop containers and remove images (keeps your data/videos)
+#   --clean-all    ⚠ stop containers, remove images AND delete all data/videos
 set -euo pipefail
 
 SKIP_BUILD=false
 WITH_AUTH=false
+CLEAN=false
+CLEAN_ALL=false
 for arg in "$@"; do
     [[ "$arg" == "--skip-build" ]] && SKIP_BUILD=true
     [[ "$arg" == "--with-auth"  ]] && WITH_AUTH=true
+    [[ "$arg" == "--clean"      ]] && CLEAN=true
+    [[ "$arg" == "--clean-all"  ]] && CLEAN_ALL=true
 done
 
 # Cross-platform helpers
@@ -50,6 +56,67 @@ WARNINGS=0
 check_ok()   { ok "$1"; }
 check_warn() { warn "$1"; WARNINGS=$((WARNINGS+1)); }
 check_fail() { fail "$1"; ERRORS=$((ERRORS+1)); }
+
+# ── clean mode ─────────────────────────────────────────────────────────────────
+if [[ "$CLEAN_ALL" == "true" || "$CLEAN" == "true" ]]; then
+    echo ""
+    echo -e "${BOLD}╔══════════════════════════════════════════╗${RESET}"
+    echo -e "${BOLD}║       MaskAnyone  —  Setup Scout         ║${RESET}"
+    echo -e "${BOLD}╚══════════════════════════════════════════╝${RESET}"
+    echo ""
+
+    if [[ "$CLEAN_ALL" == "true" ]]; then
+        echo -e "  ${RED}${BOLD}⚠  WARNING: --clean-all will permanently delete:${RESET}"
+        echo -e "  ${RED}     • All MaskAnyone containers and images${RESET}"
+        echo -e "  ${RED}     • All uploaded videos${RESET}"
+        echo -e "  ${RED}     • All results and processed outputs${RESET}"
+        echo -e "  ${RED}     • The database (all job history)${RESET}"
+        echo ""
+        echo -ne "  ${YELLOW}Type YES to confirm: ${RESET}"
+        read -r CONFIRM
+        if [[ "$CONFIRM" != "YES" ]]; then
+            echo "  Aborted."
+            exit 0
+        fi
+    else
+        echo -e "  ${YELLOW}${BOLD}--clean: stopping containers and removing images.${RESET}"
+        echo -e "  ${YELLOW}Your uploaded videos and results will be kept.${RESET}"
+        echo ""
+    fi
+
+    # Detect compose base for teardown
+    if [[ "$HAS_GPU" == "true" ]]; then
+        COMPOSE_BASE="-f docker-compose.yml"
+    else
+        COMPOSE_BASE="-f docker-compose.yml -f docker-compose-cpu.yml"
+    fi
+
+    info "Stopping containers..."
+    docker compose $COMPOSE_BASE down --remove-orphans 2>/dev/null || true
+    check_ok "Containers stopped"
+
+    info "Removing MaskAnyone images..."
+    docker images --format '{{.Repository}}:{{.Tag}}' | grep '^maskanyone-src-' | xargs -r docker rmi -f 2>/dev/null || true
+    check_ok "Images removed"
+
+    if [[ "$CLEAN_ALL" == "true" ]]; then
+        info "Removing data directories..."
+        rm -rf ./data
+        check_ok "Data removed"
+        info "Removing Docker volumes..."
+        docker volume ls --format '{{.Name}}' | grep 'maskanyone' | xargs -r docker volume rm 2>/dev/null || true
+        check_ok "Volumes removed"
+    fi
+
+    echo ""
+    if [[ "$CLEAN_ALL" == "true" ]]; then
+        echo -e "  ${GREEN}${BOLD}Clean complete. Run 'bash setup.sh' to start fresh.${RESET}"
+    else
+        echo -e "  ${GREEN}${BOLD}Clean complete. Run 'bash setup.sh' to rebuild and restart.${RESET}"
+    fi
+    echo ""
+    exit 0
+fi
 
 # ── header ─────────────────────────────────────────────────────────────────────
 echo ""

@@ -88,3 +88,5 @@ Something else on your machine is using port 443. Stop it or change the nginx po
 | `bash setup.sh` | Local mode, no login required |
 | `bash setup.sh --with-auth` | Enable Keycloak authentication |
 | `bash setup.sh --skip-build` | Skip image build (use existing images) |
+| `bash setup.sh --clean` | Stop and remove images, **keep your videos and results** |
+| `bash setup.sh --clean-all` | ⚠ Full wipe — removes everything including videos and database |
