@@ -174,3 +174,5 @@ data/backend/results/*
 data/backend/videos/*
 !data/backend/videos/.gitkeep
 
+benchmark/
+benchmark_results.txt
