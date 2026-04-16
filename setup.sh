@@ -273,6 +273,40 @@ if [[ "$BACKEND_UP" == "false" ]]; then
     check_warn "Backend not reachable yet — try opening https://localhost in a minute"
 fi
 
+# ── seed sample videos (only if library is empty) ──────────────────────────────
+if [[ "$BACKEND_UP" == "true" ]]; then
+    VIDEO_COUNT=$(curl -4sk --max-time 5 "https://localhost/api//videos/" 2>/dev/null \
+        | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "1")
+    if [[ "$VIDEO_COUNT" == "0" ]]; then
+        info "Seeding sample videos from MaskedPiper paper..."
+        SAMPLE_BASE="https://raw.githubusercontent.com/WimPouw/TowardsMultimodalOpenScience/main/Input_Videos"
+        SEED_OK=0
+        for SAMPLE_NAME in "sample.mp4" "ted_kid.mp4"; do
+            SAMPLE_URL="${SAMPLE_BASE}/${SAMPLE_NAME}"
+            SAMPLE_TMP="/tmp/maskanyone_seed_${SAMPLE_NAME}"
+            if curl -fsSL "$SAMPLE_URL" -o "$SAMPLE_TMP" 2>/dev/null; then
+                # request upload slot
+                UPLOAD_ID=$(curl -4sk -X POST "https://localhost/api//videos/upload/request" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"fileName\":\"${SAMPLE_NAME}\",\"fileSize\":$(wc -c < "$SAMPLE_TMP"),\"tags\":[]}" \
+                    2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('videoId',''))" 2>/dev/null || echo "")
+                if [[ -n "$UPLOAD_ID" ]]; then
+                    curl -4sk -X POST "https://localhost/api//videos/upload/${UPLOAD_ID}" \
+                        -F "file=@${SAMPLE_TMP}" &>/dev/null || true
+                    curl -4sk -X POST "https://localhost/api//videos/upload/finalize" \
+                        -H "Content-Type: application/json" \
+                        -d "{\"videoId\":\"${UPLOAD_ID}\"}" &>/dev/null || true
+                    SEED_OK=$((SEED_OK+1))
+                fi
+                rm -f "$SAMPLE_TMP"
+            fi
+        done
+        [[ "$SEED_OK" -gt 0 ]] && check_ok "Sample videos seeded ($SEED_OK)" || warn "Could not seed sample videos (network issue?)"
+    else
+        info "Library not empty — skipping sample video seed"
+    fi
+fi
+
 # Query /platform/resources
 RESOURCES=$(curl -4sk --max-time 10 https://localhost/api/platform/resources 2>/dev/null || echo "{}")
 
