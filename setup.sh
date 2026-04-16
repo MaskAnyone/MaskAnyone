@@ -62,6 +62,13 @@ echo ""
 section "1 / 4  Prerequisites"
 # ═══════════════════════════════════════════════════════════════════════════════
 
+# curl
+if command -v curl &>/dev/null; then
+    check_ok "curl $(curl --version | head -1 | awk '{print $2}')"
+else
+    check_fail "curl not found — install curl (e.g. 'sudo apt install curl' or 'brew install curl')"
+fi
+
 # Docker
 if command -v docker &>/dev/null; then
     DOCKER_VER=$(docker --version | awk '{print $3}' | tr -d ',')
@@ -206,8 +213,12 @@ if [[ ${#NEED_BUILD[@]} -gt 0 ]]; then
         NB_IDX=$((NB_IDX + 1))
         echo -e "  ${CYAN}→${RESET}  [${NB_IDX}/${NB_TOTAL}] Building ${BOLD}${SVC}${RESET}..."
         BUILD_START=$SECONDS
-        docker compose $COMPOSE_BASE build "$SVC" 2>&1
-        ok "[${NB_IDX}/${NB_TOTAL}] ${SVC} built ($((SECONDS - BUILD_START))s)"
+        if docker compose $COMPOSE_BASE build "$SVC" 2>&1; then
+            ok "[${NB_IDX}/${NB_TOTAL}] ${SVC} built ($((SECONDS - BUILD_START))s)"
+        else
+            fail "[${NB_IDX}/${NB_TOTAL}] ${SVC} build FAILED"
+            exit 1
+        fi
         echo ""
     done
     check_ok "Missing images built"
@@ -288,7 +299,7 @@ if [[ "$BACKEND_UP" == "true" ]]; then
                 # request upload slot
                 UPLOAD_ID=$(curl -4sk -X POST "https://localhost/api//videos/upload/request" \
                     -H "Content-Type: application/json" \
-                    -d "{\"fileName\":\"${SAMPLE_NAME}\",\"fileSize\":$(wc -c < "$SAMPLE_TMP"),\"tags\":[]}" \
+                    -d "{\"fileName\":\"${SAMPLE_NAME}\",\"fileSize\":$(wc -c < "$SAMPLE_TMP" | tr -d ' '),\"tags\":[]}" \
                     2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('videoId',''))" 2>/dev/null || echo "")
                 if [[ -n "$UPLOAD_ID" ]]; then
                     curl -4sk -X POST "https://localhost/api//videos/upload/${UPLOAD_ID}" \
