@@ -44,6 +44,21 @@ class BackendClient:
             self._make_url("jobs/" + job_id + "/fail")
         )
 
+    def get_job_status(self, job_id: str) -> str:
+        """Return the current status of a job ('open'|'running'|'finished'|'failed'|'cancelled').
+
+        On network errors, returns 'unknown' — the caller should treat this as "don't
+        cancel on a transient failure to fetch status."
+        """
+        try:
+            response = requests.get(
+                self._make_url("jobs/" + job_id + "/status"),
+                timeout=5,
+            )
+            return response.json().get("status", "unknown")
+        except Exception:
+            return "unknown"
+
     def upload_result_video(self, video_id: str, result_video_id: str, content):
         requests.post(
             self._make_url("videos/" + video_id + "/results/" + result_video_id),
@@ -81,10 +96,13 @@ class BackendClient:
                 headers={"Content-Type": "application/octet-stream"},
             )
 
-    def update_progress(self, job_id: str, progress: int):
+    def update_progress(self, job_id: str, progress: int, phase: str | None = None):
+        payload = {"progress": progress}
+        if phase is not None:
+            payload["phase"] = phase
         requests.post(
             self._make_url("jobs/" + job_id + "/progress"),
-            json={"progress": progress},
+            json=payload,
         )
 
     def _make_url(self, path: str) -> str:

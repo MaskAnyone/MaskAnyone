@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # MaskAnyone setup script
 # Usage: bash setup.sh [--skip-build] [--with-auth] [--clean] [--clean-all]
+#        bash setup.sh doctor               # diagnose a broken install, suggest fixes
 #   --skip-build   skip docker compose build (use existing images)
 #   --with-auth    enable Keycloak authentication (default: local/no-login mode)
 #   --clean        stop containers and remove images (keeps your data/videos)
@@ -11,12 +12,33 @@ SKIP_BUILD=false
 WITH_AUTH=false
 CLEAN=false
 CLEAN_ALL=false
+DOCTOR=false
 for arg in "$@"; do
     [[ "$arg" == "--skip-build" ]] && SKIP_BUILD=true
     [[ "$arg" == "--with-auth"  ]] && WITH_AUTH=true
     [[ "$arg" == "--clean"      ]] && CLEAN=true
     [[ "$arg" == "--clean-all"  ]] && CLEAN_ALL=true
+    [[ "$arg" == "doctor"       ]] && DOCTOR=true
 done
+
+# Tee all output to a timestamped log file. Keeps the user's terminal live while
+# also producing a file they can paste when reporting an issue.
+mkdir -p logs
+LOG_FILE="logs/setup-$(date +%Y%m%d-%H%M%S).log"
+exec > >(tee -a "$LOG_FILE") 2>&1
+echo "Log: $LOG_FILE"
+
+# Pick a working Python for JSON parsing. On Windows, `python3` often resolves to
+# the Microsoft Store launcher stub which errors instead of running — so check
+# that the binary actually executes, not just that it's in PATH.
+PY=""
+for cmd in python3 python py; do
+    if command -v "$cmd" &>/dev/null && "$cmd" -c 'import json' &>/dev/null 2>&1; then
+        PY="$cmd"
+        break
+    fi
+done
+PY="${PY:-python3}"  # last-resort fallback; ||-chains below still tolerate failure
 
 # Cross-platform helpers
 # sed -i behaves differently on macOS (BSD) vs Linux/Git Bash
@@ -38,6 +60,22 @@ if [[ "$HAS_GPU" == "true" ]]; then
     COMPOSE_BASE="-f docker-compose.yml"
 else
     COMPOSE_BASE="-f docker-compose.yml -f docker-compose-cpu.yml"
+fi
+
+# Detect the GPU's compute capability and inject into the build.
+# Without this, a Dockerfile compiled for sm_86 will fail at runtime on sm_120
+# with "no kernel image is available for execution on the device".
+BUILD_ARGS=""
+if [[ "$HAS_GPU" == "true" ]]; then
+    GPU_ARCH=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null \
+        | tr -d ' ' | sort -uV | tr '\n' ';' | sed 's/;$//')
+    if [[ -n "$GPU_ARCH" ]]; then
+        export TORCH_CUDA_ARCH_LIST="${GPU_ARCH}+PTX"
+        # OpenPose's cmake wants the arch without dots (e.g. 12.0 → 120) and semicolons
+        # for multi-GPU, which matches the `CUDA_ARCH_BIN` cmake convention.
+        CUDA_ARCH_BIN=$(echo "$GPU_ARCH" | tr -d '.')
+        BUILD_ARGS="--build-arg TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} --build-arg CUDA_ARCH_BIN=${CUDA_ARCH_BIN}"
+    fi
 fi
 
 # ── colours ────────────────────────────────────────────────────────────────────
@@ -96,7 +134,7 @@ if [[ "$CLEAN_ALL" == "true" || "$CLEAN" == "true" ]]; then
     check_ok "Containers stopped"
 
     info "Removing MaskAnyone images..."
-    docker images --format '{{.Repository}}:{{.Tag}}' | grep '^maskanyone-src-' | xargs -r docker rmi -f 2>/dev/null || true
+    docker images --format '{{.Repository}}:{{.Tag}}' | grep '^maskanyone-' | xargs -r docker rmi -f 2>/dev/null || true
     check_ok "Images removed"
 
     if [[ "$CLEAN_ALL" == "true" ]]; then
@@ -113,6 +151,129 @@ if [[ "$CLEAN_ALL" == "true" || "$CLEAN" == "true" ]]; then
         echo -e "  ${GREEN}${BOLD}Clean complete. Run 'bash setup.sh' to start fresh.${RESET}"
     else
         echo -e "  ${GREEN}${BOLD}Clean complete. Run 'bash setup.sh' to rebuild and restart.${RESET}"
+    fi
+    echo ""
+    exit 0
+fi
+
+# ── doctor mode ────────────────────────────────────────────────────────────────
+# Diagnoses a broken install without changing anything. Each failed check prints
+# the exact command a user should run to recover. The goal is to turn "it's
+# broken" into "run this one line."
+if [[ "$DOCTOR" == "true" ]]; then
+    echo ""
+    echo -e "${BOLD}╔══════════════════════════════════════════╗${RESET}"
+    echo -e "${BOLD}║       MaskAnyone  —  Doctor              ║${RESET}"
+    echo -e "${BOLD}╚══════════════════════════════════════════╝${RESET}"
+    echo ""
+
+    ISSUES=0
+    fixhint() { echo -e "      ${CYAN}→ fix:${RESET} $*"; ISSUES=$((ISSUES+1)); }
+
+    # Convert PyTorch 'sm_XX' to compute capability 'X.X' (e.g. sm_120 → 12.0)
+    sm_to_cap() { echo "$1" | sed 's/sm_//' | sed -E 's/(.)$/.\1/'; }
+
+    section "Docker"
+    if ! docker info &>/dev/null 2>&1; then
+        fail "Docker daemon not running"
+        fixhint "Open Docker Desktop (or 'sudo systemctl start docker'), then re-run doctor"
+        echo ""
+        echo -e "  ${RED}${BOLD}Cannot continue without Docker. Aborting.${RESET}"
+        exit 1
+    fi
+    ok "Docker daemon running"
+
+    section "Expected images"
+    EXPECTED_IMAGES=(nginx postgres pgadmin yarn python worker sam2 rtmpose openpose)
+    MISSING_IMAGES=()
+    for SVC in "${EXPECTED_IMAGES[@]}"; do
+        if docker image inspect "maskanyone-${SVC}:latest" &>/dev/null; then
+            ok "maskanyone-${SVC}:latest"
+        else
+            fail "maskanyone-${SVC}:latest missing"
+            MISSING_IMAGES+=("$SVC")
+        fi
+    done
+    if [[ ${#MISSING_IMAGES[@]} -gt 0 ]]; then
+        fixhint "bash setup.sh    # will rebuild the missing images"
+    fi
+
+    section "Running containers"
+    EXPECTED_CONTAINERS=(nginx postgres pgadmin yarn python worker sam2 rtmpose openpose)
+    STOPPED=()
+    for SVC in "${EXPECTED_CONTAINERS[@]}"; do
+        STATE=$(docker inspect -f '{{.State.Status}}' "maskanyone-${SVC}-1" 2>/dev/null || echo "missing")
+        case "$STATE" in
+            running)  ok "$SVC" ;;
+            missing)  fail "$SVC container does not exist";       STOPPED+=("$SVC") ;;
+            exited)   fail "$SVC container exited";                STOPPED+=("$SVC") ;;
+            *)        warn "$SVC state: $STATE";                   STOPPED+=("$SVC") ;;
+        esac
+    done
+    if [[ ${#STOPPED[@]} -gt 0 ]]; then
+        fixhint "docker compose up -d ${STOPPED[*]}"
+    fi
+
+    section "Backend reachable"
+    STATUS=$(curl -4sk --max-time 5 -o /dev/null -w "%{http_code}" https://localhost/api/platform/mode 2>/dev/null || echo "000")
+    if [[ "$STATUS" == "200" ]]; then
+        ok "https://localhost/api/platform/mode → 200"
+    else
+        fail "https://localhost/api/platform/mode → $STATUS"
+        fixhint "docker compose restart python nginx    # restart backend + proxy"
+    fi
+
+    # GPU arch compatibility check — the exact class of bug we hit with SAM2.
+    # Compare the GPU's compute cap to what each PyTorch build was compiled for.
+    section "GPU arch compatibility"
+    if command -v nvidia-smi &>/dev/null && nvidia-smi -L &>/dev/null 2>&1; then
+        GPU_CAP=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | head -1 | tr -d ' ')
+        info "Host GPU compute capability: $GPU_CAP"
+        for SVC in sam2; do
+            if ! docker ps --format '{{.Names}}' | grep -q "^maskanyone-${SVC}-1$"; then
+                warn "$SVC not running — skipping arch check"
+                continue
+            fi
+            SUPPORTED=$(MSYS_NO_PATHCONV=1 docker exec "maskanyone-${SVC}-1" python -c \
+                "import torch; print(' '.join(torch.cuda.get_arch_list()))" 2>/dev/null || echo "")
+            if [[ -z "$SUPPORTED" ]]; then
+                warn "$SVC: could not read arch list (torch missing?)"
+                continue
+            fi
+            MATCHED=false
+            for SM in $SUPPORTED; do
+                [[ "$(sm_to_cap "$SM")" == "$GPU_CAP" ]] && MATCHED=true
+            done
+            if [[ "$MATCHED" == "true" ]]; then
+                ok "$SVC compiled for your GPU (cap $GPU_CAP)"
+            else
+                fail "$SVC NOT compiled for your GPU (cap $GPU_CAP). Supports: $SUPPORTED"
+                fixhint "docker compose build --no-cache --build-arg TORCH_CUDA_ARCH_LIST=${GPU_CAP}+PTX $SVC && docker compose up -d $SVC"
+            fi
+        done
+    else
+        info "No NVIDIA GPU — skipping arch check"
+    fi
+
+    section "Per-service health"
+    RESOURCES=$(curl -4sk --max-time 10 https://localhost/api/platform/resources 2>/dev/null || echo "{}")
+    # Substring match on the JSON is good enough — the backend's format is stable
+    # and this works without depending on Python being in PATH.
+    for SVC in sam2 rtmpose openpose; do
+        if echo "$RESOURCES" | grep -q "\"$SVC\":[[:space:]]*true"; then
+            ok "$SVC: Online"
+        else
+            fail "$SVC: Offline"
+            fixhint "docker logs --tail 40 maskanyone-${SVC}-1    # inspect crash, then: docker compose restart $SVC"
+        fi
+    done
+
+    echo ""
+    echo -e "${BOLD}────────────────────────────────────────────${RESET}"
+    if [[ "$ISSUES" -eq 0 ]]; then
+        echo -e "  ${GREEN}${BOLD}No issues found. MaskAnyone looks healthy.${RESET}"
+    else
+        echo -e "  ${YELLOW}${BOLD}$ISSUES issue(s) found — run the suggested fixes above, top-down.${RESET}"
     fi
     echo ""
     exit 0
@@ -165,6 +326,9 @@ if [[ "$HAS_GPU" == "true" ]]; then
     GPU_MEM=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader 2>/dev/null | head -1 | tr -d ' ' || echo "")
     if [[ -n "$GPU_NAME" ]]; then
         check_ok "GPU: $GPU_NAME ($GPU_MEM) — running in GPU mode"
+        if [[ -n "${TORCH_CUDA_ARCH_LIST:-}" ]]; then
+            check_ok "GPU compute arch: $TORCH_CUDA_ARCH_LIST (passed to Dockerfiles)"
+        fi
     else
         check_warn "nvidia-smi found but no GPU detected — falling back to CPU mode"
     fi
@@ -245,7 +409,7 @@ else
         BUILD_IDX=$((BUILD_IDX + 1))
         echo -e "  ${CYAN}→${RESET}  [${BUILD_IDX}/${BUILD_TOTAL}] Building ${BOLD}${SVC}${RESET}..."
         BUILD_START=$SECONDS
-        if docker compose $COMPOSE_BASE build "$SVC" 2>&1; then
+        if docker compose $COMPOSE_BASE build $BUILD_ARGS "$SVC" 2>&1; then
             BUILD_ELAPSED=$((SECONDS - BUILD_START))
             ok "[${BUILD_IDX}/${BUILD_TOTAL}] ${SVC} built (${BUILD_ELAPSED}s)"
         else
@@ -267,7 +431,7 @@ CORE_SVCS=(python worker sam2 yarn nginx postgres pgadmin rtmpose openpose)
 [[ "$WITH_AUTH" == "true" ]] && CORE_SVCS+=(keycloak)
 NEED_BUILD=()
 for SVC in "${CORE_SVCS[@]}"; do
-    IMG="maskanyone-src-${SVC}:latest"
+    IMG="maskanyone-${SVC}:latest"
     if ! docker image inspect "$IMG" &>/dev/null 2>&1; then
         NEED_BUILD+=("$SVC")
     fi
@@ -280,7 +444,7 @@ if [[ ${#NEED_BUILD[@]} -gt 0 ]]; then
         NB_IDX=$((NB_IDX + 1))
         echo -e "  ${CYAN}→${RESET}  [${NB_IDX}/${NB_TOTAL}] Building ${BOLD}${SVC}${RESET}..."
         BUILD_START=$SECONDS
-        if docker compose $COMPOSE_BASE build "$SVC" 2>&1; then
+        if docker compose $COMPOSE_BASE build $BUILD_ARGS "$SVC" 2>&1; then
             ok "[${NB_IDX}/${NB_TOTAL}] ${SVC} built ($((SECONDS - BUILD_START))s)"
         else
             fail "[${NB_IDX}/${NB_TOTAL}] ${SVC} build FAILED"
@@ -353,8 +517,8 @@ fi
 
 # ── seed sample videos (only if library is empty) ──────────────────────────────
 if [[ "$BACKEND_UP" == "true" ]]; then
-    VIDEO_COUNT=$(curl -4sk --max-time 5 "https://localhost/api//videos/" 2>/dev/null \
-        | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "1")
+    VIDEO_COUNT=$(curl -4sk --max-time 5 "https://localhost/api/videos" 2>/dev/null \
+        | "$PY" -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "1")
     if [[ "$VIDEO_COUNT" == "0" ]]; then
         info "Seeding sample videos from MaskedPiper paper..."
         SAMPLE_BASE="https://raw.githubusercontent.com/WimPouw/TowardsMultimodalOpenScience/main/Input_Videos"
@@ -364,14 +528,14 @@ if [[ "$BACKEND_UP" == "true" ]]; then
             SAMPLE_TMP="/tmp/maskanyone_seed_${SAMPLE_NAME}"
             if curl -fsSL "$SAMPLE_URL" -o "$SAMPLE_TMP" 2>/dev/null; then
                 # request upload slot
-                UPLOAD_ID=$(curl -4sk -X POST "https://localhost/api//videos/upload/request" \
+                UPLOAD_ID=$(curl -4sk -X POST "https://localhost/api/videos/upload/request" \
                     -H "Content-Type: application/json" \
                     -d "{\"fileName\":\"${SAMPLE_NAME}\",\"fileSize\":$(wc -c < "$SAMPLE_TMP" | tr -d ' '),\"tags\":[]}" \
-                    2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('videoId',''))" 2>/dev/null || echo "")
+                    2>/dev/null | "$PY" -c "import sys,json; print(json.load(sys.stdin).get('videoId',''))" 2>/dev/null || echo "")
                 if [[ -n "$UPLOAD_ID" ]]; then
-                    curl -4sk -X POST "https://localhost/api//videos/upload/${UPLOAD_ID}" \
+                    curl -4sk -X POST "https://localhost/api/videos/upload/${UPLOAD_ID}" \
                         -F "file=@${SAMPLE_TMP}" &>/dev/null || true
-                    curl -4sk -X POST "https://localhost/api//videos/upload/finalize" \
+                    curl -4sk -X POST "https://localhost/api/videos/upload/finalize" \
                         -H "Content-Type: application/json" \
                         -d "{\"videoId\":\"${UPLOAD_ID}\"}" &>/dev/null || true
                     SEED_OK=$((SEED_OK+1))
@@ -388,9 +552,9 @@ fi
 # Query /platform/resources
 RESOURCES=$(curl -4sk --max-time 10 https://localhost/api/platform/resources 2>/dev/null || echo "{}")
 
-GPU=$(echo "$RESOURCES" | python3 -c "import sys,json; d=json.load(sys.stdin); g=d.get('gpu'); print(f\"{g['name']} ({g['vram_gb']} GB VRAM)\" if g else 'Not detected')" 2>/dev/null || echo "unknown")
-RAM=$(echo "$RESOURCES" | python3 -c "import sys,json; d=json.load(sys.stdin); print(f\"{d.get('ram_total_gb','?')} GB\")" 2>/dev/null || echo "?")
-DISK=$(echo "$RESOURCES" | python3 -c "import sys,json; d=json.load(sys.stdin); print(f\"{d.get('disk_free_gb','?')} GB free\")" 2>/dev/null || echo "?")
+GPU=$(echo "$RESOURCES" | "$PY" -c "import sys,json; d=json.load(sys.stdin); g=d.get('gpu'); print(f\"{g['name']} ({g['vram_gb']} GB VRAM)\" if g else 'Not detected')" 2>/dev/null || echo "unknown")
+RAM=$(echo "$RESOURCES" | "$PY" -c "import sys,json; d=json.load(sys.stdin); print(f\"{d.get('ram_total_gb','?')} GB\")" 2>/dev/null || echo "?")
+DISK=$(echo "$RESOURCES" | "$PY" -c "import sys,json; d=json.load(sys.stdin); print(f\"{d.get('disk_free_gb','?')} GB free\")" 2>/dev/null || echo "?")
 
 if [[ "$GPU" == "Not detected" ]]; then
     check_warn "GPU: $GPU — chunked processing recommended for videos > 2 min"
@@ -402,7 +566,7 @@ check_ok "Disk: $DISK"
 
 # Per-service health
 for SERVICE in sam2 rtmpose openpose; do
-    UP=$(echo "$RESOURCES" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('services',{}).get('$SERVICE', False))" 2>/dev/null || echo "False")
+    UP=$(echo "$RESOURCES" | "$PY" -c "import sys,json; d=json.load(sys.stdin); print(d.get('services',{}).get('$SERVICE', False))" 2>/dev/null || echo "False")
     if [[ "$UP" == "True" ]]; then
         check_ok "$SERVICE: Online"
     else

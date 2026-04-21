@@ -176,3 +176,6 @@ data/backend/videos/*
 
 benchmark/
 benchmark_results.txt
+
+# Temp directory worker writes sub-videos to during pose estimation
+worker/subvideos/

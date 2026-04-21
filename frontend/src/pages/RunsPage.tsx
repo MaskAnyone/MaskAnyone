@@ -18,6 +18,7 @@ import {Job} from "../state/types/Job";
 import {Link} from "react-router-dom";
 import Paths from "../paths";
 import DeleteIcon from '@mui/icons-material/Delete';
+import CancelIcon from '@mui/icons-material/Cancel';
 import DeleteJobDialog from "../components/runs/DeleteJobDialog";
 import Command from "../state/actions/command";
 
@@ -265,10 +266,31 @@ const pulse = keyframes`
     50% { opacity: 0.5; }
 `;
 
-const getProgressPhase = (progress: number, status: string): { label: string; color: string; detail: string } => {
+// Authoritative phase labels reported by the worker. Falls back to inferring from
+// progress ranges for backward compatibility with jobs written before the phase
+// field existed (or for UIs that have loaded before the column was populated).
+const PHASE_META: Record<string, { color: string; detail: string }> = {
+    'Preparing':       { color: 'info.main',    detail: 'Setting up the pipeline and reading video metadata' },
+    'Segmenting':      { color: 'warning.main', detail: 'SAM2 propagating masks frame-by-frame — longest step, depends on video length' },
+    'Estimating pose': { color: 'info.main',    detail: 'Running pose estimation on each tracked object (RTMPose / OpenPose / MediaPipe)' },
+    'Rendering':       { color: 'success.main', detail: 'Compositing the output video — applying masks and pose overlays' },
+};
+
+const getProgressPhase = (progress: number, status: string, phase?: string | null): { label: string; color: string; detail: string } => {
     if (status === 'finished') return { label: 'Done', color: 'success.main', detail: 'Processing complete' };
     if (status === 'failed') return { label: 'Failed', color: 'error.main', detail: 'Job failed — check worker logs' };
+    if (status === 'cancelled') return { label: 'Cancelled', color: 'text.secondary', detail: 'Cancelled by user — the worker stopped at the next checkpoint.' };
     if (status === 'open') return { label: 'Queued', color: 'text.secondary', detail: 'Waiting for a worker to pick up the job' };
+
+    // Prefer the authoritative phase from the backend when available.
+    if (phase && PHASE_META[phase]) {
+        return { label: phase, ...PHASE_META[phase] };
+    }
+    if (phase) {
+        return { label: phase, color: 'info.main', detail: phase };
+    }
+
+    // Fallback: infer from progress range (legacy behavior).
     if (progress <= 5) return { label: 'Reading', color: 'info.main', detail: 'Reading video into memory' };
     if (progress <= 30) return { label: 'SAM2', color: 'warning.main', detail: 'SAM2 propagating masks frame-by-frame — longest step, depends on video length' };
     if (progress <= 35) return { label: 'Decoding', color: 'info.main', detail: 'Decoding SAM2 mask output' };
@@ -291,7 +313,7 @@ const JobProgressCell = ({ job }: { job: Job }) => {
         );
     }
 
-    const phase = getProgressPhase(job.progress, job.status);
+    const phase = getProgressPhase(job.progress, job.status, job.phase);
     const isSegmenting = job.status === 'running' && job.progress > 5 && job.progress <= 30;
 
     return (
@@ -450,6 +472,17 @@ const RunsPage = () => {
                       />
                     </TableCell>
                     <TableCell>
+                      {(row.status === 'open' || row.status === 'running') && (
+                        <Tooltip title="Stop the worker at the next checkpoint. The job stays visible here with status 'cancelled'.">
+                          <IconButton
+                            color={'warning'}
+                            size="small"
+                            onClick={() => dispatch(Command.Job.cancelJob({ id: row.id }))}
+                          >
+                            <CancelIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                       <IconButton color={'primary'} size="small" onClick={() => setJobToDelete(row.id)}>
                         <DeleteIcon fontSize="small" />
                       </IconButton>

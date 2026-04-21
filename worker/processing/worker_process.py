@@ -12,6 +12,7 @@ from communication.video_manager import VideoManager
 from masking.media_pipe_pose_masker import MediaPipePoseMasker
 from masking.sam2_pose_masker import Sam2PoseMasker
 from masking.ffmpeg_converter import FFmpegConverter
+from masking.exceptions import JobCancelled
 
 SLEEP_INTERVAL = 5
 
@@ -87,6 +88,10 @@ class WorkerProcess:
 
             self._backend_client.mark_job_as_finished(job["id"])
             print("Finished processing job with id " + job["id"], flush=True)
+        except JobCancelled:
+            # The cancel endpoint already set status='cancelled' in the DB — do NOT
+            # mark as failed. Just log and move on to the next job.
+            print("Job " + job["id"] + " was cancelled by the user. Unwinding cleanly.", flush=True)
         except Exception as e:
             print("Error while processing job, marking as failed.", flush=True)
             stack_trace = traceback.format_exc()
@@ -97,8 +102,8 @@ class WorkerProcess:
     def _run_media_pipe_pose_masker(self, job):
         self._last_api_call_time = 0
 
-        def progress_callback(progress: int) -> None:
-            self._report_masker_progress(job, progress)
+        def progress_callback(progress: int, phase: str | None = None) -> None:
+            self._report_masker_progress(job, progress, phase)
 
         media_pipe_pose_masker = MediaPipePoseMasker(
             self._video_manager.get_original_video_path(job["video_id"]),
@@ -110,9 +115,21 @@ class WorkerProcess:
 
     def _run_sam2_masking(self, job):
         self._last_api_call_time = 0
+        self._last_cancel_check_time = 0
+        self._cached_cancel_status = False
 
-        def progress_callback(progress: int) -> None:
-            self._report_masker_progress(job, progress)
+        def progress_callback(progress: int, phase: str | None = None) -> None:
+            self._report_masker_progress(job, progress, phase)
+
+        def is_cancelled() -> bool:
+            # Rate-limit status polls to every 2s to avoid hammering the backend.
+            # Return the cached decision in between polls.
+            current = time.time()
+            if current - self._last_cancel_check_time >= 2:
+                self._last_cancel_check_time = current
+                status = self._backend_client.get_job_status(job["id"])
+                self._cached_cancel_status = (status == "cancelled")
+            return self._cached_cancel_status
 
         sam2_pose_masker = Sam2PoseMasker(
             self._sam2_client,
@@ -122,7 +139,8 @@ class WorkerProcess:
             self._video_manager.get_output_video_path(job["video_id"]),
             self._video_manager.get_result_data_path(job["video_id"], 'sam2_masks'),
             self._video_manager.get_result_data_path(job["video_id"], 'poses'),
-            progress_callback
+            progress_callback,
+            is_cancelled_callback=is_cancelled,
         )
 
         sam2_pose_masker.mask(job['data']['videoMasking'])
@@ -138,11 +156,13 @@ class WorkerProcess:
                 self._video_manager.get_original_video_path(job["video_id"]),
             )
 
-    def _report_masker_progress(self, job, progress: int) -> None:
+    def _report_masker_progress(self, job, progress: int, phase: str | None = None) -> None:
         current_time = time.time()
-        if current_time - self._last_api_call_time >= 3:
+        # Phase transitions bypass the 3s rate-limit — they're rare and worth surfacing
+        # to the UI immediately.
+        if phase is not None or current_time - self._last_api_call_time >= 3:
             self._last_api_call_time = current_time
-            self._backend_client.update_progress(job["id"], progress)
+            self._backend_client.update_progress(job["id"], progress, phase)
 
     def _generate_preview_image(self, video_path: str) -> None:
         video_cap = cv2.VideoCapture(video_path)

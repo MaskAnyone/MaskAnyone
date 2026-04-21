@@ -6,6 +6,7 @@ interface ModelOption {
     value: string;
     label: string;
     hint: string;
+    disabled?: boolean;
 }
 
 interface ModelGroup {
@@ -29,13 +30,13 @@ const MODEL_GROUPS: ModelGroup[] = [
         ],
     },
     {
-        label: 'Animal',
+        label: 'Animal — in development',
         options: [
-            { value: 'rtmpose_ap10k', label: 'AP-10K', hint: 'HRNet-W32 trained on AP-10K (54 species). Baseline animal model.' },
-            { value: 'rtmpose_ap10k_w48', label: 'AP-10K W48', hint: 'Larger HRNet-W48 backbone on AP-10K. More accurate, slower.' },
-            { value: 'rtmpose_ap10k_rtm', label: 'AP-10K RTMPose ★', hint: 'RTMPose backbone on AP-10K. Best confidence for primates in benchmarks. Recommended for animal use.' },
-            { value: 'rtmpose_animalpose', label: 'AnimalPose', hint: 'Trained on cat, dog, horse, sheep, cow. Good for domestic animals.' },
-            { value: 'rtmpose_ak_mammal', label: 'Animal Kingdom (mammal)', hint: 'Mammal-specific model from Animal Kingdom dataset. Best option for primates.' },
+            { value: 'rtmpose_ap10k', label: 'AP-10K', hint: 'In development — not yet tested or tuned. HRNet-W32 on AP-10K (54 species).', disabled: true },
+            { value: 'rtmpose_ap10k_w48', label: 'AP-10K W48', hint: 'In development — not yet tested or tuned. Larger HRNet-W48 backbone.', disabled: true },
+            { value: 'rtmpose_ap10k_rtm', label: 'AP-10K RTMPose ★', hint: 'In development — not yet tested or tuned. RTMPose backbone on AP-10K.', disabled: true },
+            { value: 'rtmpose_animalpose', label: 'AnimalPose', hint: 'In development — not yet tested or tuned. Trained on cat/dog/horse/sheep/cow.', disabled: true },
+            { value: 'rtmpose_ak_mammal', label: 'Animal Kingdom (mammal)', hint: 'In development — not yet tested or tuned. Mammal-specific Animal Kingdom model.', disabled: true },
         ],
     },
     {
@@ -96,14 +97,18 @@ const ModelPicker = ({ value, onChange }: ModelPickerProps) => {
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                                 {group.options.map(opt => (
                                     <Tooltip key={opt.value} title={opt.hint} placement="top" arrow>
-                                        <Chip
-                                            label={opt.label}
-                                            size="small"
-                                            onClick={() => { onChange(opt.value); setAnchor(null); }}
-                                            color={opt.value === value ? 'primary' : 'default'}
-                                            variant={opt.value === value ? 'filled' : 'outlined'}
-                                            sx={{ cursor: 'pointer' }}
-                                        />
+                                        {/* wrapper div lets the Tooltip fire even when the Chip is disabled */}
+                                        <span>
+                                            <Chip
+                                                label={opt.label}
+                                                size="small"
+                                                onClick={opt.disabled ? undefined : () => { onChange(opt.value); setAnchor(null); }}
+                                                color={opt.value === value ? 'primary' : 'default'}
+                                                variant={opt.value === value ? 'filled' : 'outlined'}
+                                                disabled={opt.disabled}
+                                                sx={{ cursor: opt.disabled ? 'not-allowed' : 'pointer', opacity: opt.disabled ? 0.5 : 1 }}
+                                            />
+                                        </span>
                                     </Tooltip>
                                 ))}
                             </div>

@@ -1,6 +1,6 @@
 import React, {Fragment, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useParams} from "react-router";
-import {Box, Button, Divider, IconButton, MenuItem, Select, Slider, TextField, Tooltip, Typography} from "@mui/material";
+import {Box, Button, Checkbox, Divider, FormControlLabel, IconButton, MenuItem, Select, Slider, TextField, Tooltip, Typography} from "@mui/material";
 import {useDispatch, useSelector} from "react-redux";
 import Selector from "../state/selector";
 import Api from "../api";
@@ -35,6 +35,7 @@ const VideoMaskingEditorPage = () => {
     const [posePrompts, setPosePrompts] = useState<[number, number, number][][]>([]);
     const [hidingStrategies, setHidingStrategies] = useState<string[]>([]);
     const [overlayStrategies, setOverlayStrategories] = useState<string[]>([]);
+    const [motionTraces, setMotionTraces] = useState<boolean>(false);
     const [bounds, setBounds] = useState({ left: 0, top: 0, right: 0, bottom: 0 });
     const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
     const [segmentationImageUrl, setSegmentationImageUrl] = useState<string | null>(null);
@@ -64,6 +65,7 @@ const VideoMaskingEditorPage = () => {
             setPosePrompts((resultVideoJob.data as any)['videoMasking']['posePrompts'][0]);
             setOverlayStrategories((resultVideoJob.data as any)['videoMasking']['overlayStrategies']);
             setHidingStrategies((resultVideoJob.data as any)['videoMasking']['hidingStrategies'] || []);
+            setMotionTraces(Boolean((resultVideoJob.data as any)['videoMasking']['motionTraces']));
         } else {
             Api.fetchPosePrompt(videoId, currentFrame).then(posePrompts => {
                 setPosePrompts(posePrompts);
@@ -263,6 +265,7 @@ const VideoMaskingEditorPage = () => {
                     overlayStrategies,
                     hidingStrategies,
                     samModel,
+                    motionTraces,
                     ...(chunkSizeSeconds !== null ? { chunkSizeSeconds, chunkOverlapSeconds } : {}),
                 } as any,
                 voiceMasking: {
@@ -393,6 +396,24 @@ const VideoMaskingEditorPage = () => {
                         <MenuItem value="sam2.1_hiera_base_plus">Base+</MenuItem>
                         <MenuItem value="sam2.1_hiera_large">Large (best quality)</MenuItem>
                     </Select>
+                </Box>
+
+                <Box component='div' sx={{ marginTop: 2 }}>
+                    <Tooltip
+                        title="Draws fading green/blue trails behind each subject's wrists in the output video — useful for visualizing gestures or movement paths."
+                        placement="right"
+                    >
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    checked={motionTraces}
+                                    onChange={e => setMotionTraces(e.target.checked)}
+                                    size="small"
+                                />
+                            }
+                            label={<Typography variant="body2">Motion traces</Typography>}
+                        />
+                    </Tooltip>
                 </Box>
 
                 <Box component='div' sx={{ marginTop: 2 }}>

@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from enum import IntEnum, Enum
+from typing import Optional
 
 
 class HidingStrategy(IntEnum):
@@ -37,6 +38,7 @@ class FinalizeVideoUploadParams(BaseModel):
 
 class UpdateJobProgressParams(BaseModel):
     progress: int
+    phase: Optional[str] = None
 
 
 class CreatePresetParams(BaseModel):

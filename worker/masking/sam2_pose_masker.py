@@ -15,6 +15,7 @@ from masking.mask_renderer import MaskRenderer
 from masking.pose_renderer import PoseRenderer
 from masking.media_pipe_landmarker import MediaPipeLandmarker
 from masking.pose_postprocessor import PosePostprocessor
+from masking.exceptions import JobCancelled
 
 DEBUG = False
 APPLY_CLAHE = False
@@ -28,7 +29,8 @@ class Sam2PoseMasker:
     _output_path: str
     _sam2_masks_path: str
     _poses_path: str
-    _progress_callback: Callable[[int], None]
+    _progress_callback: Callable[..., None]
+    _is_cancelled_callback: Callable[[], bool]
     _media_pipe_landmarker: MediaPipeLandmarker
     _pose_postprocessor: PosePostprocessor
 
@@ -41,7 +43,8 @@ class Sam2PoseMasker:
             output_path: str,
             sam2_masks_path: str,
             poses_path: str,
-            progress_callback: Callable[[int], None]
+            progress_callback: Callable[..., None],
+            is_cancelled_callback: Callable[[], bool] = lambda: False,
     ):
         self._sam2_client = sam2_client
         self._openpose_client = openpose_client
@@ -51,17 +54,29 @@ class Sam2PoseMasker:
         self._sam2_masks_path = sam2_masks_path
         self._poses_path = poses_path
         self._progress_callback = progress_callback
+        self._is_cancelled_callback = is_cancelled_callback
         self._media_pipe_landmarker = MediaPipeLandmarker()
         self._pose_postprocessor = PosePostprocessor()
 
+    def _check_cancelled(self):
+        """Raise JobCancelled if the user has requested cancellation.
+
+        Called at each phase boundary (via `_progress_callback` wrapper below) and
+        periodically inside the render loop so long-running work unwinds promptly.
+        """
+        if self._is_cancelled_callback():
+            raise JobCancelled()
+
     def mask(self, video_masking_data: dict):
         start = time.time()
-        self._progress_callback(1)
+        self._check_cancelled()
+        self._progress_callback(1, "Preparing")
 
         self._progress_callback(5)
         model_variant = video_masking_data.get('samModel', 'sam2.1_hiera_small')
         chunk_size_seconds = video_masking_data.get('chunkSizeSeconds', None)
-        self._progress_callback(10)  # SAM2 running — stays here until segmentation completes
+        self._check_cancelled()
+        self._progress_callback(10, "Segmenting")  # SAM2 running — stays here until segmentation completes
 
         if chunk_size_seconds is not None:
             chunk_overlap_seconds = video_masking_data.get('chunkOverlapSeconds', 2)
@@ -101,9 +116,10 @@ class Sam2PoseMasker:
         total_frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
         print(f"[timing] video: {total_frames} frames at {sample_rate:.1f}fps")
 
+        self._check_cancelled()
         bounding_boxes = self._calculate_full_object_bounding_boxes(masks)
         estimation_input_bounding_boxes = self._calculate_estimation_input_bounding_boxes(bounding_boxes, frame_width, frame_height)
-        self._progress_callback(38)
+        self._progress_callback(38, "Estimating pose")
 
         subvideo_output_dir = '/app/subvideos'
         t_subvideo_start = time.time()
@@ -115,7 +131,8 @@ class Sam2PoseMasker:
         pose_data_dict = self._compute_pose_data(video_masking_data, sub_videos, total_frames)
         self._pose_postprocessor.postprocess(pose_data_dict, video_masking_data['overlayStrategies'], total_frames, sample_rate, estimation_input_bounding_boxes)
         print(f"[timing] pose_estimation: {time.time() - t_pose_start:.1f}s")
-        self._progress_callback(55)
+        self._check_cancelled()
+        self._progress_callback(55, "Rendering")
 
         shutil.rmtree(subvideo_output_dir, ignore_errors=True)
 
@@ -138,8 +155,15 @@ class Sam2PoseMasker:
             for obj_id in pose_data_dict.keys()
         }
 
+        # Motion traces are opt-in via `motionTraces` in the masking config.
+        # fps=0 disables the feature in the renderer; pass real fps when enabled.
+        traces_fps = sample_rate if video_masking_data.get('motionTraces', False) else 0.0
+
         pose_renderers = {
-            obj_id: PoseRenderer(video_masking_data['overlayStrategies'][obj_id - 1])
+            obj_id: PoseRenderer(
+                video_masking_data['overlayStrategies'][obj_id - 1],
+                fps=traces_fps,
+            )
             for obj_id in pose_data_dict.keys()
         }
 
@@ -160,9 +184,10 @@ class Sam2PoseMasker:
                 self._render_bounding_boxes(output_frame, estimation_input_bounding_boxes, idx, (0, 255, 0))
 
             for obj_id, poses in pose_data_dict.items():
-                if poses[idx] is not None:
-                    current_pose = poses[idx]
-                    pose_renderers[obj_id].render_keypoint_overlay(output_frame, current_pose)
+                # Always call the renderer so traces persist across frames where pose
+                # detection failed. Renderer handles None keypoint_data gracefully.
+                current_pose = poses[idx] if idx < len(poses) else None
+                pose_renderers[obj_id].render_keypoint_overlay(output_frame, current_pose)
 
             output_frame = cv2.cvtColor(output_frame, cv2.COLOR_RGB2BGR)
             video_writer.write(output_frame)
@@ -171,6 +196,9 @@ class Sam2PoseMasker:
             if total_frames > 0:
                 render_progress = 55 + round((idx / total_frames) * 44)
                 self._progress_callback(min(render_progress, 99))
+                # Periodic cancellation check during long render — every ~30 frames
+                if idx % 30 == 0:
+                    self._check_cancelled()
 
         video_capture.release()
         video_writer.release()
@@ -331,7 +359,7 @@ class Sam2PoseMasker:
             with open(self._poses_path, 'w') as f:
                 json.dump(self._convert_numpy_to_native(all_pose_data), f)
 
-            self._progress_callback(55)
+            self._progress_callback(55, "Rendering")
 
             # ---- Phase 2: render chunk by chunk ----
             n_objects = len(video_masking_data['overlayStrategies'])
@@ -344,8 +372,13 @@ class Sam2PoseMasker:
                 )
                 for obj_id in obj_ids
             }
+            traces_fps = sample_rate if video_masking_data.get('motionTraces', False) else 0.0
+
             pose_renderers = {
-                obj_id: PoseRenderer(video_masking_data['overlayStrategies'][obj_id - 1])
+                obj_id: PoseRenderer(
+                    video_masking_data['overlayStrategies'][obj_id - 1],
+                    fps=traces_fps,
+                )
                 for obj_id in obj_ids
             }
 
@@ -376,8 +409,8 @@ class Sam2PoseMasker:
                     self._render_all_masks_on_image(output_frame, mask_renderers, gf, chunk_masks)
 
                     for obj_id, poses in all_pose_data.items():
-                        if gf < len(poses) and poses[gf] is not None:
-                            pose_renderers[obj_id].render_keypoint_overlay(output_frame, poses[gf])
+                        current_pose = poses[gf] if gf < len(poses) else None
+                        pose_renderers[obj_id].render_keypoint_overlay(output_frame, current_pose)
 
                     output_frame = cv2.cvtColor(output_frame, cv2.COLOR_RGB2BGR)
                     video_writer.write(output_frame)
@@ -386,6 +419,8 @@ class Sam2PoseMasker:
                     if total_frames > 0:
                         render_progress = 55 + round((rendered_frames / total_frames) * 44)
                         self._progress_callback(min(render_progress, 99))
+                        if rendered_frames % 30 == 0:
+                            self._check_cancelled()
 
                 cap.release()
                 del chunk_masks

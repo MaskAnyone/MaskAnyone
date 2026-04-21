@@ -145,6 +145,13 @@ docker compose up
 to get the live output of the applicaiton and see where it might crash.
 Alternatively you can use `docker compose logs -f` if you already started the application using the detached (`-d`) flag.
 
+For a quick health check of a running install, run:
+```bash
+bash setup.sh doctor
+```
+
+See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for known issues (GPU compatibility, OpenPose on new hardware, Windows Python PATH quirks, etc.).
+
 ### Database
 
 **Export Schema**

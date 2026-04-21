@@ -115,25 +115,168 @@ HAND_PAIRS = [
     (0, 17), (17, 18), (18, 19), (19, 20)  # Pinky
 ]
 
+# RTMPose default model (rtmpose-m_8xb256-420e_coco-256x192) returns the standard
+# COCO-17 keypoints: nose, L/R eye, L/R ear, L/R shoulder, L/R elbow, L/R wrist,
+# L/R hip, L/R knee, L/R ankle.
+COCO_17_PAIRS = [
+    (0, 1), (0, 2), (1, 3), (2, 4),                 # head
+    (5, 7), (7, 9), (6, 8), (8, 10),                # arms
+    (5, 6), (5, 11), (6, 12), (11, 12),             # torso
+    (11, 13), (13, 15), (12, 14), (14, 16),         # legs
+]
+
+# AP-10K animal pose (17 keypoints: eyes, nose, neck, tail root, 4 legs with
+# shoulder/elbow/paw + hip/knee/paw). Used by rtmpose_ap10k* variants.
+AP_10K_PAIRS = [
+    (0, 1), (0, 2), (1, 2), (2, 3),                 # head
+    (3, 4), (3, 5), (3, 8),                         # neck/shoulders
+    (5, 6), (6, 7), (8, 9), (9, 10),                # front legs
+    (4, 11), (4, 14),                               # tail-to-hips
+    (11, 12), (12, 13), (14, 15), (15, 16),         # back legs
+]
+
+RTMPOSE_MIN_SCORE = 0.3  # skip keypoints the model isn't confident about
+
+# Per-strategy left/right wrist indices, used for motion traces. Strategies not
+# in this map won't produce traces (e.g. mp_face, animal poses).
+WRIST_INDICES = {
+    'mp_pose':           (15, 16),   # MediaPipe BlazePose
+    'openpose':          (7, 4),     # BODY_25: L wrist 7, R wrist 4
+    'openpose_body25b':  (9, 10),    # BODY_25B / BODY_135: L 9, R 10
+    'openpose_body_135': (9, 10),
+    'rtmpose':           (9, 10),    # COCO-17
+    'rtmpose_s':         (9, 10),
+    'rtmpose_m':         (9, 10),
+    'rtmpose_l':         (9, 10),
+}
+
+TRACE_SECONDS_DEFAULT = 1.5
+TRACE_COLOR_LEFT_DEFAULT = (0, 255, 0)   # green (RGB — renderer operates in RGB space)
+TRACE_COLOR_RIGHT_DEFAULT = (0, 0, 255)  # blue
+
 
 class PoseRenderer:
     _type: str
 
-    def __init__(self, type: str):
+    def __init__(self, type: str, fps: float = 0.0,
+                 trace_seconds: float = TRACE_SECONDS_DEFAULT,
+                 trace_color_left=TRACE_COLOR_LEFT_DEFAULT,
+                 trace_color_right=TRACE_COLOR_RIGHT_DEFAULT):
         self._type = type
+        # Trace buffers persist across frames for this subject. fps=0 disables traces.
+        self._max_trace = int(fps * trace_seconds) if fps > 0 else 0
+        self._left_trace = []
+        self._right_trace = []
+        self._trace_color_left = trace_color_left
+        self._trace_color_right = trace_color_right
 
     def render_keypoint_overlay(self, rgb_image, keypoint_data):
-        if keypoint_data is None:
-            return
+        # Update trace buffers and draw the skeleton only when we have a pose this frame.
+        if keypoint_data is not None:
+            self._update_traces(keypoint_data)
 
-        if self._type == 'mp_hand':
-            self._render_mp_hand_overlay(rgb_image, keypoint_data)
-        elif self._type == 'mp_face':
-            self._render_mp_face_overlay(rgb_image, keypoint_data)
-        elif self._type == 'mp_pose':
-            self._render_mp_pose_overlay(rgb_image, keypoint_data)
-        elif self._type.startswith('openpose'):
-            self._render_openpose_overlay(self._type, rgb_image, keypoint_data)
+            if self._type == 'mp_hand':
+                self._render_mp_hand_overlay(rgb_image, keypoint_data)
+            elif self._type == 'mp_face':
+                self._render_mp_face_overlay(rgb_image, keypoint_data)
+            elif self._type == 'mp_pose':
+                self._render_mp_pose_overlay(rgb_image, keypoint_data)
+            elif self._type.startswith('openpose'):
+                self._render_openpose_overlay(self._type, rgb_image, keypoint_data)
+            elif self._type.startswith('rtmpose'):
+                self._render_rtmpose_overlay(self._type, rgb_image, keypoint_data)
+
+        # Always draw traces — keeps the trail visible on frames where pose was missed.
+        self._draw_traces(rgb_image)
+
+    def _get_wrist_positions(self, keypoint_data):
+        """Return (left_xy, right_xy); either/both may be None if unavailable/low-confidence."""
+        indices = WRIST_INDICES.get(self._type)
+        if indices is None:
+            return (None, None)
+        l_idx, r_idx = indices
+
+        if isinstance(keypoint_data, dict):
+            kps = keypoint_data.get('pose_keypoints')
+        else:
+            kps = keypoint_data
+        if not kps or l_idx >= len(kps) or r_idx >= len(kps):
+            return (None, None)
+
+        def _extract(i):
+            kp = kps[i]
+            if kp is None:
+                return None
+            # Drop low-confidence keypoints when a score is present (RTMPose/OpenPose).
+            if len(kp) >= 3 and kp[2] < RTMPOSE_MIN_SCORE:
+                return None
+            if kp[0] < 1 and kp[1] < 1:
+                return None
+            return (int(kp[0]), int(kp[1]))
+
+        return (_extract(l_idx), _extract(r_idx))
+
+    def _update_traces(self, keypoint_data):
+        if self._max_trace <= 0:
+            return
+        left, right = self._get_wrist_positions(keypoint_data)
+        if left is not None:
+            self._left_trace.append(left)
+            if len(self._left_trace) > self._max_trace:
+                self._left_trace.pop(0)
+        if right is not None:
+            self._right_trace.append(right)
+            if len(self._right_trace) > self._max_trace:
+                self._right_trace.pop(0)
+
+    def _draw_traces(self, rgb_image):
+        # Fading polyline: older segments blend in at low alpha, newest at full opacity.
+        # Matches the Masked-Piper / envisionBOX visual convention.
+        for trace, color in ((self._left_trace, self._trace_color_left),
+                             (self._right_trace, self._trace_color_right)):
+            n = len(trace)
+            if n < 2:
+                continue
+            for i in range(n - 1):
+                alpha = (i + 1) / n
+                overlay = rgb_image.copy()
+                cv2.line(overlay, trace[i], trace[i + 1], color, 2)
+                cv2.addWeighted(overlay, alpha, rgb_image, 1 - alpha, 0, dst=rgb_image)
+
+    def _render_rtmpose_overlay(self, type: str, rgb_image, keypoint_data):
+        # RTMPose wraps the result in {'pose_keypoints': [[x, y, score], ...]}.
+        # Fallback handles older call sites that might pass the list directly.
+        pose_keypoints = keypoint_data.get('pose_keypoints', keypoint_data) \
+            if isinstance(keypoint_data, dict) else keypoint_data
+
+        # Pick skeleton topology from the strategy name. Unknown variants fall through
+        # to dots-only (still visibly shows where joints are, just without edges).
+        if type.startswith('rtmpose_ap10k'):
+            pairs = AP_10K_PAIRS
+        elif type == 'rtmpose' or type in ('rtmpose_s', 'rtmpose_m', 'rtmpose_l'):
+            pairs = COCO_17_PAIRS
+        else:
+            pairs = []
+
+        def _visible(kp):
+            return kp is not None and len(kp) >= 2 \
+                and (len(kp) < 3 or kp[2] >= RTMPOSE_MIN_SCORE) \
+                and not (kp[0] < 1 and kp[1] < 1)
+
+        for kp in pose_keypoints:
+            if not _visible(kp):
+                continue
+            cv2.circle(rgb_image, tuple(map(int, kp[:2])), 3, (0, 255, 0), -1)
+
+        for a, b in pairs:
+            if a >= len(pose_keypoints) or b >= len(pose_keypoints):
+                continue
+            if not _visible(pose_keypoints[a]) or not _visible(pose_keypoints[b]):
+                continue
+            cv2.line(rgb_image,
+                     tuple(map(int, pose_keypoints[a][:2])),
+                     tuple(map(int, pose_keypoints[b][:2])),
+                     (0, 255, 0), 2)
 
     def _render_mp_pose_overlay(self, rgb_image, keypoint_data):
         for i in range(len(keypoint_data)):

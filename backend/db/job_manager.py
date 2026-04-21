@@ -46,7 +46,74 @@ class JobManager:
                 },
             )
 
+    def reclaim_orphaned_jobs(self) -> int:
+        """Reset jobs stuck in 'running' because their worker died or restarted.
+
+        A job is orphaned when:
+          - status='running', AND
+          - started_at is older than 10s (grace for the tiny race between marking
+            the job running and the worker writing its job_id), AND
+          - no active worker (pinged within 3 min) holds a reference to it.
+
+        Resets the row so any worker (including a freshly-restarted one) can
+        pick it up again. Also clears `job_id` on stale workers so the /workers
+        UI doesn't show them hung on ghost assignments.
+
+        Returns the number of jobs reclaimed. Called from fetch_next_job, so
+        every poll self-heals — no dedicated cron needed.
+        """
+        cursor = self.__db_connection.get_cursor()
+        try:
+            cursor.execute("BEGIN")
+            cursor.execute(
+                """
+                UPDATE jobs
+                   SET status='open', started_at=NULL, progress=0, phase=NULL
+                 WHERE status='running'
+                   AND started_at < NOW() - INTERVAL '10 SECONDS'
+                   AND NOT EXISTS (
+                       SELECT 1 FROM workers w
+                        WHERE w.job_id = jobs.id
+                          AND w.last_activity > NOW() - INTERVAL '3 MINUTES'
+                   )
+                RETURNING id
+                """
+            )
+            reclaimed_rows = cursor.fetchall()
+            cursor.execute(
+                """
+                UPDATE workers
+                   SET job_id=NULL
+                 WHERE last_activity <= NOW() - INTERVAL '3 MINUTES'
+                   AND job_id IS NOT NULL
+                """
+            )
+            cursor.execute("COMMIT")
+
+            if reclaimed_rows:
+                reclaimed_ids = [row[0] for row in reclaimed_rows]
+                logger.warning(
+                    "Reclaimed %d orphaned job(s) back to 'open': %s",
+                    len(reclaimed_ids),
+                    reclaimed_ids,
+                )
+            return len(reclaimed_rows)
+        except Exception:
+            cursor.execute("ROLLBACK")
+            logger.exception("Error reclaiming orphaned jobs")
+            raise
+        finally:
+            cursor.close()
+
     def fetch_next_job(self) -> Job | None:
+        # Self-heal: before claiming a new job, reset any orphaned 'running' rows.
+        # Cheap (indexed query, usually a no-op), runs on every worker poll.
+        try:
+            self.reclaim_orphaned_jobs()
+        except Exception:
+            # Never block job fetching on a sweep failure — log and continue.
+            logger.exception("reclaim_orphaned_jobs failed, continuing to fetch anyway")
+
         cursor = self.__db_connection.get_cursor()
         jobs = []
 
@@ -88,22 +155,42 @@ class JobManager:
 
         return Job(*job_data_list[0])
 
-    def update_job_progress(self, job_id: str, progress: int) -> None:
-        self.__db_connection.execute(
-            "UPDATE jobs SET progress=%(progress)s WHERE id=%(id)s",
-            {"progress": progress, "id": job_id},
-        )
+    def update_job_progress(self, job_id: str, progress: int, phase: str | None = None) -> None:
+        # Keep phase column untouched when caller doesn't supply one — prevents blanking
+        # the phase on mid-phase progress ticks.
+        if phase is None:
+            self.__db_connection.execute(
+                "UPDATE jobs SET progress=%(progress)s WHERE id=%(id)s",
+                {"progress": progress, "id": job_id},
+            )
+        else:
+            self.__db_connection.execute(
+                "UPDATE jobs SET progress=%(progress)s, phase=%(phase)s WHERE id=%(id)s",
+                {"progress": progress, "phase": phase, "id": job_id},
+            )
 
     def mark_job_as_finished(self, job_id: str) -> None:
+        # Don't flip a cancelled job to finished — the cancel wins even if the worker
+        # happens to complete the in-flight phase before noticing.
         self.__db_connection.execute(
-            "UPDATE jobs SET status=%(status)s, finished_at=current_timestamp, progress=100 WHERE id=%(id)s",
+            "UPDATE jobs SET status=%(status)s, finished_at=current_timestamp, progress=100 "
+            "WHERE id=%(id)s AND status <> 'cancelled'",
             {"status": "finished", "id": job_id},
         )
 
     def mark_job_as_failed(self, job_id: str) -> None:
+        # Guard: don't clobber a cancelled job with 'failed' if a worker exits via
+        # JobCancelled → worker_process's exception handler.
         self.__db_connection.execute(
-            "UPDATE jobs SET status=%(status)s, finished_at=current_timestamp, progress=100 WHERE id=%(id)s",
+            "UPDATE jobs SET status=%(status)s, finished_at=current_timestamp, progress=100 "
+            "WHERE id=%(id)s AND status <> 'cancelled'",
             {"status": "failed", "id": job_id},
+        )
+
+    def mark_job_as_cancelled(self, job_id: str) -> None:
+        self.__db_connection.execute(
+            "UPDATE jobs SET status=%(status)s, finished_at=current_timestamp WHERE id=%(id)s",
+            {"status": "cancelled", "id": job_id},
         )
 
     def get_job_status(self, job_id: str) -> str:

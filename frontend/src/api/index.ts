@@ -110,6 +110,12 @@ const Api = {
             method: 'post',
         });
     },
+    cancelJob: async (id: string): Promise<void> => {
+        await sendApiRequest({
+            url: `jobs/${id}/cancel`,
+            method: 'post',
+        });
+    },
     requestVideoUpload: async (videoId: string, videoName: string): Promise<void> => {
         await sendApiRequest({
             url: 'videos/upload/request',
