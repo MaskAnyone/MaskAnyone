@@ -199,5 +199,5 @@ async def upload_result_data(
         video_id,
         job.id,
         data_type,
-        (json.dumps(await request.json()) if data_type == 'poses' else await request.body()),
+        (json.dumps(await request.json()) if data_type in ('poses', 'qa') else await request.body()),
     )

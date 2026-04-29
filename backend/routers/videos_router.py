@@ -1,5 +1,6 @@
 import csv
 import io
+import json
 import logging
 import os
 
@@ -379,6 +380,31 @@ def get_result_preview_for_video(video_id: str, result_video_id: str, token_payl
         image_content = f.read()
 
     return Response(content=image_content, media_type="image/png")
+
+
+@router.get("/{video_id}/results/{result_video_id}/qa")
+def get_result_qa(video_id: str, result_video_id: str, token_payload: dict = Depends(JWTBearer())):
+    """Return the per-frame mask-coverage QA report for a result, or 404 if absent.
+
+    QA is stored as an extra file with type='qa' (JSON-serialised dict).
+    Older results predating the QA collector won't have one — that's fine,
+    callers should treat a 404 as "no report available" and degrade gracefully.
+    """
+    validate_resource_id(video_id)
+    validate_resource_id(result_video_id)
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+
+    entries = result_extra_files_manager.find_entries(result_video_id)
+    qa_entry = next((e for e in entries if e["type"] == "qa"), None)
+    if qa_entry is None:
+        raise HTTPException(status_code=404, detail="No QA report for this result")
+
+    extra_file = result_extra_files_manager.fetch_result_extra_files_entry(qa_entry["id"])
+    try:
+        return json.loads(bytes(extra_file.data))
+    except (ValueError, TypeError) as e:
+        raise HTTPException(status_code=500, detail=f"QA report is corrupted: {e}")
 
 
 @router.get("/{video_id}/results/{result_video_id}/result-files")

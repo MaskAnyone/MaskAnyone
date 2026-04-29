@@ -77,6 +77,20 @@ const Api = {
 
         return result.data;
     },
+    fetchResultQa: async (videoId: string, resultVideoId: string): Promise<any | null> => {
+        // Returns the QA report or null if 404 (result was generated before
+        // the QA collector landed). Any other error is rethrown.
+        try {
+            const result = await sendApiRequest({
+                url: `videos/${videoId}/results/${resultVideoId}/qa`,
+                method: 'get'
+            });
+            return result.data;
+        } catch (err: any) {
+            if (err?.response?.status === 404) return null;
+            throw err;
+        }
+    },
     fetchJobs: async (): Promise<ApiFetchJobsResponse> => {
         const result = await sendApiRequest({
             url: 'jobs',
