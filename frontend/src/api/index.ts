@@ -128,7 +128,7 @@ const Api = {
     },
     uploadVideo: async (
         videoId: string,
-        fileContent: ArrayBuffer,
+        fileContent: Blob | ArrayBuffer,
         onUploadProgress: (percentage: number) => void,
     ): Promise<void> => {
         await sendApiRequest({

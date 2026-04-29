@@ -1,6 +1,8 @@
 import React, {Fragment, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useParams} from "react-router";
 import {Box, Button, Checkbox, Divider, FormControlLabel, IconButton, MenuItem, Select, Slider, TextField, Tooltip, Typography} from "@mui/material";
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import CloseIcon from '@mui/icons-material/Close';
 import {useDispatch, useSelector} from "react-redux";
 import Selector from "../state/selector";
 import Api from "../api";
@@ -30,6 +32,7 @@ const VideoMaskingEditorPage = () => {
     const { videoId, resultVideoId } = useParams<{ videoId: string, resultVideoId?: string }>();
 
     const imgRef = useRef<HTMLImageElement>(null);
+    const [legendVisible, setLegendVisible] = useState<boolean>(true);
     const [currentFrame, setCurrentFrame] = useState<number>(0);
     const [debouncedCurrentFrame, setDebouncedCurrentFrame] = useState<number>(currentFrame);
     const [posePrompts, setPosePrompts] = useState<[number, number, number][][]>([]);
@@ -497,8 +500,66 @@ const VideoMaskingEditorPage = () => {
                                 />
                             ))
                         ))}
+                        {/* Collapsed state: just a small ? icon in the corner that re-opens the legend. */}
+                        {!legendVisible && (
+                            <Tooltip title="Show prompt legend" placement="left">
+                                <IconButton
+                                    onClick={() => setLegendVisible(true)}
+                                    size="small"
+                                    sx={{
+                                        position: 'absolute',
+                                        top: 4,
+                                        right: 4,
+                                        backgroundColor: 'rgba(0,0,0,0.5)',
+                                        color: 'white',
+                                        padding: '2px',
+                                        '&:hover': { backgroundColor: 'rgba(0,0,0,0.7)' },
+                                    }}
+                                >
+                                    <HelpOutlineIcon fontSize="small" />
+                                </IconButton>
+                            </Tooltip>
+                        )}
                     </Box>
                 </Box>
+                {/* Persistent legend strip below the canvas — discoverable by default,
+                    one-click dismiss to a tiny ? icon in the corner. */}
+                {legendVisible && (
+                    <Box
+                        component="div"
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: 1.5,
+                            px: 1,
+                            py: 0.5,
+                            mt: 0.5,
+                            backgroundColor: 'rgba(0,0,0,0.04)',
+                            borderRadius: 1,
+                            fontSize: 12,
+                        }}
+                    >
+                        <Box component="div" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Box component="div" sx={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: 'green', boxShadow: '0 0 0 1px white, 0 0 2px rgba(0,0,0,0.4)' }} />
+                            <Typography variant="caption"><strong>+ Subject</strong></Typography>
+                        </Box>
+                        <Box component="div" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Box component="div" sx={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: 'red', boxShadow: '0 0 0 1px white, 0 0 2px rgba(0,0,0,0.4)' }} />
+                            <Typography variant="caption"><strong>− Background</strong> (exclude)</Typography>
+                        </Box>
+                        <Box component="div" sx={{ width: '1px', height: 16, backgroundColor: 'rgba(0,0,0,0.2)' }} />
+                        <Typography variant="caption" color="text.secondary">click toggles +/−</Typography>
+                        <Typography variant="caption" color="text.secondary">drag to move</Typography>
+                        <Typography variant="caption" color="text.secondary">right-click image to add · right-click dot to remove</Typography>
+                        <Box component="div" sx={{ flexGrow: 1 }} />
+                        <Tooltip title="Hide legend">
+                            <IconButton onClick={() => setLegendVisible(false)} size="small" sx={{ padding: '2px' }}>
+                                <CloseIcon sx={{ fontSize: 14 }} />
+                            </IconButton>
+                        </Tooltip>
+                    </Box>
+                )}
                 {Boolean(videoPosePrompts[0]) && (
                     <Slider 
                         min={0} 

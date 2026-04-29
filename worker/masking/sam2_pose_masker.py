@@ -15,6 +15,7 @@ from masking.mask_renderer import MaskRenderer
 from masking.pose_renderer import PoseRenderer
 from masking.media_pipe_landmarker import MediaPipeLandmarker
 from masking.pose_postprocessor import PosePostprocessor
+from masking.mask_qa_collector import MaskQaCollector
 from masking.exceptions import JobCancelled
 
 DEBUG = False
@@ -29,6 +30,7 @@ class Sam2PoseMasker:
     _output_path: str
     _sam2_masks_path: str
     _poses_path: str
+    _qa_path: str | None
     _progress_callback: Callable[..., None]
     _is_cancelled_callback: Callable[[], bool]
     _media_pipe_landmarker: MediaPipeLandmarker
@@ -45,6 +47,7 @@ class Sam2PoseMasker:
             poses_path: str,
             progress_callback: Callable[..., None],
             is_cancelled_callback: Callable[[], bool] = lambda: False,
+            qa_path: str | None = None,
     ):
         self._sam2_client = sam2_client
         self._openpose_client = openpose_client
@@ -53,6 +56,7 @@ class Sam2PoseMasker:
         self._output_path = output_path
         self._sam2_masks_path = sam2_masks_path
         self._poses_path = poses_path
+        self._qa_path = qa_path
         self._progress_callback = progress_callback
         self._is_cancelled_callback = is_cancelled_callback
         self._media_pipe_landmarker = MediaPipeLandmarker()
@@ -167,6 +171,8 @@ class Sam2PoseMasker:
             for obj_id in pose_data_dict.keys()
         }
 
+        qa_collector = MaskQaCollector()
+
         idx = 0
         while video_capture.isOpened():
             ret, frame = video_capture.read()
@@ -183,11 +189,15 @@ class Sam2PoseMasker:
                 self._render_bounding_boxes(output_frame, bounding_boxes, idx, (255, 255, 255))
                 self._render_bounding_boxes(output_frame, estimation_input_bounding_boxes, idx, (0, 255, 0))
 
+            pose_for_frame = {}
             for obj_id, poses in pose_data_dict.items():
                 # Always call the renderer so traces persist across frames where pose
                 # detection failed. Renderer handles None keypoint_data gracefully.
                 current_pose = poses[idx] if idx < len(poses) else None
                 pose_renderers[obj_id].render_keypoint_overlay(output_frame, current_pose)
+                pose_for_frame[obj_id] = current_pose
+
+            qa_collector.record_frame(idx, masks.get(idx), pose_for_frame, sample_rate)
 
             output_frame = cv2.cvtColor(output_frame, cv2.COLOR_RGB2BGR)
             video_writer.write(output_frame)
@@ -202,6 +212,8 @@ class Sam2PoseMasker:
 
         video_capture.release()
         video_writer.release()
+
+        self._write_qa_report(qa_collector.finalize(total_frames, sample_rate))
 
         t_total = time.time() - start
         t_render = t_total - (t_pose_start - start) - (t_sam2 - start)
@@ -384,6 +396,7 @@ class Sam2PoseMasker:
 
             video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)
             rendered_frames = 0
+            qa_collector = MaskQaCollector()
 
             for global_keep_start, global_keep_end, npz_path in chunk_files:
                 # Load this chunk's masks from disk (context manager closes file handle
@@ -408,9 +421,13 @@ class Sam2PoseMasker:
 
                     self._render_all_masks_on_image(output_frame, mask_renderers, gf, chunk_masks)
 
+                    pose_for_frame = {}
                     for obj_id, poses in all_pose_data.items():
                         current_pose = poses[gf] if gf < len(poses) else None
                         pose_renderers[obj_id].render_keypoint_overlay(output_frame, current_pose)
+                        pose_for_frame[obj_id] = current_pose
+
+                    qa_collector.record_frame(gf, chunk_masks.get(gf), pose_for_frame, sample_rate)
 
                     output_frame = cv2.cvtColor(output_frame, cv2.COLOR_RGB2BGR)
                     video_writer.write(output_frame)
@@ -427,10 +444,21 @@ class Sam2PoseMasker:
                 os.unlink(npz_path)
 
             video_writer.release()
+            self._write_qa_report(qa_collector.finalize(total_frames, sample_rate))
             print(f"[timing] streaming_total: {time.time() - start_time:.1f}s")
 
         finally:
             shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    def _write_qa_report(self, report: dict) -> None:
+        if self._qa_path is None:
+            return
+        try:
+            with open(self._qa_path, 'w') as f:
+                json.dump(report, f)
+        except Exception as e:
+            # QA is advisory — never fail the job if writing it breaks.
+            print(f"[qa] failed to write QA report: {e}", flush=True)
 
     @staticmethod
     def _convert_numpy_to_native(obj):

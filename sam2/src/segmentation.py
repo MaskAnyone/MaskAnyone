@@ -32,6 +32,24 @@ MODEL_CONFIGS = {
 DEFAULT_MODEL = "sam2.1_hiera_small"
 
 
+def preload_predictor(model_variant: str):
+    """Build the SAM2 predictor and keep it resident so subsequent calls reuse it."""
+    global predictors
+
+    if model_variant not in MODEL_CONFIGS:
+        raise ValueError(f"Unknown model variant '{model_variant}'. Choose from: {list(MODEL_CONFIGS.keys())}")
+
+    if model_variant in predictors:
+        return predictors[model_variant]
+
+    configure_torch()
+    torch.cuda.empty_cache()
+
+    cfg = MODEL_CONFIGS[model_variant]
+    predictors[model_variant] = build_sam2_video_predictor(cfg["config"], cfg["checkpoint"])
+    return predictors[model_variant]
+
+
 def perform_sam2_segmentation(
     frame_dir_path: str,
     pose_prompts,
@@ -51,19 +69,7 @@ def perform_sam2_segmentation(
                        tracking continuity from the previous chunk's last frame.
                        Must be 2D boolean arrays matching the video frame dimensions.
     """
-    global predictors
-
-    if model_variant not in MODEL_CONFIGS:
-        raise ValueError(f"Unknown model variant '{model_variant}'. Choose from: {list(MODEL_CONFIGS.keys())}")
-
-    if model_variant not in predictors:
-        configure_torch()
-        torch.cuda.empty_cache()
-
-        cfg = MODEL_CONFIGS[model_variant]
-        predictors[model_variant] = build_sam2_video_predictor(cfg["config"], cfg["checkpoint"])
-
-    predictor = predictors[model_variant]
+    predictor = preload_predictor(model_variant)
 
     print(f"Initializing SAM2 predictor with flags: "
           f"offload_video_to_cpu={SAM2_OFFLOAD_VIDEO_TO_CPU}, "

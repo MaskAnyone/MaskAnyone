@@ -9,9 +9,24 @@ import gc
 import time
 
 from fastapi import FastAPI, APIRouter, File, Form, UploadFile, HTTPException, Response
-from src.segmentation import perform_sam2_segmentation, MODEL_CONFIGS
+from src.segmentation import perform_sam2_segmentation, preload_predictor, MODEL_CONFIGS, DEFAULT_MODEL
 
 app = FastAPI()
+
+
+@app.on_event("startup")
+async def warm_default_predictor() -> None:
+    # Keep the most common model resident in VRAM so the first job doesn't pay
+    # the ~2–5 s checkpoint-load cost. Override with SAM2_WARM_MODEL.
+    warm_model = os.environ.get("SAM2_WARM_MODEL", DEFAULT_MODEL)
+    if warm_model.lower() in ("", "none"):
+        return
+    try:
+        preload_predictor(warm_model)
+        print(f"[sam2] warmed predictor: {warm_model}", flush=True)
+    except Exception as e:
+        print(f"[sam2] failed to warm predictor {warm_model}: {e}", flush=True)
+
 
 router = APIRouter(
     prefix="/sam2",

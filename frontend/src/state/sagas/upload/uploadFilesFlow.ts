@@ -4,7 +4,6 @@ import {Action} from 'redux-actions';
 import Command from "../../actions/command";
 import Event from "../../actions/event";
 import Config from "../../../config";
-import {readFileArrayBuffer} from "../../../util/readFile";
 import {UploadVideosPayload} from "../../actions/uploadCommand";
 import Api from "../../../api";
 
@@ -35,8 +34,11 @@ const formatVideoName = (fileName: string): string => {
 const onUploadVideo = function*(file: FileUpload) {
     yield call(Api.requestVideoUpload, file.id, formatVideoName(file.file.name));
 
-    const fileContent: ArrayBuffer = yield call(readFileArrayBuffer, file.file);
-    yield call(Api.uploadVideo, file.id, fileContent, percentage => {
+    // Pass the File directly — axios streams it from disk, fires upload progress
+    // events from byte 0, and avoids loading the whole file into the JS heap
+    // (which previously doubled browser RAM and silently blocked for ~5–15 s
+    // on multi-hundred-MB files).
+    yield call(Api.uploadVideo, file.id, file.file, percentage => {
         uploadProgressChannel.put(
             Event.Upload.videoUploadProgressChanged({ videoId: file.id, progress: percentage }),
         );
