@@ -87,8 +87,12 @@ def perform_sam2_segmentation(
     predictor.reset_state(inference_state)
     torch.cuda.empty_cache()
 
+    # Apply both prompt types when present. SAM2 supports an initial mask at
+    # frame 0 (boundary handoff between chunks) AND fresh point prompts at any
+    # frame within the same propagation pass — both feed the inference state
+    # and are not mutually exclusive. Older code used if/else, which silently
+    # dropped user re-prompts in chunks > 0.
     if initial_masks:
-        # Chunk continuation: seed each object from its previous-chunk boundary mask.
         # add_new_mask() requires a 2D boolean numpy array at frame 0.
         for obj_id, mask_array in initial_masks.items():
             assert mask_array.ndim == 2 and mask_array.dtype == bool, (
@@ -101,19 +105,18 @@ def perform_sam2_segmentation(
                 obj_id=int(obj_id),
                 mask=mask_array,
             )
-    else:
-        # First chunk (or single-pass): use user-supplied point prompts.
-        for frame_idx, frame_pose_prompts in pose_prompts.items():
-            obj_id_list, points_list, labels_list = extract_points_and_labels(frame_pose_prompts)
 
-            for obj_id, points, labels in zip(obj_id_list, points_list, labels_list):
-                predictor.add_new_points(
-                    inference_state=inference_state,
-                    frame_idx=int(frame_idx),
-                    obj_id=obj_id,
-                    points=points,
-                    labels=labels,
-                )
+    for frame_idx, frame_pose_prompts in pose_prompts.items():
+        obj_id_list, points_list, labels_list = extract_points_and_labels(frame_pose_prompts)
+
+        for obj_id, points, labels in zip(obj_id_list, points_list, labels_list):
+            predictor.add_new_points(
+                inference_state=inference_state,
+                frame_idx=int(frame_idx),
+                obj_id=obj_id,
+                points=points,
+                labels=labels,
+            )
 
     video_segments = {}
     for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state):

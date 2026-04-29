@@ -284,29 +284,32 @@ class Sam2PoseMasker:
                       f"keep [{global_keep_start}, {chunk_global_end})")
                 self._progress_callback(10 + round((chunk_idx / n_chunks) * 40))  # 10→50%
 
-                # Build local pose prompts (chunk 0 only; rest use initial_masks)
-                if chunk_idx == 0:
-                    local_pose_prompts = {
-                        int(frame_idx) - chunk_global_start: prompts
-                        for frame_idx, prompts in video_masking_data['posePrompts'].items()
-                        if chunk_global_start <= int(frame_idx) < chunk_global_end
-                    }
-                    chunk_initial_masks = None
-                else:
-                    local_pose_prompts = {}
-                    chunk_initial_masks = boundary_masks
+                # Honour user-supplied prompts in every chunk that contains them,
+                # not just chunk 0. Combined with the boundary-mask handoff for
+                # chunks > 0, this lets a re-prompt at frame 1500 actually
+                # re-anchor SAM2 mid-video instead of being silently dropped.
+                local_pose_prompts = {
+                    int(frame_idx) - chunk_global_start: prompts
+                    for frame_idx, prompts in video_masking_data['posePrompts'].items()
+                    if chunk_global_start <= int(frame_idx) < chunk_global_end
+                }
+                chunk_initial_masks = None if chunk_idx == 0 else boundary_masks
 
                 local_masks = self._segment_one_chunk(
                     chunk_global_start, chunk_global_end, fps,
                     local_pose_prompts, model_variant, chunk_initial_masks,
                 )
 
-                # Extract boundary mask from the last local frame (before keep filtering)
+                # Pick the boundary anchor for the next chunk: among the last
+                # few local frames, take the one whose summed mask area is
+                # largest. This avoids inheriting a degraded final frame when
+                # an earlier-but-recent frame in the same window has materially
+                # better coverage — a common SAM2 failure mode at end-of-chunk.
                 if local_masks:
-                    last_local = max(local_masks.keys())
+                    boundary_local = self._select_boundary_local_frame(local_masks)
                     boundary_masks = {
                         obj_id: arr[0].astype(bool)
-                        for obj_id, arr in local_masks[last_local].items()
+                        for obj_id, arr in local_masks[boundary_local].items()
                     }
 
                 # Remap to global indices, keeping only non-overlap frames
@@ -565,13 +568,15 @@ class Sam2PoseMasker:
             # Which local frames to keep (discard warm-up overlap for chunks > 0)
             local_keep_start = overlap_frames if chunk_idx > 0 else 0
 
-            # Extract boundary mask from last kept local frame for the next chunk
-            kept_frames = sorted(lf for lf in local_masks if lf >= local_keep_start)
-            if kept_frames:
-                last_local = kept_frames[-1]
+            # Pick the boundary anchor among the last few kept frames — best
+            # mask area wins, so a degraded last frame doesn't poison the next
+            # chunk's seed.
+            kept_masks = {lf: local_masks[lf] for lf in local_masks if lf >= local_keep_start}
+            if kept_masks:
+                boundary_local = self._select_boundary_local_frame(kept_masks)
                 boundary_masks = {
                     obj_id: mask_arr[0].astype(bool)  # (1,H,W) → (H,W)
-                    for obj_id, mask_arr in local_masks[last_local].items()
+                    for obj_id, mask_arr in local_masks[boundary_local].items()
                 }
 
             # Merge into global mask dict
@@ -609,6 +614,33 @@ class Sam2PoseMasker:
     def _read_video_content(self):
         with open(self._input_path, "rb") as file:
             return file.read()
+
+    @staticmethod
+    def _select_boundary_local_frame(local_masks: dict, window: int = 5) -> int:
+        """Pick the local frame to use as the next chunk's initial-mask anchor.
+
+        Among the last `window` local frames in `local_masks`, returns the one
+        whose summed mask area across all objects is largest. Falls back to
+        the absolute last frame when only one candidate exists.
+
+        Why a window rather than just the last frame: SAM2 confidence often
+        decays in the final ~5 frames of a chunk; the last frame has strong
+        temporal proximity to the next chunk but may be visibly worse than
+        the third-from-last. Picking the best of the recent few preserves
+        proximity while avoiding "garbage in" at the boundary.
+        """
+        sorted_locals = sorted(local_masks.keys())
+        candidates = sorted_locals[-max(1, window):]
+        # Tiebreaker: when two frames have equal area, prefer the later one —
+        # it sits closer to the next chunk's start, so its mask is a better
+        # match for the next chunk's local frame 0.
+        return max(
+            candidates,
+            key=lambda lf: (
+                sum(int((arr[0] > 0).sum()) for arr in local_masks[lf].values()),
+                lf,
+            ),
+        )
 
     def _select_bounding_box(self, bbox_dict, idx):
         bbox = None
