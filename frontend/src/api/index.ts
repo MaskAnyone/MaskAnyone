@@ -53,6 +53,13 @@ const Api = {
             method: 'post',
         });
     },
+    renameResultVideo: async (id: string, name: string): Promise<void> => {
+        await sendApiRequest({
+            url: `results/${id}/rename`,
+            method: 'post',
+            data: { name },
+        });
+    },
     fetchBlendshapes: async (resultVideoId: string): Promise<any> => {
         const result = await sendApiRequest({
             url: `/results/${resultVideoId}/blendshapes`,

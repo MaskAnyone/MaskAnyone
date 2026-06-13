@@ -33,11 +33,16 @@ RUN git clone https://github.com/facebookresearch/sam2.git && \
     #sed -i 's/self.thread.start()/# self.thread.start()/g' ./sam2/utils/misc.py && \
     SAM2_BUILD_ALLOW_ERRORS=1 pip install -e .
 
-RUN wget -P /workspace/sam2/checkpoints \
-    https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_tiny.pt \
-    https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt \
-    https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_base_plus.pt \
-    https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt
+# SAM2_MODELS: comma-separated list of checkpoints to bake in.
+# Values: tiny (~46 MB), small (~185 MB), base_plus (~325 MB), large (~898 MB)
+# Default matches the original student setup. setup.sh prompts the user at build time.
+ARG SAM2_MODELS=small
+
+RUN set -e; \
+    BASE="https://dl.fbaipublicfiles.com/segment_anything_2/092824"; \
+    for m in $(echo "$SAM2_MODELS" | tr ',' ' '); do \
+        wget -P /workspace/sam2/checkpoints "$BASE/sam2.1_hiera_${m}.pt"; \
+    done
 
 # === Runtime Stage (Slimmer image) ===
 FROM pytorch/pytorch:2.8.0-cuda12.8-cudnn9-runtime

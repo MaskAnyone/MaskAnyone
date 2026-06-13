@@ -14,6 +14,7 @@ from db.video_manager import VideoManager
 from db.result_video_manager import ResultVideoManager
 from auth.jwt_bearer import JWTBearer
 from config import RESULT_BASE_PATH
+from models import RenameVideoParams
 from utils.path_validation import validate_resource_id
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,21 @@ result_video_manager = ResultVideoManager(db_connection)
 router = APIRouter(
     prefix="/results",
 )
+
+
+@router.post("/{result_video_id}/rename")
+def rename_result(result_video_id: str, params: RenameVideoParams, token_payload: dict = Depends(JWTBearer())):
+    validate_resource_id(result_video_id)
+    user_id = token_payload["sub"]
+
+    result_video = result_video_manager.get_result_video(result_video_id)
+    video_manager.assert_user_has_video(result_video.video_id, user_id)
+
+    if result_video_manager.has_result_video_with_name(result_video.video_id, params.name):
+        raise HTTPException(status_code=409, detail="A result with this name already exists")
+
+    result_video_manager.rename_result_video(result_video_id, params.name)
+    return {"status": "ok"}
 
 
 @router.post("/{result_video_id}/delete")

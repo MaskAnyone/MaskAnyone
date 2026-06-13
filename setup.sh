@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # MaskAnyone setup script
-# Usage: bash setup.sh [--skip-build] [--with-auth] [--clean] [--clean-all]
+# Usage: bash setup.sh [--skip-build] [--with-auth] [--clean] [--clean-all] [--sam2-models=LIST]
 #        bash setup.sh doctor               # diagnose a broken install, suggest fixes
-#   --skip-build   skip docker compose build (use existing images)
-#   --with-auth    enable Keycloak authentication (default: local/no-login mode)
-#   --clean        stop containers and remove images (keeps your data/videos)
-#   --clean-all    ⚠ stop containers, remove images AND delete all data/videos
+#   --skip-build         skip docker compose build (use existing images)
+#   --with-auth          enable Keycloak authentication (default: local/no-login mode)
+#   --clean              stop containers and remove images (keeps your data/videos)
+#   --clean-all          ⚠ stop containers, remove images AND delete all data/videos
+#   --sam2-models=LIST   comma-separated SAM2 checkpoints to bake in (tiny,small,base_plus,large)
+#                        omit to be prompted interactively
 set -euo pipefail
 
 SKIP_BUILD=false
@@ -13,12 +15,14 @@ WITH_AUTH=false
 CLEAN=false
 CLEAN_ALL=false
 DOCTOR=false
+SAM2_MODELS=""   # empty = prompt interactively; set via --sam2-models=...
 for arg in "$@"; do
-    [[ "$arg" == "--skip-build" ]] && SKIP_BUILD=true
-    [[ "$arg" == "--with-auth"  ]] && WITH_AUTH=true
-    [[ "$arg" == "--clean"      ]] && CLEAN=true
-    [[ "$arg" == "--clean-all"  ]] && CLEAN_ALL=true
-    [[ "$arg" == "doctor"       ]] && DOCTOR=true
+    [[ "$arg" == "--skip-build" ]]   && SKIP_BUILD=true
+    [[ "$arg" == "--with-auth"  ]]   && WITH_AUTH=true
+    [[ "$arg" == "--clean"      ]]   && CLEAN=true
+    [[ "$arg" == "--clean-all"  ]]   && CLEAN_ALL=true
+    [[ "$arg" == "doctor"       ]]   && DOCTOR=true
+    [[ "$arg" == --sam2-models=* ]]  && SAM2_MODELS="${arg#--sam2-models=}"
 done
 
 # Tee all output to a timestamped log file. Keeps the user's terminal live while
@@ -392,11 +396,30 @@ else
     sedi 's/^MASK_ANYONE_PLATFORM_MODE=.*/MASK_ANYONE_PLATFORM_MODE=local/' app.env
 fi
 
+# ── SAM2 checkpoint selection ───────────────────────────────────────────────────
+if [[ "$SKIP_BUILD" != "true" && -z "$SAM2_MODELS" ]]; then
+    echo ""
+    echo -e "  ${BOLD}SAM2 model checkpoints${RESET} — choose what to bake into the image:"
+    echo -e "    ${CYAN}1)${RESET} small only        (~185 MB)  — fast, good for most videos  ${BOLD}[default]${RESET}"
+    echo -e "    ${CYAN}2)${RESET} small + large     (~1.1 GB)  — best quality"
+    echo -e "    ${CYAN}3)${RESET} all four          (~1.5 GB)  — tiny, small, base_plus, large"
+    echo ""
+    echo -ne "  Enter choice [1]: "
+    read -r SAM2_CHOICE </dev/tty
+    case "${SAM2_CHOICE:-1}" in
+        2) SAM2_MODELS="small,large" ;;
+        3) SAM2_MODELS="tiny,small,base_plus,large" ;;
+        *) SAM2_MODELS="small" ;;
+    esac
+    echo ""
+fi
+[[ -z "$SAM2_MODELS" ]] && SAM2_MODELS="small"
+
 if [[ "$SKIP_BUILD" == "true" ]]; then
     info "Skipping build (--skip-build)"
 else
     info "Building Docker images (this takes 20–60 min on first run)..."
-    info "SAM2 will download ~4 GB of model checkpoints. RTMPose will download ~1 GB."
+    info "SAM2 checkpoints selected: ${SAM2_MODELS}. RTMPose will download ~1 GB."
     echo ""
 
     BUILD_SVCS=(nginx postgres pgadmin yarn python worker sam2 rtmpose openpose)
@@ -409,7 +432,9 @@ else
         BUILD_IDX=$((BUILD_IDX + 1))
         echo -e "  ${CYAN}→${RESET}  [${BUILD_IDX}/${BUILD_TOTAL}] Building ${BOLD}${SVC}${RESET}..."
         BUILD_START=$SECONDS
-        if docker compose $COMPOSE_BASE build $BUILD_ARGS "$SVC" 2>&1; then
+        SAM2_BUILD_ARG=""
+        [[ "$SVC" == "sam2" ]] && SAM2_BUILD_ARG="--build-arg SAM2_MODELS=${SAM2_MODELS}"
+        if docker compose $COMPOSE_BASE build $BUILD_ARGS $SAM2_BUILD_ARG "$SVC" 2>&1; then
             BUILD_ELAPSED=$((SECONDS - BUILD_START))
             ok "[${BUILD_IDX}/${BUILD_TOTAL}] ${SVC} built (${BUILD_ELAPSED}s)"
         else
@@ -444,7 +469,9 @@ if [[ ${#NEED_BUILD[@]} -gt 0 ]]; then
         NB_IDX=$((NB_IDX + 1))
         echo -e "  ${CYAN}→${RESET}  [${NB_IDX}/${NB_TOTAL}] Building ${BOLD}${SVC}${RESET}..."
         BUILD_START=$SECONDS
-        if docker compose $COMPOSE_BASE build $BUILD_ARGS "$SVC" 2>&1; then
+        SAM2_BUILD_ARG=""
+        [[ "$SVC" == "sam2" ]] && SAM2_BUILD_ARG="--build-arg SAM2_MODELS=${SAM2_MODELS}"
+        if docker compose $COMPOSE_BASE build $BUILD_ARGS $SAM2_BUILD_ARG "$SVC" 2>&1; then
             ok "[${NB_IDX}/${NB_TOTAL}] ${SVC} built ($((SECONDS - BUILD_START))s)"
         else
             fail "[${NB_IDX}/${NB_TOTAL}] ${SVC} build FAILED"
