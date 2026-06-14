@@ -82,6 +82,24 @@ if [[ "$HAS_GPU" == "true" ]]; then
     fi
 fi
 
+# ── build helper ───────────────────────────────────────────────────────────────
+build_svc() {
+    local SVC="$1" IDX="$2" TOTAL="$3"
+    echo -e "  ${CYAN}→${RESET}  [${IDX}/${TOTAL}] Building ${BOLD}${SVC}${RESET}..."
+    local START=$SECONDS
+    local EXTRA=""
+    [[ "$SVC" == "sam2" ]] && EXTRA="--build-arg SAM2_MODELS=${SAM2_MODELS}"
+    if docker compose $COMPOSE_BASE build $BUILD_ARGS $EXTRA "$SVC" 2>&1; then
+        ok "[${IDX}/${TOTAL}] ${SVC} built ($((SECONDS - START))s)"
+        echo ""
+        return 0
+    else
+        fail "[${IDX}/${TOTAL}] ${SVC} build FAILED"
+        echo ""
+        return 1
+    fi
+}
+
 # ── colours ────────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; YELLOW='\033[1;33m'; GREEN='\033[0;32m'
 CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'
@@ -375,6 +393,13 @@ else
     check_warn "RAM: ${RAM_GB} GB (low — use small chunk sizes)"
 fi
 
+# Docker Desktop memory allocation
+DOCKER_MEM_GB=$(docker info --format '{{.MemTotal}}' 2>/dev/null \
+    | "$PY" -c "import sys; v=sys.stdin.read().strip(); print(int(v)//1073741824 if v.isdigit() else 0)" 2>/dev/null || echo "0")
+if [[ "$DOCKER_MEM_GB" -gt 0 && "$DOCKER_MEM_GB" -lt 6 ]]; then
+    check_warn "Docker has only ${DOCKER_MEM_GB} GB memory allocated — builds may OOM. Go to Docker Desktop → Settings → Resources and set Memory to 8+ GB."
+fi
+
 if [[ "$ERRORS" -gt 0 ]]; then
     echo ""
     fail "Found $ERRORS critical issue(s) above. Fix them before continuing."
@@ -430,18 +455,7 @@ else
 
     for SVC in "${BUILD_SVCS[@]}"; do
         BUILD_IDX=$((BUILD_IDX + 1))
-        echo -e "  ${CYAN}→${RESET}  [${BUILD_IDX}/${BUILD_TOTAL}] Building ${BOLD}${SVC}${RESET}..."
-        BUILD_START=$SECONDS
-        SAM2_BUILD_ARG=""
-        [[ "$SVC" == "sam2" ]] && SAM2_BUILD_ARG="--build-arg SAM2_MODELS=${SAM2_MODELS}"
-        if docker compose $COMPOSE_BASE build $BUILD_ARGS $SAM2_BUILD_ARG "$SVC" 2>&1; then
-            BUILD_ELAPSED=$((SECONDS - BUILD_START))
-            ok "[${BUILD_IDX}/${BUILD_TOTAL}] ${SVC} built (${BUILD_ELAPSED}s)"
-        else
-            fail "[${BUILD_IDX}/${BUILD_TOTAL}] ${SVC} build FAILED"
-            BUILD_ERRORS=$((BUILD_ERRORS + 1))
-        fi
-        echo ""
+        build_svc "$SVC" "$BUILD_IDX" "$BUILD_TOTAL" || BUILD_ERRORS=$((BUILD_ERRORS + 1))
     done
 
     if [[ "$BUILD_ERRORS" -gt 0 ]]; then
@@ -467,17 +481,7 @@ if [[ ${#NEED_BUILD[@]} -gt 0 ]]; then
     NB_IDX=0
     for SVC in "${NEED_BUILD[@]}"; do
         NB_IDX=$((NB_IDX + 1))
-        echo -e "  ${CYAN}→${RESET}  [${NB_IDX}/${NB_TOTAL}] Building ${BOLD}${SVC}${RESET}..."
-        BUILD_START=$SECONDS
-        SAM2_BUILD_ARG=""
-        [[ "$SVC" == "sam2" ]] && SAM2_BUILD_ARG="--build-arg SAM2_MODELS=${SAM2_MODELS}"
-        if docker compose $COMPOSE_BASE build $BUILD_ARGS $SAM2_BUILD_ARG "$SVC" 2>&1; then
-            ok "[${NB_IDX}/${NB_TOTAL}] ${SVC} built ($((SECONDS - BUILD_START))s)"
-        else
-            fail "[${NB_IDX}/${NB_TOTAL}] ${SVC} build FAILED"
-            exit 1
-        fi
-        echo ""
+        build_svc "$SVC" "$NB_IDX" "$NB_TOTAL" || exit 1
     done
     check_ok "Missing images built"
 fi
@@ -545,7 +549,7 @@ fi
 # ── seed sample videos (only if library is empty) ──────────────────────────────
 if [[ "$BACKEND_UP" == "true" ]]; then
     VIDEO_COUNT=$(curl -4sk --max-time 5 "https://localhost/api/videos" 2>/dev/null \
-        | "$PY" -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "1")
+        | "$PY" -c "import sys,json; print(len(json.load(sys.stdin).get('videos',[])))" 2>/dev/null || echo "1")
     if [[ "$VIDEO_COUNT" == "0" ]]; then
         info "Seeding sample videos from MaskedPiper paper..."
         SAMPLE_BASE="https://raw.githubusercontent.com/WimPouw/TowardsMultimodalOpenScience/main/Input_Videos"
@@ -554,17 +558,19 @@ if [[ "$BACKEND_UP" == "true" ]]; then
             SAMPLE_URL="${SAMPLE_BASE}/${SAMPLE_NAME}"
             SAMPLE_TMP="/tmp/maskanyone_seed_${SAMPLE_NAME}"
             if curl -fsSL "$SAMPLE_URL" -o "$SAMPLE_TMP" 2>/dev/null; then
-                # request upload slot
-                UPLOAD_ID=$(curl -4sk -X POST "https://localhost/api/videos/upload/request" \
-                    -H "Content-Type: application/json" \
-                    -d "{\"fileName\":\"${SAMPLE_NAME}\",\"fileSize\":$(wc -c < "$SAMPLE_TMP" | tr -d ' '),\"tags\":[]}" \
-                    2>/dev/null | "$PY" -c "import sys,json; print(json.load(sys.stdin).get('videoId',''))" 2>/dev/null || echo "")
+                UPLOAD_ID=$("$PY" -c "import uuid; print(uuid.uuid4())" 2>/dev/null || echo "")
+                UPLOAD_NAME="${SAMPLE_NAME%.mp4}"
                 if [[ -n "$UPLOAD_ID" ]]; then
+                    curl -4sk -X POST "https://localhost/api/videos/upload/request" \
+                        -H "Content-Type: application/json" \
+                        -d "{\"video_id\":\"${UPLOAD_ID}\",\"video_name\":\"${UPLOAD_NAME}\"}" \
+                        &>/dev/null || true
                     curl -4sk -X POST "https://localhost/api/videos/upload/${UPLOAD_ID}" \
-                        -F "file=@${SAMPLE_TMP}" &>/dev/null || true
+                        -H "Content-Type: application/octet-stream" \
+                        --data-binary "@${SAMPLE_TMP}" &>/dev/null || true
                     curl -4sk -X POST "https://localhost/api/videos/upload/finalize" \
                         -H "Content-Type: application/json" \
-                        -d "{\"videoId\":\"${UPLOAD_ID}\"}" &>/dev/null || true
+                        -d "{\"video_id\":\"${UPLOAD_ID}\"}" &>/dev/null || true
                     SEED_OK=$((SEED_OK+1))
                 fi
                 rm -f "$SAMPLE_TMP"
