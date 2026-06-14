@@ -37,19 +37,21 @@ interface VideoTrimDialogProps {
 const VideoTrimDialog = (props: VideoTrimDialogProps) => {
     const dispatch = useDispatch();
     const trimStatus = useSelector(Selector.Video.trimStatus);
+    const trimInitiated = React.useRef(false);
 
     const [range, setRange] = useState<[number, number]>([0, props.videoDuration]);
     const [newName, setNewName] = useState<string>(`${props.videoName} (trimmed)`);
 
     useEffect(() => {
         if (props.open) {
+            trimInitiated.current = false;
             setRange([0, props.videoDuration]);
             setNewName(`${props.videoName} (trimmed)`);
         }
     }, [props.open, props.videoDuration, props.videoName]);
 
     useEffect(() => {
-        if (trimStatus === 'done' && props.open) {
+        if (trimStatus === 'done' && props.open && trimInitiated.current) {
             props.onClose();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -60,6 +62,7 @@ const VideoTrimDialog = (props: VideoTrimDialogProps) => {
     };
 
     const handleTrim = () => {
+        trimInitiated.current = true;
         const newVideoId = uuidv4();
         dispatch(Command.Video.trimVideo({
             videoId: props.videoId,
