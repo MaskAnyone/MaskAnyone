@@ -11,7 +11,7 @@ const styles = {
     root: {
         width: '100%',
         height: '100%',
-        fontFamily: 'Roboto',
+        fontFamily: '"IBM Plex Sans", sans-serif',
     },
     content: (theme: any) => ({
         padding: 1,
@@ -19,7 +19,7 @@ const styles = {
         width: '100%',
         height: '100%',
         boxSizing: 'border-box',
-        backgroundColor: '#F9FAFB',
+        backgroundColor: theme.palette.background.default,
         [theme.breakpoints.up('sm')]: {
             padding: 2,
             paddingTop: '84px',
@@ -54,10 +54,10 @@ const LandingPageLayout = () => {
 
     return (
         <Box component="div" sx={styles.root}>
-            <AppBar position={'fixed'} color={'primary'} sx={styles.appBar}>
+            <AppBar position={'fixed'} sx={{...styles.appBar, backgroundColor: '#161616'}}>
                 <Toolbar sx={styles.toolbar}>
                     <Button component={Link} to={'/'} sx={{ color: 'white', marginLeft: '-16px' }}>
-                        <img src={Assets.logos.logoWhite} height={50} style={{ pointerEvents: 'none' }} />
+                        <img src={Assets.logos.logoWhite} height={50} style={{ pointerEvents: 'none' }} alt="MaskAnyone" />
                     </Button>
 
                     <Box component="div" sx={styles.navigationContainer}>

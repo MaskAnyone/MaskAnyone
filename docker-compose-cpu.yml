@@ -1,0 +1,26 @@
+# CPU override — applied automatically by setup.sh when no NVIDIA GPU is detected.
+# Strips GPU device reservations from all services so the stack starts on CPU-only machines.
+services:
+  python:
+    deploy:
+      resources:
+        reservations:
+          devices: []
+
+  sam2:
+    deploy:
+      resources:
+        reservations:
+          devices: []
+
+  openpose:
+    deploy:
+      resources:
+        reservations:
+          devices: []
+
+  rtmpose:
+    deploy:
+      resources:
+        reservations:
+          devices: []

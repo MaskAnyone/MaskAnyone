@@ -1,53 +1,62 @@
+import json
+
+from fastapi import HTTPException
+
 from db.db_connection import DBConnection
 from db.model.video import Video
-import json
 
 
 class VideoManager:
     def __init__(self, db_connection: DBConnection):
         self.__db_connection = db_connection
 
-    def fetch_videos(self, user_id: str):
-        result = []
-
+    def fetch_videos(self, user_id: str) -> list[Video]:
         video_data_list = self.__db_connection.select_all(
             "SELECT * FROM videos WHERE status=%(status)s AND user_id=%(user_id)s",
             {"status": "valid", "user_id": user_id},
         )
 
-        for video_data in video_data_list:
-            result.append(Video(*video_data))
-
-        return result
+        return [Video(*video_data) for video_data in video_data_list]
 
     def has_video_with_name(self, video_name: str, user_id: str) -> bool:
         result = self.__db_connection.select_all(
-            "SELECT id FROM videos WHERE name=%(name)s AND user_id=%(user_id)s", {"name": video_name, "user_id": user_id}
+            "SELECT id FROM videos WHERE name=%(name)s AND user_id=%(user_id)s",
+            {"name": video_name, "user_id": user_id},
         )
 
         return len(result) > 0
 
-    def add_pending_video(self, id: str, name: str, user_id: str):
+    def add_pending_video(self, id: str, name: str, user_id: str) -> None:
         self.__db_connection.execute(
             "INSERT INTO videos (id, name, status, user_id) VALUES (%(id)s, %(name)s, %(status)s, %(user_id)s)",
             {"id": id, "name": name, "status": "pending", "user_id": user_id},
         )
 
-    def set_video_to_valid(self, id: str, video_info: dict):
+    def set_video_to_valid(self, id: str, video_info: dict) -> None:
         self.__db_connection.execute(
             "UPDATE videos SET status=%(status)s, video_info=%(video_info)s WHERE id=%(id)s",
             {"id": id, "status": "valid", "video_info": json.dumps(video_info)},
         )
 
-    def assert_user_has_video(self, video_id: str, user_id: str):
+    def assert_user_has_video(self, video_id: str, user_id: str) -> None:
         result = self.__db_connection.select_all(
-            "SELECT id FROM videos WHERE id=%(video_id)s AND user_id=%(user_id)s", {"video_id": video_id, "user_id": user_id}
+            "SELECT id FROM videos WHERE id=%(video_id)s AND user_id=%(user_id)s",
+            {"video_id": video_id, "user_id": user_id},
         )
 
         if len(result) == 0:
-            raise Exception("User does not have video with id " + video_id)
+            raise HTTPException(
+                status_code=403,
+                detail=f"Access denied for video {video_id}",
+            )
 
-    def delete_video(self, video_id: str):
+    def rename_video(self, video_id: str, new_name: str) -> None:
+        self.__db_connection.execute(
+            "UPDATE videos SET name=%(name)s WHERE id=%(video_id)s",
+            {"video_id": video_id, "name": new_name},
+        )
+
+    def delete_video(self, video_id: str) -> None:
         self.__db_connection.execute(
             "DELETE FROM videos WHERE id=%(video_id)s",
             {"video_id": video_id},

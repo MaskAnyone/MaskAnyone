@@ -1,4 +1,4 @@
-import { call, fork, put, take, delay, select } from 'redux-saga/effects';
+import { call, fork, put, take, delay } from 'redux-saga/effects';
 import { Action } from 'redux-actions';
 import Command from "../../actions/command";
 import Api from "../../../api";
@@ -40,6 +40,7 @@ const onFetchJobList = function* (payload: FetchJobListPayload) {
             startedAt: job.started_at ? new Date(job.started_at) : undefined,
             finishedAt: job.finished_at ? new Date(job.finished_at) : undefined,
             progress: job.progress,
+            phase: job.phase,
         }));
 
         yield put(Event.Job.jobListFetched({ jobList }));

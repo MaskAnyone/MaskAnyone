@@ -1,14 +1,11 @@
 import { HidingMethods, MaskingMethods } from "../state/types/RunParamRendering";
 import {
-    faceswapFormSchema,
     blackoutFormSchemaBG,
     blackoutFormSchemaSubject,
     blackoutFormSchemaSubjectUI,
-    blenderMocapFormSchema,
     blurFormSchemaBG,
     blurFormSchemaSubject,
     blurFormSchemaSubjectUI,
-    faceMeshFormSchema,
     inpaintFormSchemaSubject,
     inpaintFormSchemaSubjectUI,
     rvcSchema,

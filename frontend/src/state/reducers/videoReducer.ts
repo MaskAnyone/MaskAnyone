@@ -6,10 +6,15 @@ import {
     ResultsListFetchedPayload, ResultVideoDeletedPayload,
     VideoDeletedPayload,
     VideoListFetchedPayload,
+    VideoTrimStartedPayload,
+    VideoTrimFinishedPayload,
+    VideoTrimFailedPayload,
 } from "../actions/videoEvent";
 import { Video } from "../types/Video";
 import { ResultVideo } from "../types/ResultVideo";
 import { DownloadableResultFile } from "../types/DownloadableResultFile";
+
+export type TrimStatus = 'idle' | 'trimming' | 'done' | 'error';
 
 export interface VideoState {
     videoList: Video[];
@@ -17,6 +22,7 @@ export interface VideoState {
     downloadableResultFileLists: Record<string, DownloadableResultFile[]>;
     blendshapesList: Record<string, any>;
     mpKinematicsList: Record<string, any>;
+    trimStatus: TrimStatus;
 }
 
 export const videoInitialState: VideoState = {
@@ -25,6 +31,7 @@ export const videoInitialState: VideoState = {
     downloadableResultFileLists: {},
     blendshapesList: {},
     mpKinematicsList: {},
+    trimStatus: 'idle',
 };
 
 /* eslint-disable max-len */
@@ -93,6 +100,15 @@ export const videoReducer = handleActions<VideoState, any>(
                     Object.entries(state.resultVideoLists).filter(([key]) => key !== action.payload.videoId)
                 ),
             };
+        },
+        [Event.Video.videoTrimStarted.toString()]: (state, _action: Action<VideoTrimStartedPayload>): VideoState => {
+            return { ...state, trimStatus: 'trimming' };
+        },
+        [Event.Video.videoTrimFinished.toString()]: (state, _action: Action<VideoTrimFinishedPayload>): VideoState => {
+            return { ...state, trimStatus: 'done' };
+        },
+        [Event.Video.videoTrimFailed.toString()]: (state, _action: Action<VideoTrimFailedPayload>): VideoState => {
+            return { ...state, trimStatus: 'error' };
         },
     },
     videoInitialState,

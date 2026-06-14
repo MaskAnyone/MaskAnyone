@@ -10,11 +10,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu \
     && pip install --no-cache-dir \
         fastapi uvicorn[standard] psycopg2 requests python-jose[cryptography] opencv-python-headless \
-        numpy==1.24.4 psutil matplotlib tqdm pandas ultralytics-thop \
+        numpy==1.24.4 psutil matplotlib tqdm pandas ultralytics-thop pynvml \
     && pip install --no-cache-dir ultralytics==8.3.78 --no-deps
 
 RUN mkdir /backend_models \
     && wget https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11m-pose.pt \
-        -O /backend_models/yolo11m-pose.pt
+        -O /backend_models/yolo11m-pose.pt \
+    && wget https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11m.pt \
+        -O /backend_models/yolo11m.pt
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

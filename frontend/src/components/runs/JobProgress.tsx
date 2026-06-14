@@ -3,14 +3,14 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 
 const styles = {
     circularProgressBottom: {
-        color: '#dfdfdf',
+        color: 'action.disabledBackground',
     },
     circularProgressTop: {
         position: 'absolute',
         left: 0,
     },
     waitingForJobStart: {
-        color: '#bfbfbf',
+        color: 'action.disabled',
     },
 };
 

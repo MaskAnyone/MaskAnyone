@@ -9,9 +9,24 @@ import gc
 import time
 
 from fastapi import FastAPI, APIRouter, File, Form, UploadFile, HTTPException, Response
-from src.segmentation import perform_sam2_segmentation
+from src.segmentation import perform_sam2_segmentation, preload_predictor, MODEL_CONFIGS, DEFAULT_MODEL
 
 app = FastAPI()
+
+
+@app.on_event("startup")
+async def warm_default_predictor() -> None:
+    # Keep the most common model resident in VRAM so the first job doesn't pay
+    # the ~2–5 s checkpoint-load cost. Override with SAM2_WARM_MODEL.
+    warm_model = os.environ.get("SAM2_WARM_MODEL", DEFAULT_MODEL)
+    if warm_model.lower() in ("", "none"):
+        return
+    try:
+        preload_predictor(warm_model)
+        print(f"[sam2] warmed predictor: {warm_model}", flush=True)
+    except Exception as e:
+        print(f"[sam2] failed to warm predictor {warm_model}: {e}", flush=True)
+
 
 router = APIRouter(
     prefix="/sam2",
@@ -32,8 +47,12 @@ colors = [
 @router.post("/segment-image")
 async def segment_image(
     pose_prompts = Form(...),
-    image: UploadFile = File(...)
+    image: UploadFile = File(...),
+    model_variant: str = Form("sam2.1_hiera_small"),
 ):
+    if model_variant not in MODEL_CONFIGS:
+        raise HTTPException(status_code=400, detail=f"Unknown model_variant '{model_variant}'. Valid options: {list(MODEL_CONFIGS.keys())}")
+
     image_content = await image.read()
 
     pose_prompts = json.loads(pose_prompts)
@@ -47,7 +66,7 @@ async def segment_image(
             f.write(image_content)
 
         video_pose_prompts = { 0: pose_prompts }
-        masks = perform_sam2_segmentation(temp_dir, video_pose_prompts)[0]
+        masks = perform_sam2_segmentation(temp_dir, video_pose_prompts, model_variant)[0]
 
         output_image = cv2.imread(frame_file_path)
         for object_id, mask in masks.items():
@@ -71,11 +90,32 @@ async def segment_image(
 @router.post("/segment-video")
 async def segment_video(
     pose_prompts = Form(...),
-    video: UploadFile = File(...)
+    video: UploadFile = File(...),
+    model_variant: str = Form("sam2.1_hiera_small"),
+    initial_masks: UploadFile = File(None),
 ):
+    """Segment a video with SAM2.
+
+    initial_masks is an optional .npz file encoding {str(obj_id): bool_array} —
+    when present, mask prompts are used instead of point prompts (chunk continuation).
+    """
+    if model_variant not in MODEL_CONFIGS:
+        raise HTTPException(status_code=400, detail=f"Unknown model_variant '{model_variant}'. Valid options: {list(MODEL_CONFIGS.keys())}")
+
     try:
         video_content = await video.read()
         pose_prompts = json.loads(pose_prompts)
+
+        decoded_initial_masks = None
+        if initial_masks is not None:
+            masks_content = await initial_masks.read()
+            if masks_content:
+                buf = io.BytesIO(masks_content)
+                loaded = np.load(buf)
+                decoded_initial_masks = {
+                    int(key): loaded[key].astype(bool)
+                    for key in loaded.files
+                }
 
         temp_dir = tempfile.mkdtemp()
         video_path = os.path.join(temp_dir, f"video_{int(time.time())}.mp4")
@@ -83,7 +123,7 @@ async def segment_video(
         file.write(video_content)
         file.close()
 
-        masks = perform_sam2_segmentation(video_path, pose_prompts)
+        masks = perform_sam2_segmentation(video_path, pose_prompts, model_variant, initial_masks=decoded_initial_masks)
 
         flattened_masks = {
             f"frame{frame}_mask{mask}": mask_array

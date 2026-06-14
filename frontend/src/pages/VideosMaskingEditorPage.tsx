@@ -1,6 +1,8 @@
 import React, {Fragment, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useParams} from "react-router";
-import {Box, Button, Divider, IconButton, InputLabel, MenuItem, Select, Slider, TextField} from "@mui/material";
+import {Box, Button, Checkbox, Divider, FormControlLabel, IconButton, MenuItem, Select, Slider, TextField, Tooltip, Typography} from "@mui/material";
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import CloseIcon from '@mui/icons-material/Close';
 import {useDispatch, useSelector} from "react-redux";
 import Selector from "../state/selector";
 import Api from "../api";
@@ -11,9 +13,18 @@ import Command from "../state/actions/command";
 import {v4 as uuidv4} from "uuid";
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import PersonSearchIcon from '@mui/icons-material/PersonSearch';
+import ImageSearchIcon from '@mui/icons-material/ImageSearch';
 import ShieldLogoIcon from "../components/common/ShieldLogoIcon";
+import ModelPicker from "../components/videosMakingEditor/ModelPicker";
 import { debounce } from 'lodash';
 import { ReduxState } from "../state/reducer";
+
+function recommendChunkSize(durationSeconds: number): number | null {
+    if (durationSeconds < 30) return null;          // short video — single pass
+    if (durationSeconds < 120) return 30;            // medium — 30 s chunks
+    return 60;                                        // long — 60 s chunks
+}
 
 const VideoMaskingEditorPage = () => {
     const dispatch = useDispatch();
@@ -21,15 +32,20 @@ const VideoMaskingEditorPage = () => {
     const { videoId, resultVideoId } = useParams<{ videoId: string, resultVideoId?: string }>();
 
     const imgRef = useRef<HTMLImageElement>(null);
+    const [legendVisible, setLegendVisible] = useState<boolean>(true);
     const [currentFrame, setCurrentFrame] = useState<number>(0);
     const [debouncedCurrentFrame, setDebouncedCurrentFrame] = useState<number>(currentFrame);
     const [posePrompts, setPosePrompts] = useState<[number, number, number][][]>([]);
     const [hidingStrategies, setHidingStrategies] = useState<string[]>([]);
     const [overlayStrategies, setOverlayStrategories] = useState<string[]>([]);
+    const [motionTraces, setMotionTraces] = useState<boolean>(false);
     const [bounds, setBounds] = useState({ left: 0, top: 0, right: 0, bottom: 0 });
     const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
     const [segmentationImageUrl, setSegmentationImageUrl] = useState<string | null>(null);
     const [videoPosePrompts, setVideoPosePrompts] = useState<Record<string, [number, number, number][][]>>({});
+    const [samModel, setSamModel] = useState<string>('sam2.1_hiera_small');
+    const [chunkSizeSeconds, setChunkSizeSeconds] = useState<number | null>(null);
+    const [chunkOverlapSeconds, setChunkOverlapSeconds] = useState<number>(2);
 
     const resultVideoLists = useSelector(Selector.Video.resultVideoLists);
     const resultVideos = resultVideoLists[videoId || ''] || [];
@@ -52,6 +68,7 @@ const VideoMaskingEditorPage = () => {
             setPosePrompts((resultVideoJob.data as any)['videoMasking']['posePrompts'][0]);
             setOverlayStrategories((resultVideoJob.data as any)['videoMasking']['overlayStrategies']);
             setHidingStrategies((resultVideoJob.data as any)['videoMasking']['hidingStrategies'] || []);
+            setMotionTraces(Boolean((resultVideoJob.data as any)['videoMasking']['motionTraces']));
         } else {
             Api.fetchPosePrompt(videoId, currentFrame).then(posePrompts => {
                 setPosePrompts(posePrompts);
@@ -59,6 +76,7 @@ const VideoMaskingEditorPage = () => {
                 setHidingStrategies(posePrompts.map((_: any) => 'solid_fill'));
             });
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [videoId, resultVideoId, Boolean(resultVideoJob)]);
 
     useEffect(() => {
@@ -74,6 +92,7 @@ const VideoMaskingEditorPage = () => {
                 });
             };
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [imgRef.current]);
 
     const targetCount = useMemo(() => {
@@ -86,6 +105,7 @@ const VideoMaskingEditorPage = () => {
         return Math.max(posePromptsTargets, videoPosePromptsTargets);
     }, [posePrompts, videoPosePrompts]);
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const debouncedSetCurrentFrame = useCallback(
         debounce((frame) => {
             setDebouncedCurrentFrame(frame);
@@ -210,12 +230,20 @@ const VideoMaskingEditorPage = () => {
         setSegmentationImageUrl(null);
     };
 
+    const video = videoList.find(videoListItem => videoListItem.id === videoId);
+    const frameCount = video?.videoInfo.frameCount || 0;
+
+    // Set chunk-size recommendation once the video loads (runs once per videoId)
+    useEffect(() => {
+        if (video?.videoInfo.duration) {
+            setChunkSizeSeconds(recommendChunkSize(video.videoInfo.duration));
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [video?.videoInfo.duration]);
+
     if (!videoId && videoList.length > 0) {
         return null;
     }
-
-    const video = videoList.find(videoListItem => videoListItem.id === videoId)!;
-    const frameCount = video?.videoInfo.frameCount || 0;
 
     const maskVideo = () => {
         if (!posePrompts.some(prompt => prompt.length > 0) && Object.entries(videoPosePrompts).length < 1) {
@@ -234,11 +262,14 @@ const VideoMaskingEditorPage = () => {
             resultVideoId: uuidv4(),
             runData: {
                 videoMasking: {
-                    posePrompts: posePrompts.some(prompt => prompt.length > 0) 
-                        ? { ...videoPosePrompts, [currentFrame]: posePrompts } 
+                    posePrompts: posePrompts.some(prompt => prompt.length > 0)
+                        ? { ...videoPosePrompts, [currentFrame]: posePrompts }
                         : videoPosePrompts,
                     overlayStrategies,
                     hidingStrategies,
+                    samModel,
+                    motionTraces,
+                    ...(chunkSizeSeconds !== null ? { chunkSizeSeconds, chunkOverlapSeconds } : {}),
                 } as any,
                 voiceMasking: {
                     strategy: 'remove',
@@ -283,7 +314,40 @@ const VideoMaskingEditorPage = () => {
         <Box component="div" sx={{ display: 'flex' }}>
             <Box component='div' sx={{ width: 320 }}>
                 <Button onClick={maskVideo} variant={'contained'} color={'secondary'} startIcon={<ShieldLogoIcon />}>Mask</Button>
-                <Button onClick={segmentPrompt} variant={'contained'} color={'primary'} sx={{ marginLeft: 1, marginRight: 1 }}>Test Prompt</Button>
+                <Button onClick={segmentPrompt} variant={'contained'} color={'primary'} sx={{ marginLeft: 1 }}>Test Prompt</Button>
+
+                <Box component="div" sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                    <Button
+                        variant={'outlined'}
+                        onClick={() => {
+                            if (!videoId) return;
+                            Api.fetchPosePrompt(videoId, debouncedCurrentFrame).then(prompts => {
+                                setPosePrompts(prompts);
+                                setOverlayStrategories(prompts.map((_: any) => 'mp_pose'));
+                                setHidingStrategies(prompts.map((_: any) => 'solid_fill'));
+                            });
+                        }}
+                        startIcon={<PersonSearchIcon />}
+                        size="small"
+                    >
+                        Detect Poses
+                    </Button>
+                    <Button
+                        variant={'outlined'}
+                        onClick={() => {
+                            if (!videoId) return;
+                            Api.fetchObjectPrompts(videoId, debouncedCurrentFrame).then(prompts => {
+                                setPosePrompts(prev => [...prev, ...prompts]);
+                                setOverlayStrategories(prev => [...prev, ...prompts.map((_: any) => 'none')]);
+                                setHidingStrategies(prev => [...prev, ...prompts.map((_: any) => 'solid_fill')]);
+                            });
+                        }}
+                        startIcon={<ImageSearchIcon />}
+                        size="small"
+                    >
+                        Detect Objects
+                    </Button>
+                </Box>
 
                 <Divider sx={{ marginTop: 2 }} />
 
@@ -295,20 +359,10 @@ const VideoMaskingEditorPage = () => {
                             <IconButton><AddCircleOutlineIcon onClick={() => addTargetPoint(index)} /></IconButton>
                         </div>
 
-                        <Select 
-                            value={overlayStrategies[index] || ''}
-                            onChange={e => updateOverlayStrategy(e.target.value as string, index)}
-                            size='small'
-                        >
-                            <MenuItem value={'none'}>No Overlay</MenuItem>
-                            <MenuItem value={'mp_pose'}>MediaPipe Pose</MenuItem>
-                            <MenuItem value={'mp_face'}>MediaPipe Face</MenuItem>
-                            <MenuItem value={'mp_hand'}>MediaPipe Hands</MenuItem>
-                            <MenuItem value={'openpose'}>Openpose</MenuItem>
-                            <MenuItem value={'openpose_body25b'}>Openpose (BODY_25B)</MenuItem>
-                            <MenuItem value={'openpose_face'}>Openpose + Face</MenuItem>
-                            <MenuItem value={'openpose_body_135'}>Openpose (BODY_135)</MenuItem>
-                        </Select>
+                        <ModelPicker
+                            value={overlayStrategies[index] || 'none'}
+                            onChange={value => updateOverlayStrategy(value, index)}
+                        />
                         <br />
                         <Select 
                             value={hidingStrategies[index] || ''}
@@ -327,6 +381,80 @@ const VideoMaskingEditorPage = () => {
 
                 <Box component='div' sx={{ marginTop: 3}}>
                     <Button variant={'contained'} onClick={addNewTarget}>Add New Target</Button>
+                </Box>
+
+                <Divider sx={{ marginTop: 2 }} />
+
+                <Box component='div' sx={{ marginTop: 2 }}>
+                    <Typography variant="caption" color="text.secondary">SAM2 Model</Typography>
+                    <Select
+                        value={samModel}
+                        onChange={e => setSamModel(e.target.value)}
+                        size="small"
+                        fullWidth
+                        sx={{ mt: 0.5 }}
+                    >
+                        <MenuItem value="sam2.1_hiera_tiny">Tiny (fastest)</MenuItem>
+                        <MenuItem value="sam2.1_hiera_small">Small (default)</MenuItem>
+                        <MenuItem value="sam2.1_hiera_base_plus">Base+</MenuItem>
+                        <MenuItem value="sam2.1_hiera_large">Large (best quality)</MenuItem>
+                    </Select>
+                </Box>
+
+                <Box component='div' sx={{ marginTop: 2 }}>
+                    <Tooltip
+                        title="Draws fading green/blue trails behind each subject's wrists in the output video — useful for visualizing gestures or movement paths."
+                        placement="right"
+                    >
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    checked={motionTraces}
+                                    onChange={e => setMotionTraces(e.target.checked)}
+                                    size="small"
+                                />
+                            }
+                            label={<Typography variant="body2">Motion traces</Typography>}
+                        />
+                    </Tooltip>
+                </Box>
+
+                <Box component='div' sx={{ marginTop: 2 }}>
+                    <Tooltip title="Split long videos into chunks so SAM2 doesn't run out of memory. Recommended automatically based on video length." placement="right">
+                        <Typography variant="caption" color="text.secondary">
+                            Chunk size (s) — {chunkSizeSeconds === null ? 'single pass' : `${chunkSizeSeconds}s chunks`}
+                            {video?.videoInfo.duration
+                                ? ` · recommended: ${recommendChunkSize(video.videoInfo.duration) ?? 'single pass'}`
+                                : ''}
+                        </Typography>
+                    </Tooltip>
+                    <Select
+                        value={chunkSizeSeconds === null ? 'none' : String(chunkSizeSeconds)}
+                        onChange={e => setChunkSizeSeconds(e.target.value === 'none' ? null : Number(e.target.value))}
+                        size="small"
+                        fullWidth
+                        sx={{ mt: 0.5 }}
+                    >
+                        <MenuItem value="none">Single pass (no chunking)</MenuItem>
+                        <MenuItem value="10">10 s</MenuItem>
+                        <MenuItem value="20">20 s</MenuItem>
+                        <MenuItem value="30">30 s</MenuItem>
+                        <MenuItem value="60">60 s</MenuItem>
+                        <MenuItem value="120">120 s</MenuItem>
+                    </Select>
+                    {chunkSizeSeconds !== null && (
+                        <Box component='div' sx={{ mt: 1 }}>
+                            <Typography variant="caption" color="text.secondary">Overlap (s)</Typography>
+                            <TextField
+                                type="number"
+                                size="small"
+                                value={chunkOverlapSeconds}
+                                onChange={e => setChunkOverlapSeconds(Math.max(0, Number(e.target.value)))}
+                                inputProps={{ min: 0, max: chunkSizeSeconds - 1 }}
+                                sx={{ mt: 0.5, width: '100%' }}
+                            />
+                        </Box>
+                    )}
                 </Box>
 
                 <Divider sx={{ marginTop: 2 }} />
@@ -372,8 +500,66 @@ const VideoMaskingEditorPage = () => {
                                 />
                             ))
                         ))}
+                        {/* Collapsed state: just a small ? icon in the corner that re-opens the legend. */}
+                        {!legendVisible && (
+                            <Tooltip title="Show prompt legend" placement="left">
+                                <IconButton
+                                    onClick={() => setLegendVisible(true)}
+                                    size="small"
+                                    sx={{
+                                        position: 'absolute',
+                                        top: 4,
+                                        right: 4,
+                                        backgroundColor: 'rgba(0,0,0,0.5)',
+                                        color: 'white',
+                                        padding: '2px',
+                                        '&:hover': { backgroundColor: 'rgba(0,0,0,0.7)' },
+                                    }}
+                                >
+                                    <HelpOutlineIcon fontSize="small" />
+                                </IconButton>
+                            </Tooltip>
+                        )}
                     </Box>
                 </Box>
+                {/* Persistent legend strip below the canvas — discoverable by default,
+                    one-click dismiss to a tiny ? icon in the corner. */}
+                {legendVisible && (
+                    <Box
+                        component="div"
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: 1.5,
+                            px: 1,
+                            py: 0.5,
+                            mt: 0.5,
+                            backgroundColor: 'rgba(0,0,0,0.04)',
+                            borderRadius: 1,
+                            fontSize: 12,
+                        }}
+                    >
+                        <Box component="div" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Box component="div" sx={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: 'green', boxShadow: '0 0 0 1px white, 0 0 2px rgba(0,0,0,0.4)' }} />
+                            <Typography variant="caption"><strong>+ Subject</strong></Typography>
+                        </Box>
+                        <Box component="div" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Box component="div" sx={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: 'red', boxShadow: '0 0 0 1px white, 0 0 2px rgba(0,0,0,0.4)' }} />
+                            <Typography variant="caption"><strong>− Background</strong> (exclude)</Typography>
+                        </Box>
+                        <Box component="div" sx={{ width: '1px', height: 16, backgroundColor: 'rgba(0,0,0,0.2)' }} />
+                        <Typography variant="caption" color="text.secondary">click toggles +/−</Typography>
+                        <Typography variant="caption" color="text.secondary">drag to move</Typography>
+                        <Typography variant="caption" color="text.secondary">right-click image to add · right-click dot to remove</Typography>
+                        <Box component="div" sx={{ flexGrow: 1 }} />
+                        <Tooltip title="Hide legend">
+                            <IconButton onClick={() => setLegendVisible(false)} size="small" sx={{ padding: '2px' }}>
+                                <CloseIcon sx={{ fontSize: 14 }} />
+                            </IconButton>
+                        </Tooltip>
+                    </Box>
+                )}
                 {Boolean(videoPosePrompts[0]) && (
                     <Slider 
                         min={0} 

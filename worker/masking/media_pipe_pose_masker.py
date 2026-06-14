@@ -29,9 +29,9 @@ options = mediapipe.tasks.vision.PoseLandmarkerOptions(
 class MediaPipePoseMasker:
     _video_capture: cv2.VideoCapture
     _video_writer: cv2.VideoWriter
-    _progress_callback: Callable[[int], None]
+    _progress_callback: Callable[..., None]
 
-    def __init__(self, input_path: str, output_path: str, progress_callback: Callable[[int], None]):
+    def __init__(self, input_path: str, output_path: str, progress_callback: Callable[..., None]):
         self._video_capture = cv2.VideoCapture(input_path)
         self._progress_callback = progress_callback
 

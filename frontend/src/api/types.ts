@@ -56,12 +56,13 @@ export interface ApiFetchJobsResponse {
         id: string;
         video_id: string;
         type: string;
-        status: 'open' | 'running' | 'finished' | 'failed';
+        status: 'open' | 'running' | 'finished' | 'failed' | 'cancelled';
         data: object;
         created_at: string;
         started_at: string | null;
         finished_at: string | null;
         progress: number;
+        phase: string | null;
     }[];
 }
 

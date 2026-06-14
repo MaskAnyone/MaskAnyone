@@ -1,11 +1,17 @@
-import {Box, Typography} from "@mui/material";
+import {Box, Button, Typography, useTheme} from "@mui/material";
+import {Link} from "react-router-dom";
 import Assets from "../assets/assets";
+import Paths from "../paths";
+import SchoolIcon from "@mui/icons-material/School";
 
 const AboutPage = () => {
+    const theme = useTheme();
+    const logo = theme.palette.mode === 'dark' ? Assets.logos.logoWhite : Assets.logos.logoBlack;
+
     return (
         <Box component={'div'}>
             <Box component={'div'} sx={{ display: 'flex', justifyContent: 'center', marginTop: 4, marginBottom: 4 }}>
-                <img src={Assets.logos.logoBlack} width={250} />
+                <img src={logo} width={250} alt="Mask Anyone logo" />
             </Box>
 
             <Typography variant={'h4'}>About</Typography>
@@ -15,6 +21,16 @@ const AboutPage = () => {
             <Typography variant={'body1'} sx={{ marginTop: 2 }}>
                 MaskAnyone is a docker-packaged modern web app that is built with React, MaterialUI, FastAPI and PostgreSQL. It is designed to be easily extensible with new algorithms and to be scalable with multiple docker workers. It is also designed to be easily usable by non-technical users.
             </Typography>
+            <Box component="div" sx={{ mt: 3 }}>
+                <Button
+                    variant="outlined"
+                    component={Link}
+                    to={Paths.tutorial}
+                    startIcon={<SchoolIcon />}
+                >
+                    View Tutorial
+                </Button>
+            </Box>
             <Typography variant={'body1'} sx={{ marginTop: 2 }}>
                 <em>This Project is the result of the 2023 Mastersproject at the "Intelligent Systems Group" at the Hasso Plattner Institute.</em>
             </Typography>

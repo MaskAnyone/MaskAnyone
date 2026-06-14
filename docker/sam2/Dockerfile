@@ -1,10 +1,13 @@
 # === Build Stage (Full dependencies for compilation) ===
-FROM pytorch/pytorch:2.7.1-cuda12.6-cudnn9-devel AS builder
+FROM pytorch/pytorch:2.8.0-cuda12.8-cudnn9-devel AS builder
 
 WORKDIR /workspace
 
 ARG DEBIAN_FRONTEND=noninteractive
-ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6+PTX"
+# TORCH_CUDA_ARCH_LIST is injected by setup.sh from `nvidia-smi --query-gpu=compute_cap`.
+# Fallback covers Ampere (8.0/8.6), Hopper (9.0), and Blackwell (12.0) with PTX for forward compat.
+ARG TORCH_CUDA_ARCH_LIST="8.0;8.6;9.0;12.0+PTX"
+ENV TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST}
 
 RUN apt-get update && apt-get install -y \
     ffmpeg \
@@ -28,12 +31,21 @@ RUN git clone https://github.com/facebookresearch/sam2.git && \
     #sed -i 's/self.images\[index\] = img/# self.images\[index\] = img/g' ./sam2/utils/misc.py && \
     #sed -i 's/self.thread = Thread(target=_load_frames, daemon=True)/# self.thread = Thread(target=_load_frames, daemon=True)/g' ./sam2/utils/misc.py && \
     #sed -i 's/self.thread.start()/# self.thread.start()/g' ./sam2/utils/misc.py && \
-    SAM2_BUILD_ALLOW_ERRORS=0 pip install -e .
+    SAM2_BUILD_ALLOW_ERRORS=1 pip install -e .
 
-RUN wget -P /workspace/sam2/checkpoints https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt
+# SAM2_MODELS: comma-separated list of checkpoints to bake in.
+# Values: tiny (~46 MB), small (~185 MB), base_plus (~325 MB), large (~898 MB)
+# Default matches the original student setup. setup.sh prompts the user at build time.
+ARG SAM2_MODELS=small
+
+RUN set -e; \
+    BASE="https://dl.fbaipublicfiles.com/segment_anything_2/092824"; \
+    for m in $(echo "$SAM2_MODELS" | tr ',' ' '); do \
+        wget -P /workspace/sam2/checkpoints "$BASE/sam2.1_hiera_${m}.pt"; \
+    done
 
 # === Runtime Stage (Slimmer image) ===
-FROM pytorch/pytorch:2.7.1-cuda12.6-cudnn9-runtime
+FROM pytorch/pytorch:2.8.0-cuda12.8-cudnn9-runtime
 
 WORKDIR /workspace
 

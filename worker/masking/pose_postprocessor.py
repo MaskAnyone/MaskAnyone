@@ -82,6 +82,14 @@ class PosePostprocessor:
                     obj_id,
                     pose_data
                 )
+            elif overlay_strategy.startswith('rtmpose'):
+                self._postprocess_rtmpose(
+                    pose_data_dict,
+                    frame_count,
+                    estimation_input_bounding_boxes,
+                    obj_id,
+                    pose_data
+                )
             elif overlay_strategy == 'mask_anyone_holistic':
                 self._postprocess_mask_anyone_holistic(
                     pose_data_dict,
@@ -238,3 +246,30 @@ class PosePostprocessor:
                     adjusted_hand.append(None)
 
             pose_data_dict[obj_id][idx] = adjusted_hand
+
+    def _postprocess_rtmpose(self, pose_data_dict, frame_count, estimation_input_bounding_boxes, obj_id, pose_data):
+        for idx in range(frame_count):
+            bbox_start_frames = [frame for frame in estimation_input_bounding_boxes[obj_id].keys() if frame <= idx]
+
+            if len(bbox_start_frames) < 1:
+                pose_data_dict[obj_id][idx] = None
+                continue
+
+            relevant_start_frame = max(bbox_start_frames)
+            bbox = estimation_input_bounding_boxes[obj_id][relevant_start_frame]
+            xmin, ymin, xmax, ymax = bbox
+
+            current_pose = pose_data[idx]
+
+            if current_pose is None or current_pose.get('pose_keypoints') is None:
+                pose_data_dict[obj_id][idx] = None
+                continue
+
+            adjusted_keypoints = []
+            for keypoint in current_pose['pose_keypoints']:
+                if keypoint is not None and (keypoint[0] > 0 or keypoint[1] > 0) and keypoint[2] > self._confidence:
+                    adjusted_keypoints.append((keypoint[0] + xmin, keypoint[1] + ymin))
+                else:
+                    adjusted_keypoints.append(None)
+
+            pose_data_dict[obj_id][idx] = {'pose_keypoints': adjusted_keypoints}

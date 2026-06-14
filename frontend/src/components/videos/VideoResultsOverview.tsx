@@ -38,11 +38,6 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
         setActiveResultVideoId(resultVideoId);
     };
 
-    const openCreatePresetDialog = () => {
-        setVideoResultAnchorEl(null);
-        setCreatePresetDialogOpen(true);
-    };
-
     const openShowRunParamsDialog = () => {
         setVideoResultAnchorEl(null);
         setCreateResultRunParamsDialogOpen(true);

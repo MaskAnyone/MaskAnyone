@@ -5,27 +5,78 @@ import os
 sys.path.append('/workspace/segment-anything-2')
 from sam2.build_sam import build_sam2_video_predictor
 
-predictor = None
+predictors = {}
 
 SAM2_OFFLOAD_VIDEO_TO_CPU = os.environ["SAM2_OFFLOAD_VIDEO_TO_CPU"] == "true"
 SAM2_OFFLOAD_STATE_TO_CPU = os.environ["SAM2_OFFLOAD_STATE_TO_CPU"] == "true"
 
+MODEL_CONFIGS = {
+    "sam2.1_hiera_tiny": {
+        "checkpoint": "/workspace/sam2/checkpoints/sam2.1_hiera_tiny.pt",
+        "config": "configs/sam2.1/sam2.1_hiera_t.yaml",
+    },
+    "sam2.1_hiera_small": {
+        "checkpoint": "/workspace/sam2/checkpoints/sam2.1_hiera_small.pt",
+        "config": "configs/sam2.1/sam2.1_hiera_s.yaml",
+    },
+    "sam2.1_hiera_base_plus": {
+        "checkpoint": "/workspace/sam2/checkpoints/sam2.1_hiera_base_plus.pt",
+        "config": "configs/sam2.1/sam2.1_hiera_b+.yaml",
+    },
+    "sam2.1_hiera_large": {
+        "checkpoint": "/workspace/sam2/checkpoints/sam2.1_hiera_large.pt",
+        "config": "configs/sam2.1/sam2.1_hiera_l.yaml",
+    },
+}
 
-def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
-    global predictor
+DEFAULT_MODEL = "sam2.1_hiera_small"
 
-    if predictor is None:
-        configure_torch()
-        torch.cuda.empty_cache()
 
-        sam2_checkpoint = "/workspace/sam2/checkpoints/sam2.1_hiera_small.pt"
-        model_cfg = "configs/sam2.1/sam2.1_hiera_s.yaml"
-        predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint)
+def preload_predictor(model_variant: str):
+    """Build the SAM2 predictor and keep it resident so subsequent calls reuse it."""
+    global predictors
+
+    if model_variant not in MODEL_CONFIGS:
+        raise ValueError(f"Unknown model variant '{model_variant}'. Choose from: {list(MODEL_CONFIGS.keys())}")
+
+    if model_variant in predictors:
+        return predictors[model_variant]
+
+    configure_torch()
+    torch.cuda.empty_cache()
+
+    cfg = MODEL_CONFIGS[model_variant]
+    predictors[model_variant] = build_sam2_video_predictor(cfg["config"], cfg["checkpoint"])
+    return predictors[model_variant]
+
+
+def perform_sam2_segmentation(
+    frame_dir_path: str,
+    pose_prompts,
+    model_variant: str = DEFAULT_MODEL,
+    initial_masks: dict = None,
+):
+    """Segment a video (or chunk) using SAM2.
+
+    Args:
+        frame_dir_path: Path to the video file.
+        pose_prompts: Dict of {frame_idx: [[x, y, label], ...]} point prompts.
+                      Used for the first chunk (or single-pass jobs).
+        model_variant: Which SAM2 model to use.
+        initial_masks: Optional dict of {obj_id: numpy_bool_array} mask prompts.
+                       When provided, these are injected at frame 0 instead of
+                       point prompts — used for chunk N+1 onwards to maintain
+                       tracking continuity from the previous chunk's last frame.
+                       Must be 2D boolean arrays matching the video frame dimensions.
+    """
+    predictor = preload_predictor(model_variant)
 
     print(f"Initializing SAM2 predictor with flags: "
           f"offload_video_to_cpu={SAM2_OFFLOAD_VIDEO_TO_CPU}, "
           f"offload_state_to_cpu={SAM2_OFFLOAD_STATE_TO_CPU}, "
-          f"async_loading_frames=True")
+          f"async_loading_frames=True"
+          f"{' [mask-prompt chunk]' if initial_masks else ' [point-prompt]'}")
+
     inference_state = predictor.init_state(
         video_path=frame_dir_path,
         offload_video_to_cpu=SAM2_OFFLOAD_VIDEO_TO_CPU,
@@ -36,11 +87,30 @@ def perform_sam2_segmentation(frame_dir_path: str, pose_prompts):
     predictor.reset_state(inference_state)
     torch.cuda.empty_cache()
 
+    # Apply both prompt types when present. SAM2 supports an initial mask at
+    # frame 0 (boundary handoff between chunks) AND fresh point prompts at any
+    # frame within the same propagation pass — both feed the inference state
+    # and are not mutually exclusive. Older code used if/else, which silently
+    # dropped user re-prompts in chunks > 0.
+    if initial_masks:
+        # add_new_mask() requires a 2D boolean numpy array at frame 0.
+        for obj_id, mask_array in initial_masks.items():
+            assert mask_array.ndim == 2 and mask_array.dtype == bool, (
+                f"initial_masks[{obj_id}] must be a 2D boolean numpy array, "
+                f"got shape={mask_array.shape} dtype={mask_array.dtype}"
+            )
+            predictor.add_new_mask(
+                inference_state=inference_state,
+                frame_idx=0,
+                obj_id=int(obj_id),
+                mask=mask_array,
+            )
+
     for frame_idx, frame_pose_prompts in pose_prompts.items():
         obj_id_list, points_list, labels_list = extract_points_and_labels(frame_pose_prompts)
 
         for obj_id, points, labels in zip(obj_id_list, points_list, labels_list):
-            _, out_obj_ids, out_mask_logits = predictor.add_new_points(
+            predictor.add_new_points(
                 inference_state=inference_state,
                 frame_idx=int(frame_idx),
                 obj_id=obj_id,

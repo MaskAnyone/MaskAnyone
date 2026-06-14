@@ -1,4 +1,9 @@
 # Use NVIDIA's CUDA base image
+# NOTE: Pinned to CUDA 11.7 because OpenPose's bundled Caffe fork hardcodes
+# `compute_35` (Kepler) in its known-arch list and will not compile on CUDA 12+.
+# Fixing this requires patching Caffe's ExternalProject PATCH_COMMAND to strip
+# obsolete arches — see TROUBLESHOOTING.md. Users on Blackwell GPUs (sm_120)
+# should pick MediaPipe or RTMPose as the pose strategy instead.
 FROM nvidia/cuda:11.7.1-cudnn8-devel-ubuntu20.04
 
 # Set the working directory

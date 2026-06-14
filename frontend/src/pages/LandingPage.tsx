@@ -1,4 +1,4 @@
-import {Box, Button, Typography} from "@mui/material";
+import {Box, Button, Typography, useTheme} from "@mui/material";
 import KeycloakAuth from "../keycloakAuth";
 import Selector from "../state/selector";
 import {useSelector} from "react-redux";
@@ -6,11 +6,13 @@ import Assets from "../assets/assets";
 
 const LandingPage = () => {
     const authProviderInitialized = useSelector(Selector.Auth.initialized);
+    const theme = useTheme();
+    const logo = theme.palette.mode === 'dark' ? Assets.logos.logoWhite : Assets.logos.logoBlack;
 
     return (
         <Box component="div">
             <Box component={'div'} sx={{ display: 'flex', justifyContent: 'center', marginTop: 4, marginBottom: 4 }}>
-                <img src={Assets.logos.logoBlack} width={250} />
+                <img src={logo} width={250} alt="Mask Anyone logo" />
             </Box>
             <Typography variant={'h4'} sx={{ textAlign: 'center' }}>Video de-identification made simple.</Typography>
             <Box component={'div'} sx={{display: 'flex', justifyContent: 'center', marginTop: 4}}>

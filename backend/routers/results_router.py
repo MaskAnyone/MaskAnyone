@@ -1,6 +1,10 @@
+import csv
+import io
+import logging
 import os
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 
 from db.job_manager import JobManager
 from db.db_connection import DBConnection
@@ -10,6 +14,10 @@ from db.video_manager import VideoManager
 from db.result_video_manager import ResultVideoManager
 from auth.jwt_bearer import JWTBearer
 from config import RESULT_BASE_PATH
+from models import RenameVideoParams
+from utils.path_validation import validate_resource_id
+
+logger = logging.getLogger(__name__)
 
 db_connection = DBConnection()
 job_manager = JobManager(db_connection)
@@ -23,8 +31,24 @@ router = APIRouter(
 )
 
 
+@router.post("/{result_video_id}/rename")
+def rename_result(result_video_id: str, params: RenameVideoParams, token_payload: dict = Depends(JWTBearer())):
+    validate_resource_id(result_video_id)
+    user_id = token_payload["sub"]
+
+    result_video = result_video_manager.get_result_video(result_video_id)
+    video_manager.assert_user_has_video(result_video.video_id, user_id)
+
+    if result_video_manager.has_result_video_with_name(result_video.video_id, params.name):
+        raise HTTPException(status_code=409, detail="A result with this name already exists")
+
+    result_video_manager.rename_result_video(result_video_id, params.name)
+    return {"status": "ok"}
+
+
 @router.post("/{result_video_id}/delete")
 def delete_result(result_video_id: str, token_payload: dict = Depends(JWTBearer())):
+    validate_resource_id(result_video_id)
     user_id = token_payload["sub"]
 
     result_video = result_video_manager.get_result_video(result_video_id)
@@ -32,14 +56,18 @@ def delete_result(result_video_id: str, token_payload: dict = Depends(JWTBearer(
 
     result_video_manager.delete_result_video(result_video_id)
 
-    result_video_path = os.path.join(RESULT_BASE_PATH, result_video.video_id, result_video_id + ".mp4")
+    result_video_path = os.path.join(RESULT_BASE_PATH, result_video.video_id, f"{result_video_id}.mp4")
     if os.path.exists(result_video_path):
         os.remove(result_video_path)
 
+    result_preview_path = os.path.join(RESULT_BASE_PATH, result_video.video_id, f"{result_video_id}.png")
+    if os.path.exists(result_preview_path):
+        os.remove(result_preview_path)
+
 
 @router.get("/{result_video_id}/blendshapes")
-def get_blendshapes(result_video_id: str):
-    # @todo auth
+def get_blendshapes(result_video_id: str, token_payload: dict = Depends(JWTBearer())):
+    validate_resource_id(result_video_id)
 
     try:
         result_blendshapes = (
@@ -47,15 +75,15 @@ def get_blendshapes(result_video_id: str):
                 result_video_id
             )
         )
-
         return result_blendshapes.data
-    except Exception as error:
+    except Exception:
+        logger.warning(f"No blendshapes found for result video {result_video_id}")
         return None
 
 
 @router.get("/{result_video_id}/mp-kinematics")
-def get_mp_kinematics(result_video_id: str):
-    # @todo auth
+def get_mp_kinematics(result_video_id: str, token_payload: dict = Depends(JWTBearer())):
+    validate_resource_id(result_video_id)
 
     try:
         result_mp_kinematics = (
@@ -63,14 +91,15 @@ def get_mp_kinematics(result_video_id: str):
                 result_video_id
             )
         )
-
         return result_mp_kinematics.data
-    except Exception as error:
+    except Exception:
+        logger.warning(f"No mp kinematics found for result video {result_video_id}")
         return None
 
+
 @router.get("/{result_video_id}/mp-kinematics/csv")
-async def get_mp_kinematics_csv(result_video_id: str):
-    # @todo auth
+def get_mp_kinematics_csv(result_video_id: str, token_payload: dict = Depends(JWTBearer())):
+    validate_resource_id(result_video_id)
 
     try:
         result_mp_kinematics = (
@@ -90,10 +119,13 @@ async def get_mp_kinematics_csv(result_video_id: str):
             columns += [f'world_landmark_{i}_x', f'world_landmark_{i}_y', f'world_landmark_{i}_z', f'world_landmark_{i}_presence', f'world_landmark_{i}_visibility']
 
         def iterfile():
-            # Simulate writing to a file, but write to a string buffer instead
-            buffer = StringIO()
+            buffer = io.StringIO()
             writer = csv.writer(buffer)
             writer.writerow(columns)
+            buffer.seek(0)
+            yield buffer.getvalue()
+            buffer.truncate(0)
+            buffer.seek(0)
 
             for entry in json_data:
                 row = [entry['timestamp']]
@@ -104,15 +136,13 @@ async def get_mp_kinematics_csv(result_video_id: str):
                     row += [lm['x'], lm['y'], lm['z'], lm.get('presence', ''), lm.get('visibility', '')]
                 row += [''] * (max_world_landmarks - len(entry['data']['world_landmarks'])) * 5
 
+                writer.writerow(row)
                 buffer.seek(0)
                 yield buffer.getvalue()
                 buffer.truncate(0)
                 buffer.seek(0)
-                writer.writerow(row)
-
-            buffer.seek(0)
-            yield buffer.getvalue()
 
         return StreamingResponse(iterfile(), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=kinematics_data.csv"})
-    except Exception as error:
-        return None
+    except Exception:
+        logger.exception(f"Failed to generate CSV for result video {result_video_id}")
+        raise HTTPException(status_code=404, detail="No kinematics data found")
