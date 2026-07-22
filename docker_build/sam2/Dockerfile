@@ -1,10 +1,11 @@
 # === Build Stage (Full dependencies for compilation) ===
-FROM pytorch/pytorch:2.7.1-cuda12.6-cudnn9-devel AS builder
+FROM pytorch/pytorch:2.13.0-cuda13.2-cudnn9-devel AS builder
 
 WORKDIR /workspace
 
 ARG DEBIAN_FRONTEND=noninteractive
-ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6+PTX"
+# ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6+PTX"
+ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6;9.0;12.0+PTX"
 
 RUN apt-get update && apt-get install -y \
     ffmpeg \
@@ -33,7 +34,7 @@ RUN git clone https://github.com/facebookresearch/sam2.git && \
 RUN wget -P /workspace/sam2/checkpoints https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt
 
 # === Runtime Stage (Slimmer image) ===
-FROM pytorch/pytorch:2.7.1-cuda12.6-cudnn9-runtime
+FROM pytorch/pytorch:2.13.0-cuda13.2-cudnn9-runtime
 
 WORKDIR /workspace
 

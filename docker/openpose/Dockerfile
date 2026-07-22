@@ -1,12 +1,14 @@
 # Use NVIDIA's CUDA base image
-FROM nvidia/cuda:11.7.1-cudnn8-devel-ubuntu20.04
+FROM nvidia/cuda:13.0.0-cudnn9-devel-ubuntu22.04
 
 # Set the working directory
 WORKDIR /workspace
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6+PTX"
+# ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6+PTX"
+ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6;9.0;12.0+PTX"
+
 
 RUN apt-get update \
     && apt-get install -y \
@@ -62,7 +64,7 @@ ENV CUDNN_LIBRARY /usr/local/cuda/lib64/libcudnn.so
 # Build OpenPose
 RUN cd /workspace/openpose && \
     mkdir build && cd build && \
-    cmake -DBUILD_PYTHON=ON -DCUDA_ARCH_BIN="75" -DGPU_MODE=CUDA -DUSE_CUDNN=OFF -DCMAKE_BUILD_TYPE=Release .. && \
+    cmake -DBUILD_PYTHON=ON -DCUDA_ARCH_BIN="75;86;90;120" -DGPU_MODE=CUDA -DUSE_CUDNN=OFF -DCMAKE_BUILD_TYPE=Release .. && \
     make -j`nproc`
 
 # Set environment variables
