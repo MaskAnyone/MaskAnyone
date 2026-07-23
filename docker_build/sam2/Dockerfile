@@ -1,11 +1,14 @@
 # === Build Stage (Full dependencies for compilation) ===
 FROM pytorch/pytorch:2.13.0-cuda13.2-cudnn9-devel AS builder
 
+RUN apt-get update && apt-get install -y python3.12-venv && rm -rf /var/lib/apt/lists/*
+RUN python -m venv --system-site-packages /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 WORKDIR /workspace
 
 ARG DEBIAN_FRONTEND=noninteractive
-# ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6+PTX"
-ENV TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6;9.0;12.0+PTX"
+ENV TORCH_CUDA_ARCH_LIST="7.5;8.0;8.6;9.0;12.0+PTX"
 
 RUN apt-get update && apt-get install -y \
     ffmpeg \
@@ -38,6 +41,9 @@ FROM pytorch/pytorch:2.13.0-cuda13.2-cudnn9-runtime
 
 WORKDIR /workspace
 
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 RUN pip install --upgrade --no-cache-dir \
     fastapi \
     uvicorn[standard] \
@@ -46,9 +52,7 @@ RUN pip install --upgrade --no-cache-dir \
     opencv-python-headless \
     decord
 
-COPY --from=builder /opt/conda/lib/python3.11/site-packages /opt/conda/lib/python3.11/site-packages
 COPY --from=builder /workspace/sam2 /workspace/sam2
-
 COPY ./docker/sam2/sam2_patched_misc.py /workspace/sam2/sam2/utils/misc.py
 
 ENV PYTHONPATH=/workspace/sam2:$PYTHONPATH
