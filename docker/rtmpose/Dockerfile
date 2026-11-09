@@ -10,12 +10,20 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
+# The base image's pip (23.0.1) rejects the typing_extensions wheel from the
+# PyTorch index because of a name mismatch (typing-extensions vs typing_extensions).
+# It then tries a source build, which fails because flit_core isn't on that index.
+# Stay below 25.3: chumpy (an mmpose dependency) runs `import pip` in its setup.py,
+# which fails in the isolated builds that newer pip versions always use.
+RUN pip install --no-cache-dir --upgrade "pip<25.3"
+
 RUN pip install --no-cache-dir \
     torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cpu
 
+# mmcv is capped below 2.2.0 because mmdet 3.3.0 requires mmcv<2.2.0.
 RUN pip install --no-cache-dir -U openmim && \
     mim install --no-cache-dir "mmengine>=0.10.0" && \
-    mim install --no-cache-dir "mmcv>=2.0.1" && \
+    mim install --no-cache-dir "mmcv>=2.0.1,<2.2.0" && \
     mim install --no-cache-dir "mmdet>=3.0.0" && \
     mim install --no-cache-dir "mmpose>=1.3.0"
 
