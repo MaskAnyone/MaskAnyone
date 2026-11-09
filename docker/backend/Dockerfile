@@ -7,6 +7,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 libpq-dev ffmpeg wget gcc build-essential \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+RUN pip install --no-cache-dir --upgrade pip
+
 RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu \
     && pip install --no-cache-dir \
         fastapi uvicorn[standard] psycopg2 requests python-jose[cryptography] opencv-python-headless \
