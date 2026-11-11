@@ -1,19 +1,63 @@
 from masking.smoothing import smooth_pose
 
-CONFIDENCE_THRESHOLD = 0.05
+# ---------------------------------------------------------------------------
+# Keypoint confidence thresholds
+# ---------------------------------------------------------------------------
+# This is the ONLY place where per-keypoint confidence from the pose estimators
+# (OpenPose, RTMPose, MediaPipe) is applied. A keypoint at or below its model's
+# threshold is replaced with None; survivors are emitted as bare (x, y) and the
+# score is discarded. Everything downstream — smoothing, PoseRenderer,
+# MaskQaCollector, the saved poses JSON — therefore treats any non-None keypoint
+# as confident and must NOT apply a second threshold (it has no score to use).
+#
+# Thresholds are per model family because the scores are on different scales
+# and are not comparable:
+#   - openpose: heatmap peak value per joint; OpenPose reports 0 for joints
+#     it did not find.
+#   - rtmpose:  keypoint_scores from MMPose. Not a calibrated probability.
+#     This family also covers the HRNet animal models (ap10k, animalpose, ...)
+#     served under rtmpose_* strategies, which share the one threshold.
+#   - mp_pose:  MediaPipe BlazePose `visibility`, the model's estimate that
+#     the joint is visible (not occluded) in the frame.
+# The values are hand-set, not calibrated against data. Change them here only.
+# mp_face and mp_hand have no entry: MediaPipe face/hand landmarks carry no
+# meaningful per-point score. They are gated as a whole by MediaPipe's own
+# detection/presence confidence (library defaults, see MediaPipeLandmarker).
+#
+# YOLO keypoint/box thresholds in backend/routers/prompts_router.py (and
+# cli.py) are separate: they only choose which SAM2 prompts to send and never
+# touch the poses produced here.
+KEYPOINT_CONFIDENCE_THRESHOLDS = {
+    'openpose': 0.05,
+    'rtmpose': 0.3,
+    'mp_pose': 0.05,
+}
 SMOOTHING = True
 
+
+def keypoint_confidence_threshold(overlay_strategy: str) -> float:
+    """Return the confidence threshold for a strategy's model family."""
+    if overlay_strategy.startswith('openpose'):
+        return KEYPOINT_CONFIDENCE_THRESHOLDS['openpose']
+    if overlay_strategy.startswith('rtmpose'):
+        return KEYPOINT_CONFIDENCE_THRESHOLDS['rtmpose']
+    return KEYPOINT_CONFIDENCE_THRESHOLDS[overlay_strategy]
+
+
 class PosePostprocessor:
-    _confidence: float
     _smoothing: bool
 
     def __init__(self):
-        self._confidence = CONFIDENCE_THRESHOLD
         self._smoothing = SMOOTHING
+        # Set per object in postprocess() from KEYPOINT_CONFIDENCE_THRESHOLDS.
+        self._confidence = None
 
     def postprocess(self, pose_data_dict, overlay_strategies, frame_count, sample_rate, estimation_input_bounding_boxes):
         for obj_id, pose_data in pose_data_dict.items():
             overlay_strategy = overlay_strategies[obj_id - 1]
+
+            if overlay_strategy.startswith(('openpose', 'rtmpose')) or overlay_strategy == 'mp_pose':
+                self._confidence = keypoint_confidence_threshold(overlay_strategy)
 
             if overlay_strategy.startswith('openpose'):
                 self._postprocess_openpose(

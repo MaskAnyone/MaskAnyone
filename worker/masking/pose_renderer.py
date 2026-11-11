@@ -135,7 +135,9 @@ AP_10K_PAIRS = [
     (11, 12), (12, 13), (14, 15), (15, 16),         # back legs
 ]
 
-RTMPOSE_MIN_SCORE = 0.3  # skip keypoints the model isn't confident about
+# No confidence threshold here: PosePostprocessor is the single stage that
+# filters keypoints by score (see KEYPOINT_CONFIDENCE_THRESHOLDS). Keypoints
+# arrive as (x, y) or None, so any non-None keypoint is drawn.
 
 # Per-strategy left/right wrist indices, used for motion traces. Strategies not
 # in this map won't produce traces (e.g. mp_face, animal poses).
@@ -205,10 +207,7 @@ class PoseRenderer:
 
         def _extract(i):
             kp = kps[i]
-            if kp is None:
-                return None
-            # Drop low-confidence keypoints when a score is present (RTMPose/OpenPose).
-            if len(kp) >= 3 and kp[2] < RTMPOSE_MIN_SCORE:
+            if kp is None:  # dropped as low-confidence by PosePostprocessor
                 return None
             if kp[0] < 1 and kp[1] < 1:
                 return None
@@ -244,7 +243,7 @@ class PoseRenderer:
                 cv2.addWeighted(overlay, alpha, rgb_image, 1 - alpha, 0, dst=rgb_image)
 
     def _render_rtmpose_overlay(self, type: str, rgb_image, keypoint_data):
-        # RTMPose wraps the result in {'pose_keypoints': [[x, y, score], ...]}.
+        # Postprocessed RTMPose data is {'pose_keypoints': [(x, y) | None, ...]}.
         # Fallback handles older call sites that might pass the list directly.
         pose_keypoints = keypoint_data.get('pose_keypoints', keypoint_data) \
             if isinstance(keypoint_data, dict) else keypoint_data
@@ -260,7 +259,6 @@ class PoseRenderer:
 
         def _visible(kp):
             return kp is not None and len(kp) >= 2 \
-                and (len(kp) < 3 or kp[2] >= RTMPOSE_MIN_SCORE) \
                 and not (kp[0] < 1 and kp[1] < 1)
 
         for kp in pose_keypoints:

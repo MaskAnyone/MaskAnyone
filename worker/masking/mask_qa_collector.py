@@ -70,9 +70,10 @@ class MaskQaCollector:
 
         for obj_id, keypoint_data in pose_for_frame_per_obj.items():
             kps = _extract_keypoints(keypoint_data)
-            # PosePostprocessor already applied the confidence threshold: dropped
-            # keypoints are None and survivors are bare (x, y) with no score.
-            # Anything left is treated as confident — no second threshold here.
+            # PosePostprocessor is the single stage that applies keypoint
+            # confidence (KEYPOINT_CONFIDENCE_THRESHOLDS): dropped keypoints are
+            # None and survivors are bare (x, y) with no score. Anything left is
+            # treated as confident — no second threshold here.
             confident_kps = [
                 kp for kp in kps
                 if kp is not None and len(kp) >= 2
