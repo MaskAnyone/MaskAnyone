@@ -127,7 +127,7 @@ const headCells: readonly HeadCell[] = [
   {
     id: 'duration',
     disablePadding: false,
-    label: 'Duration / ETA',
+    label: 'Duration',
   },
   {
     id: 'actions',
@@ -215,7 +215,7 @@ const JobDurationCell = ({ job, videoInfo }: { job: Job; videoInfo: VideoInfo | 
                 <Box component="div" sx={{ minHeight: 18 }}>
                     {initialEstimate && (
                         <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
-                            ~{formatDuration(initialEstimate)}
+                            est. ~{formatDuration(initialEstimate)}
                         </Typography>
                     )}
                 </Box>
@@ -246,7 +246,7 @@ const JobDurationCell = ({ job, videoInfo }: { job: Job; videoInfo: VideoInfo | 
             <Box component="div" sx={{ minHeight: 18 }}>
                 {remaining !== null && job.status === 'running' && (
                     <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
-                        ~{formatDuration(remaining)}
+                        ~{formatDuration(remaining)} left
                     </Typography>
                 )}
                 {job.status === 'finished' && job.startedAt && job.finishedAt && (
