@@ -70,10 +70,11 @@ const UploadDialog = (props: UploadDialogProps) => {
             ...stagedFiles.filter(stagedFile => Object.keys(uploadProgress).includes(stagedFile.id)),
         ]);
 
-        if (currentUploadCount < 1) {
+        if (uploadRunning && currentUploadCount < 1) {
             props.onClose();
         }
-    }, [currentUploadCount < previousUploadCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentUploadCount]);
 
     useEffect(() => {
         if (!props.open) {

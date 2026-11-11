@@ -53,6 +53,13 @@ const Api = {
             method: 'post',
         });
     },
+    renameResultVideo: async (id: string, name: string): Promise<void> => {
+        await sendApiRequest({
+            url: `results/${id}/rename`,
+            method: 'post',
+            data: { name },
+        });
+    },
     fetchBlendshapes: async (resultVideoId: string): Promise<any> => {
         const result = await sendApiRequest({
             url: `/results/${resultVideoId}/blendshapes`,
@@ -76,6 +83,20 @@ const Api = {
         });
 
         return result.data;
+    },
+    fetchResultQa: async (videoId: string, resultVideoId: string): Promise<any | null> => {
+        // Returns the QA report or null if 404 (result was generated before
+        // the QA collector landed). Any other error is rethrown.
+        try {
+            const result = await sendApiRequest({
+                url: `videos/${videoId}/results/${resultVideoId}/qa`,
+                method: 'get'
+            });
+            return result.data;
+        } catch (err: any) {
+            if (err?.response?.status === 404) return null;
+            throw err;
+        }
     },
     fetchJobs: async (): Promise<ApiFetchJobsResponse> => {
         const result = await sendApiRequest({
@@ -110,6 +131,12 @@ const Api = {
             method: 'post',
         });
     },
+    cancelJob: async (id: string): Promise<void> => {
+        await sendApiRequest({
+            url: `jobs/${id}/cancel`,
+            method: 'post',
+        });
+    },
     requestVideoUpload: async (videoId: string, videoName: string): Promise<void> => {
         await sendApiRequest({
             url: 'videos/upload/request',
@@ -122,7 +149,7 @@ const Api = {
     },
     uploadVideo: async (
         videoId: string,
-        fileContent: ArrayBuffer,
+        fileContent: Blob | ArrayBuffer,
         onUploadProgress: (percentage: number) => void,
     ): Promise<void> => {
         await sendApiRequest({
@@ -149,6 +176,13 @@ const Api = {
         await sendApiRequest({
             url: `videos/${videoId}/delete`,
             method: 'post',
+        });
+    },
+    renameVideo: async (videoId: string, name: string): Promise<void> => {
+        await sendApiRequest({
+            url: `videos/${videoId}/rename`,
+            method: 'post',
+            data: { name },
         });
     },
     fetchWorkers: async (): Promise<ApiFetchWorkersResponse> => {
@@ -202,18 +236,65 @@ const Api = {
 
         return result.data.pose_prompts;
     },
-    fetchPosePromptSegmentation: async (videoId: string, frameIndex: number, posePrompts: [number, number, number][][]): Promise<any> => {
+    fetchPosePromptSegmentation: async (videoId: string, frameIndex: number, posePrompts: [number, number, number][][], modelVariant: string = 'sam2.1_hiera_small'): Promise<any> => {
         const result = await sendApiRequest({
             url: `prompts/${videoId}/frames/${frameIndex}/sam2`,
             method: 'post',
             data: {
                 pose_prompts: posePrompts,
+                model_variant: modelVariant,
             },
             responseType: 'blob',
         });
 
         return result.data;
-    }
+    },
+    trimVideo: async (videoId: string, newVideoId: string, newVideoName: string, startTime: number, endTime: number): Promise<void> => {
+        await sendApiRequest({
+            url: `videos/${videoId}/trim`,
+            method: 'post',
+            data: {
+                new_video_id: newVideoId,
+                new_video_name: newVideoName,
+                start_time: startTime,
+                end_time: endTime,
+            },
+        });
+    },
+    convertVideoFps: async (videoId: string, newVideoId: string, newVideoName: string, targetFps: number): Promise<void> => {
+        await sendApiRequest({
+            url: `videos/${videoId}/convert-fps`,
+            method: 'post',
+            data: {
+                new_video_id: newVideoId,
+                new_video_name: newVideoName,
+                target_fps: targetFps,
+            },
+        });
+    },
+    getConversionProgress: async (videoId: string): Promise<{progress: number; status: string}> => {
+        const result = await sendApiRequest({
+            url: `videos/${videoId}/conversion-progress`,
+            method: 'get',
+        });
+        return result.data;
+    },
+    fetchObjectPrompts: async (videoId: string, frameIndex: number): Promise<any> => {
+        const result = await sendApiRequest({
+            url: `prompts/${videoId}/frames/${frameIndex}/objects`,
+            method: 'get',
+        });
+
+        return result.data.object_prompts;
+    },
+    fetchSystemResources: async (): Promise<any> => {
+        const result = await sendApiRequest({
+            url: 'platform/resources',
+            method: 'get',
+        });
+
+        return result.data;
+    },
 };
 
 export default Api;

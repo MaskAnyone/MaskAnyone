@@ -1,5 +1,4 @@
-import { Card, CardContent, CardMedia, IconButton, Radio, Typography } from "@mui/material"
-import Config from "../../../../config"
+import { Card, CardContent, CardMedia, Radio, Typography } from "@mui/material"
 
 interface RadioCardProps {
     title: string
@@ -13,7 +12,14 @@ interface RadioCardProps {
 const RadioCard = (props: RadioCardProps) => {
     return (
         <Card variant={'outlined'}
-            sx={{ width: '250px', display: 'inline-block', marginRight: '16px', cursor: 'pointer', '&:hover': { boxShadow: '0 0 13px 0 #c8c8c8' }, '&.selected': { boxShadow: '0 0 13px 0 #777' } }}
+            sx={({ palette }) => ({
+                width: '250px',
+                display: 'inline-block',
+                marginRight: '16px',
+                cursor: 'pointer',
+                '&:hover': { boxShadow: `0 0 13px 0 ${palette.action.focus}` },
+                '&.selected': { boxShadow: `0 0 13px 0 ${palette.action.selected}` },
+            })}
             className={props.selected ? 'selected' : undefined}
             onClick={() => props.onSelect(props.value)}>
             <CardContent>

@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from enum import IntEnum, Enum
+from typing import Optional
 
 
 class HidingStrategy(IntEnum):
@@ -37,6 +38,7 @@ class FinalizeVideoUploadParams(BaseModel):
 
 class UpdateJobProgressParams(BaseModel):
     progress: int
+    phase: Optional[str] = None
 
 
 class CreatePresetParams(BaseModel):
@@ -59,3 +61,21 @@ class RegisterWorkerParams(BaseModel):
 class ResultDataType(str, Enum):
     sam2_masks = "sam2_masks"
     poses = "poses"
+    qa = "qa"
+
+
+class TrimVideoParams(BaseModel):
+    new_video_id: str
+    new_video_name: str
+    start_time: float
+    end_time: float
+
+
+class RenameVideoParams(BaseModel):
+    name: str
+
+
+class ConvertFpsParams(BaseModel):
+    new_video_id: str
+    new_video_name: str
+    target_fps: int

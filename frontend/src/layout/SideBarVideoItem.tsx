@@ -9,6 +9,7 @@ interface SideBarVideoItemProps {
     checked: boolean;
     active: boolean;
     onCheckboxClicked: (videoId: string) => void;
+    onRename: (videoId: string, newName: string) => void;
 }
 
 const SideBarVideoItem = (props: SideBarVideoItemProps) => {
@@ -20,6 +21,7 @@ const SideBarVideoItem = (props: SideBarVideoItemProps) => {
             videoId={props.video.id}
             badge={props.badge}
             onCheckboxClicked={props.onCheckboxClicked}
+            onRename={props.onRename}
             checked={props.checked}
             active={props.active}
             anyChecked={props.anyChecked}

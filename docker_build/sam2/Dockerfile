@@ -28,15 +28,25 @@ RUN git clone https://github.com/facebookresearch/sam2.git && \
     #sed -i 's/self.images\[index\] = img/# self.images\[index\] = img/g' ./sam2/utils/misc.py && \
     #sed -i 's/self.thread = Thread(target=_load_frames, daemon=True)/# self.thread = Thread(target=_load_frames, daemon=True)/g' ./sam2/utils/misc.py && \
     #sed -i 's/self.thread.start()/# self.thread.start()/g' ./sam2/utils/misc.py && \
-    SAM2_BUILD_ALLOW_ERRORS=0 pip install -e .
+    SAM2_BUILD_ALLOW_ERRORS=1 pip install -e .
 
-RUN wget -P /workspace/sam2/checkpoints https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt
+RUN wget -P /workspace/sam2/checkpoints \
+    https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_tiny.pt \
+    https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt \
+    https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_base_plus.pt \
+    https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt
 
 # === Runtime Stage (Slimmer image) ===
 FROM pytorch/pytorch:2.7.1-cuda12.6-cudnn9-runtime
 
 WORKDIR /workspace
 
+COPY --from=builder /opt/conda/lib/python3.11/site-packages /opt/conda/lib/python3.11/site-packages
+COPY --from=builder /workspace/sam2 /workspace/sam2
+
+# Must run after the site-packages COPY above. Otherwise the COPY overwrites packages
+# upgraded here with the builder's older versions (e.g. typing_extensions), leaving
+# new pydantic beside an old typing_extensions: "cannot import name 'sentinel'".
 RUN pip install --upgrade --no-cache-dir \
     fastapi \
     uvicorn[standard] \
@@ -44,9 +54,6 @@ RUN pip install --upgrade --no-cache-dir \
     python-multipart \
     opencv-python-headless \
     decord
-
-COPY --from=builder /opt/conda/lib/python3.11/site-packages /opt/conda/lib/python3.11/site-packages
-COPY --from=builder /workspace/sam2 /workspace/sam2
 
 COPY ./docker/sam2/sam2_patched_misc.py /workspace/sam2/sam2/utils/misc.py
 

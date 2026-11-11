@@ -46,6 +46,19 @@ class ResultVideoManager:
 
         return ResultVideo(*result_video_data_list[0])
 
+    def rename_result_video(self, id: str, new_name: str):
+        self.__db_connection.execute(
+            "UPDATE result_videos SET name=%(name)s WHERE id=%(id)s",
+            {"id": id, "name": new_name},
+        )
+
+    def has_result_video_with_name(self, video_id: str, name: str) -> bool:
+        result = self.__db_connection.select_all(
+            "SELECT id FROM result_videos WHERE video_id=%(video_id)s AND name=%(name)s",
+            {"video_id": video_id, "name": name},
+        )
+        return len(result) > 0
+
     def delete_result_video(self, id: str):
         self.__db_connection.execute(
             "DELETE FROM result_videos WHERE id=%(id)s",

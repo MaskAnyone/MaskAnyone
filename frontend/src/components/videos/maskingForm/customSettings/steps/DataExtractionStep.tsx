@@ -2,9 +2,7 @@ import { Box, Typography } from "@mui/material";
 import CheckableCard from "../../../../common/CheckableCard";
 import {StepProps} from "./StepProps";
 
-const DataExctactionStep = (props: StepProps) => {
-    const threeDParams = {};
-
+const DataExctactionStep = (_props: StepProps) => {
     const handleSkeletonChanged = () => {
         // @todo not in use;
     }

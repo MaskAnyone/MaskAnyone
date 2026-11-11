@@ -41,6 +41,14 @@ export interface DeleteVideoPayload {
     videoId: string;
 }
 
+export interface TrimVideoPayload {
+    videoId: string;
+    newVideoId: string;
+    newVideoName: string;
+    startTime: number;
+    endTime: number;
+}
+
 const VideoCommand = {
     fetchVideoList: createVideoCommand<FetchVideoListPayload>('FETCH_VIDEO_LIST'),
     maskVideo: createVideoCommand<MaskVideoPayload>('MASK_VIDEO'),
@@ -50,6 +58,7 @@ const VideoCommand = {
     fetchMpKinematics: createVideoCommand<FetchMpKinematicsPayload>('FETCH_MP_KINEMATICS'),
     deleteResultVideo: createVideoCommand<DeleteResultVideoPayload>('DELETE_RESULT_VIDEO'),
     deleteVideo: createVideoCommand<DeleteVideoPayload>('DELETE_VIDEO'),
+    trimVideo: createVideoCommand<TrimVideoPayload>('TRIM_VIDEO'),
 };
 
 export default VideoCommand;

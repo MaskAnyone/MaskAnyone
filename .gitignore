@@ -174,3 +174,8 @@ data/backend/results/*
 data/backend/videos/*
 !data/backend/videos/.gitkeep
 
+benchmark/
+benchmark_results.txt
+
+# Temp directory worker writes sub-videos to during pose estimation
+worker/subvideos/

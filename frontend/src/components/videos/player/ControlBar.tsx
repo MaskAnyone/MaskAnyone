@@ -1,4 +1,4 @@
-import {Box, IconButton, Menu, MenuItem, Slider, Tooltip, Typography} from "@mui/material";
+import {Box, IconButton, Menu, Slider, Tooltip, Typography} from "@mui/material";
 import FastRewindIcon from '@mui/icons-material/FastRewind';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -66,6 +66,7 @@ const ControlBar = (props: ControlBarProps) => {
         return () => {
             document.removeEventListener('keydown', handleKeyPress);
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.position]);
 
     return (

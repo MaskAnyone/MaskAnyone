@@ -1,8 +1,9 @@
+import json
+import logging
 import os
 import uuid
-import cv2
-import json
 
+import cv2
 from fastapi import APIRouter, Request
 
 from models import RunParams, MpKinematicsType, ResultDataType, UpdateJobProgressParams, RegisterWorkerParams
@@ -16,8 +17,11 @@ from db.result_audio_files_manager import ResultAudioFilesManager
 from db.result_extra_files_manager import ResultExtraFilesManager
 from db.db_connection import DBConnection
 from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
+from utils.path_validation import validate_resource_id
 from utils.request_utils import range_requests_response
 from utils.video_utils import extract_video_info_from_capture
+
+logger = logging.getLogger(__name__)
 
 db_connection = DBConnection()
 video_manager = VideoManager(db_connection)
@@ -64,14 +68,14 @@ def create_job(job_type: str, run_params: RunParams):
         run_params.result_video_id,
         run_params.run_data,
         job_type,
-        'dc2de8bb-60cd-4bf7-9574-d237a30bf96d' # @todo use reference job user id here
+        'dc2de8bb-60cd-4bf7-9574-d237a30bf96d'  # @todo use reference job user id here
     )
 
 
 @router.post("/jobs/{job_id}/progress")
 def update_job_progress(worker_id: str, job_id: str, params: UpdateJobProgressParams):
     worker_manager.update_worker_activity(worker_id)
-    job_manager.update_job_progress(job_id, params.progress)
+    job_manager.update_job_progress(job_id, params.progress, params.phase)
 
 
 @router.post("/jobs/{job_id}/finish")
@@ -88,7 +92,8 @@ def fail_job(worker_id: str, job_id: str):
 
 @router.get("/videos/{video_id}")
 def get_video_stream(worker_id: str, video_id: str, request: Request):
-    video_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
+    validate_resource_id(video_id)
+    video_path = os.path.join(VIDEOS_BASE_PATH, f"{video_id}.mp4")
 
     return range_requests_response(
         request, file_path=video_path, content_type="video/mp4"
@@ -104,7 +109,7 @@ def get_job_status(worker_id: str, job_id: str):
 def get_result_video_stream(worker_id: str, job_id: str, request: Request):
     result_video_id = job_manager.get_result_video_id(job_id)
     video_id = job_manager.get_video_id(job_id)
-    video_path = os.path.join(RESULT_BASE_PATH, video_id, result_video_id + ".mp4")
+    video_path = os.path.join(RESULT_BASE_PATH, video_id, f"{result_video_id}.mp4")
 
     return range_requests_response(
         request, file_path=video_path, content_type="video/mp4"
@@ -115,17 +120,18 @@ def get_result_video_stream(worker_id: str, job_id: str, request: Request):
 async def upload_result_video(
     worker_id: str, video_id: str, result_video_id: str, request: Request
 ):
+    validate_resource_id(video_id)
+    validate_resource_id(result_video_id)
+
     result_dir = os.path.join(RESULT_BASE_PATH, video_id)
     if not os.path.exists(result_dir):
         os.mkdir(result_dir)
 
-    video_path = os.path.join(result_dir, result_video_id + ".mp4")
+    video_path = os.path.join(result_dir, f"{result_video_id}.mp4")
 
     video_content = await request.body()
-
-    file = open(video_path, "wb")
-    file.write(video_content)
-    file.close()
+    with open(video_path, "wb") as f:
+        f.write(video_content)
 
     job = job_manager.fetch_job_by_result_video_id(result_video_id)
 
@@ -142,17 +148,18 @@ async def upload_result_video(
 async def upload_result_video_preview_image(
     worker_id: str, video_id: str, result_video_id: str, request: Request
 ):
+    validate_resource_id(video_id)
+    validate_resource_id(result_video_id)
+
     result_dir = os.path.join(RESULT_BASE_PATH, video_id)
     if not os.path.exists(result_dir):
         os.mkdir(result_dir)
 
-    image_path = os.path.join(result_dir, result_video_id + ".png")
+    image_path = os.path.join(result_dir, f"{result_video_id}.png")
 
     image_content = await request.body()
-
-    file = open(image_path, "wb")
-    file.write(image_content)
-    file.close()
+    with open(image_path, "wb") as f:
+        f.write(image_content)
 
 
 @router.post("/videos/{video_id}/results/{result_video_id}/mp_kinematics/{type}")
@@ -163,11 +170,15 @@ async def upload_result_mp_kinematics(
     type: MpKinematicsType,
     request: Request,
 ):
+    validate_resource_id(video_id)
+    validate_resource_id(result_video_id)
+
     job = job_manager.fetch_job_by_result_video_id(result_video_id)
 
     result_mp_kinematics_manager.create_result_mp_kinematics_entry(
         str(uuid.uuid4()), result_video_id, video_id, job.id, type, await request.json()
     )
+
 
 @router.post("/videos/{video_id}/results/{result_video_id}/data/{data_type}")
 async def upload_result_data(
@@ -177,6 +188,9 @@ async def upload_result_data(
     data_type: ResultDataType,
     request: Request,
 ):
+    validate_resource_id(video_id)
+    validate_resource_id(result_video_id)
+
     job = job_manager.fetch_job_by_result_video_id(result_video_id)
 
     result_extra_files_manager.create_result_extra_files_entry(
@@ -185,5 +199,5 @@ async def upload_result_data(
         video_id,
         job.id,
         data_type,
-        (json.dumps(await request.json()) if data_type == 'poses' else await request.body()),
+        (json.dumps(await request.json()) if data_type in ('poses', 'qa') else await request.body()),
     )

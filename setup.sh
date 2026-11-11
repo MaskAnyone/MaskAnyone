@@ -1,0 +1,625 @@
+#!/usr/bin/env bash
+# MaskAnyone setup script
+# Usage: bash setup.sh [--skip-build] [--with-auth] [--clean] [--clean-all] [--sam2-models=LIST]
+#        bash setup.sh doctor               # diagnose a broken install, suggest fixes
+#   --skip-build         skip docker compose build (use existing images)
+#   --with-auth          enable Keycloak authentication (default: local/no-login mode)
+#   --clean              stop containers and remove images (keeps your data/videos)
+#   --clean-all          ⚠ stop containers, remove images AND delete all data/videos
+#   --sam2-models=LIST   comma-separated SAM2 checkpoints to bake in (tiny,small,base_plus,large)
+#                        omit to be prompted interactively
+set -euo pipefail
+
+SKIP_BUILD=false
+WITH_AUTH=false
+CLEAN=false
+CLEAN_ALL=false
+DOCTOR=false
+SAM2_MODELS=""   # empty = prompt interactively; set via --sam2-models=...
+for arg in "$@"; do
+    [[ "$arg" == "--skip-build" ]]   && SKIP_BUILD=true
+    [[ "$arg" == "--with-auth"  ]]   && WITH_AUTH=true
+    [[ "$arg" == "--clean"      ]]   && CLEAN=true
+    [[ "$arg" == "--clean-all"  ]]   && CLEAN_ALL=true
+    [[ "$arg" == "doctor"       ]]   && DOCTOR=true
+    [[ "$arg" == --sam2-models=* ]]  && SAM2_MODELS="${arg#--sam2-models=}"
+done
+
+# Tee all output to a timestamped log file. Keeps the user's terminal live while
+# also producing a file they can paste when reporting an issue.
+mkdir -p logs
+LOG_FILE="logs/setup-$(date +%Y%m%d-%H%M%S).log"
+exec > >(tee -a "$LOG_FILE") 2>&1
+echo "Log: $LOG_FILE"
+
+# Pick a working Python for JSON parsing. On Windows, `python3` often resolves to
+# the Microsoft Store launcher stub which errors instead of running — so check
+# that the binary actually executes, not just that it's in PATH.
+PY=""
+for cmd in python3 python py; do
+    if command -v "$cmd" &>/dev/null && "$cmd" -c 'import json' &>/dev/null 2>&1; then
+        PY="$cmd"
+        break
+    fi
+done
+PY="${PY:-python3}"  # last-resort fallback; ||-chains below still tolerate failure
+
+# Cross-platform helpers
+# sed -i behaves differently on macOS (BSD) vs Linux/Git Bash
+if [[ "$(uname)" == "Darwin" ]]; then
+    sedi() { sed -i '' "$@"; }
+    disk_free_gb() { df -g . | awk 'NR==2{print $4}' 2>/dev/null || echo "0"; }
+else
+    sedi() { sed -i "$@"; }
+    disk_free_gb() { df -BG . | awk 'NR==2{gsub("G","",$4); print $4}' 2>/dev/null || echo "0"; }
+fi
+
+# Detect GPU early — used to choose compose files and in the service scout.
+# COMPOSE_GPU_OVERRIDE is appended to every docker compose invocation.
+HAS_GPU=false
+if command -v nvidia-smi &>/dev/null && nvidia-smi --query-gpu=name --format=csv,noheader &>/dev/null 2>&1; then
+    HAS_GPU=true
+fi
+if [[ "$HAS_GPU" == "true" ]]; then
+    COMPOSE_BASE="-f docker-compose.yml"
+else
+    COMPOSE_BASE="-f docker-compose.yml -f docker-compose-cpu.yml"
+fi
+
+# Detect the GPU's compute capability and inject into the build.
+# Without this, a Dockerfile compiled for sm_86 will fail at runtime on sm_120
+# with "no kernel image is available for execution on the device".
+BUILD_ARGS=""
+if [[ "$HAS_GPU" == "true" ]]; then
+    GPU_ARCH=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null \
+        | tr -d ' ' | sort -uV | tr '\n' ';' | sed 's/;$//')
+    if [[ -n "$GPU_ARCH" ]]; then
+        export TORCH_CUDA_ARCH_LIST="${GPU_ARCH}+PTX"
+        # OpenPose's cmake wants the arch without dots (e.g. 12.0 → 120) and semicolons
+        # for multi-GPU, which matches the `CUDA_ARCH_BIN` cmake convention.
+        CUDA_ARCH_BIN=$(echo "$GPU_ARCH" | tr -d '.')
+        BUILD_ARGS="--build-arg TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} --build-arg CUDA_ARCH_BIN=${CUDA_ARCH_BIN}"
+    fi
+fi
+
+# ── build helper ───────────────────────────────────────────────────────────────
+build_svc() {
+    local SVC="$1" IDX="$2" TOTAL="$3"
+    echo -e "  ${CYAN}→${RESET}  [${IDX}/${TOTAL}] Building ${BOLD}${SVC}${RESET}..."
+    local START=$SECONDS
+    local EXTRA=""
+    [[ "$SVC" == "sam2" ]] && EXTRA="--build-arg SAM2_MODELS=${SAM2_MODELS}"
+    if docker compose $COMPOSE_BASE build $BUILD_ARGS $EXTRA "$SVC" 2>&1; then
+        ok "[${IDX}/${TOTAL}] ${SVC} built ($((SECONDS - START))s)"
+        echo ""
+        return 0
+    else
+        fail "[${IDX}/${TOTAL}] ${SVC} build FAILED"
+        echo ""
+        return 1
+    fi
+}
+
+# ── colours ────────────────────────────────────────────────────────────────────
+RED='\033[0;31m'; YELLOW='\033[1;33m'; GREEN='\033[0;32m'
+CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'
+
+ok()   { echo -e "  ${GREEN}✓${RESET}  $*"; }
+warn() { echo -e "  ${YELLOW}⚠${RESET}  $*"; }
+fail() { echo -e "  ${RED}✗${RESET}  $*"; }
+info() { echo -e "  ${CYAN}→${RESET}  $*"; }
+section() { echo -e "\n${BOLD}$*${RESET}"; }
+
+ERRORS=0
+WARNINGS=0
+
+check_ok()   { ok "$1"; }
+check_warn() { warn "$1"; WARNINGS=$((WARNINGS+1)); }
+check_fail() { fail "$1"; ERRORS=$((ERRORS+1)); }
+
+# ── clean mode ─────────────────────────────────────────────────────────────────
+if [[ "$CLEAN_ALL" == "true" || "$CLEAN" == "true" ]]; then
+    echo ""
+    echo -e "${BOLD}╔══════════════════════════════════════════╗${RESET}"
+    echo -e "${BOLD}║       MaskAnyone  —  Setup Scout         ║${RESET}"
+    echo -e "${BOLD}╚══════════════════════════════════════════╝${RESET}"
+    echo ""
+
+    if [[ "$CLEAN_ALL" == "true" ]]; then
+        echo -e "  ${RED}${BOLD}⚠  WARNING: --clean-all will permanently delete:${RESET}"
+        echo -e "  ${RED}     • All MaskAnyone containers and images${RESET}"
+        echo -e "  ${RED}     • All uploaded videos${RESET}"
+        echo -e "  ${RED}     • All results and processed outputs${RESET}"
+        echo -e "  ${RED}     • The database (all job history)${RESET}"
+        echo ""
+        echo -ne "  ${YELLOW}Type YES to confirm: ${RESET}"
+        read -r CONFIRM
+        if [[ "$CONFIRM" != "YES" ]]; then
+            echo "  Aborted."
+            exit 0
+        fi
+    else
+        echo -e "  ${YELLOW}${BOLD}--clean: stopping containers and removing images.${RESET}"
+        echo -e "  ${YELLOW}Your uploaded videos and results will be kept.${RESET}"
+        echo ""
+    fi
+
+    # Detect compose base for teardown
+    if [[ "$HAS_GPU" == "true" ]]; then
+        COMPOSE_BASE="-f docker-compose.yml"
+    else
+        COMPOSE_BASE="-f docker-compose.yml -f docker-compose-cpu.yml"
+    fi
+
+    info "Stopping containers..."
+    docker compose $COMPOSE_BASE down --remove-orphans 2>/dev/null || true
+    check_ok "Containers stopped"
+
+    info "Removing MaskAnyone images..."
+    docker images --format '{{.Repository}}:{{.Tag}}' | grep '^maskanyone-' | xargs -r docker rmi -f 2>/dev/null || true
+    check_ok "Images removed"
+
+    if [[ "$CLEAN_ALL" == "true" ]]; then
+        info "Removing data directories..."
+        rm -rf ./data
+        check_ok "Data removed"
+        info "Removing Docker volumes..."
+        docker volume ls --format '{{.Name}}' | grep 'maskanyone' | xargs -r docker volume rm 2>/dev/null || true
+        check_ok "Volumes removed"
+    fi
+
+    echo ""
+    if [[ "$CLEAN_ALL" == "true" ]]; then
+        echo -e "  ${GREEN}${BOLD}Clean complete. Run 'bash setup.sh' to start fresh.${RESET}"
+    else
+        echo -e "  ${GREEN}${BOLD}Clean complete. Run 'bash setup.sh' to rebuild and restart.${RESET}"
+    fi
+    echo ""
+    exit 0
+fi
+
+# ── doctor mode ────────────────────────────────────────────────────────────────
+# Diagnoses a broken install without changing anything. Each failed check prints
+# the exact command a user should run to recover. The goal is to turn "it's
+# broken" into "run this one line."
+if [[ "$DOCTOR" == "true" ]]; then
+    echo ""
+    echo -e "${BOLD}╔══════════════════════════════════════════╗${RESET}"
+    echo -e "${BOLD}║       MaskAnyone  —  Doctor              ║${RESET}"
+    echo -e "${BOLD}╚══════════════════════════════════════════╝${RESET}"
+    echo ""
+
+    ISSUES=0
+    fixhint() { echo -e "      ${CYAN}→ fix:${RESET} $*"; ISSUES=$((ISSUES+1)); }
+
+    # Convert PyTorch 'sm_XX' to compute capability 'X.X' (e.g. sm_120 → 12.0)
+    sm_to_cap() { echo "$1" | sed 's/sm_//' | sed -E 's/(.)$/.\1/'; }
+
+    section "Docker"
+    if ! docker info &>/dev/null 2>&1; then
+        fail "Docker daemon not running"
+        fixhint "Open Docker Desktop (or 'sudo systemctl start docker'), then re-run doctor"
+        echo ""
+        echo -e "  ${RED}${BOLD}Cannot continue without Docker. Aborting.${RESET}"
+        exit 1
+    fi
+    ok "Docker daemon running"
+
+    section "Expected images"
+    EXPECTED_IMAGES=(nginx postgres pgadmin yarn python worker sam2 rtmpose openpose)
+    MISSING_IMAGES=()
+    for SVC in "${EXPECTED_IMAGES[@]}"; do
+        if docker image inspect "maskanyone-${SVC}:latest" &>/dev/null; then
+            ok "maskanyone-${SVC}:latest"
+        else
+            fail "maskanyone-${SVC}:latest missing"
+            MISSING_IMAGES+=("$SVC")
+        fi
+    done
+    if [[ ${#MISSING_IMAGES[@]} -gt 0 ]]; then
+        fixhint "bash setup.sh    # will rebuild the missing images"
+    fi
+
+    section "Running containers"
+    EXPECTED_CONTAINERS=(nginx postgres pgadmin yarn python worker sam2 rtmpose openpose)
+    STOPPED=()
+    for SVC in "${EXPECTED_CONTAINERS[@]}"; do
+        STATE=$(docker inspect -f '{{.State.Status}}' "maskanyone-${SVC}-1" 2>/dev/null || echo "missing")
+        case "$STATE" in
+            running)  ok "$SVC" ;;
+            missing)  fail "$SVC container does not exist";       STOPPED+=("$SVC") ;;
+            exited)   fail "$SVC container exited";                STOPPED+=("$SVC") ;;
+            *)        warn "$SVC state: $STATE";                   STOPPED+=("$SVC") ;;
+        esac
+    done
+    if [[ ${#STOPPED[@]} -gt 0 ]]; then
+        fixhint "docker compose up -d ${STOPPED[*]}"
+    fi
+
+    section "Backend reachable"
+    STATUS=$(curl -4sk --max-time 5 -o /dev/null -w "%{http_code}" https://localhost/api/platform/mode 2>/dev/null || echo "000")
+    if [[ "$STATUS" == "200" ]]; then
+        ok "https://localhost/api/platform/mode → 200"
+    else
+        fail "https://localhost/api/platform/mode → $STATUS"
+        fixhint "docker compose restart python nginx    # restart backend + proxy"
+    fi
+
+    # GPU arch compatibility check — the exact class of bug we hit with SAM2.
+    # Compare the GPU's compute cap to what each PyTorch build was compiled for.
+    section "GPU arch compatibility"
+    if command -v nvidia-smi &>/dev/null && nvidia-smi -L &>/dev/null 2>&1; then
+        GPU_CAP=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | head -1 | tr -d ' ')
+        info "Host GPU compute capability: $GPU_CAP"
+        for SVC in sam2; do
+            if ! docker ps --format '{{.Names}}' | grep -q "^maskanyone-${SVC}-1$"; then
+                warn "$SVC not running — skipping arch check"
+                continue
+            fi
+            SUPPORTED=$(MSYS_NO_PATHCONV=1 docker exec "maskanyone-${SVC}-1" python -c \
+                "import torch; print(' '.join(torch.cuda.get_arch_list()))" 2>/dev/null || echo "")
+            if [[ -z "$SUPPORTED" ]]; then
+                warn "$SVC: could not read arch list (torch missing?)"
+                continue
+            fi
+            MATCHED=false
+            for SM in $SUPPORTED; do
+                [[ "$(sm_to_cap "$SM")" == "$GPU_CAP" ]] && MATCHED=true
+            done
+            if [[ "$MATCHED" == "true" ]]; then
+                ok "$SVC compiled for your GPU (cap $GPU_CAP)"
+            else
+                fail "$SVC NOT compiled for your GPU (cap $GPU_CAP). Supports: $SUPPORTED"
+                fixhint "docker compose build --no-cache --build-arg TORCH_CUDA_ARCH_LIST=${GPU_CAP}+PTX $SVC && docker compose up -d $SVC"
+            fi
+        done
+    else
+        info "No NVIDIA GPU — skipping arch check"
+    fi
+
+    section "Per-service health"
+    RESOURCES=$(curl -4sk --max-time 10 https://localhost/api/platform/resources 2>/dev/null || echo "{}")
+    # Substring match on the JSON is good enough — the backend's format is stable
+    # and this works without depending on Python being in PATH.
+    for SVC in sam2 rtmpose openpose; do
+        if echo "$RESOURCES" | grep -q "\"$SVC\":[[:space:]]*true"; then
+            ok "$SVC: Online"
+        else
+            fail "$SVC: Offline"
+            fixhint "docker logs --tail 40 maskanyone-${SVC}-1    # inspect crash, then: docker compose restart $SVC"
+        fi
+    done
+
+    echo ""
+    echo -e "${BOLD}────────────────────────────────────────────${RESET}"
+    if [[ "$ISSUES" -eq 0 ]]; then
+        echo -e "  ${GREEN}${BOLD}No issues found. MaskAnyone looks healthy.${RESET}"
+    else
+        echo -e "  ${YELLOW}${BOLD}$ISSUES issue(s) found — run the suggested fixes above, top-down.${RESET}"
+    fi
+    echo ""
+    exit 0
+fi
+
+# ── header ─────────────────────────────────────────────────────────────────────
+echo ""
+echo -e "${BOLD}╔══════════════════════════════════════════╗${RESET}"
+echo -e "${BOLD}║       MaskAnyone  —  Setup Scout         ║${RESET}"
+echo -e "${BOLD}╚══════════════════════════════════════════╝${RESET}"
+echo ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+section "1 / 4  Prerequisites"
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# curl
+if command -v curl &>/dev/null; then
+    check_ok "curl $(curl --version | head -1 | awk '{print $2}')"
+else
+    check_fail "curl not found — install curl (e.g. 'sudo apt install curl' or 'brew install curl')"
+fi
+
+# Docker
+if command -v docker &>/dev/null; then
+    DOCKER_VER=$(docker --version | awk '{print $3}' | tr -d ',')
+    check_ok "Docker $DOCKER_VER"
+else
+    check_fail "Docker not found — install from https://docs.docker.com/get-docker/"
+fi
+
+# Docker daemon running
+if docker info &>/dev/null 2>&1; then
+    check_ok "Docker daemon running"
+else
+    check_fail "Docker daemon not running — start Docker Desktop or 'sudo systemctl start docker'"
+fi
+
+# Docker Compose
+if docker compose version &>/dev/null 2>&1; then
+    COMPOSE_VER=$(docker compose version --short 2>/dev/null || echo "v2")
+    check_ok "Docker Compose $COMPOSE_VER"
+else
+    check_fail "Docker Compose v2 not found — update Docker Desktop or install the compose plugin"
+fi
+
+# NVIDIA GPU
+if [[ "$HAS_GPU" == "true" ]]; then
+    GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 || echo "")
+    GPU_MEM=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader 2>/dev/null | head -1 | tr -d ' ' || echo "")
+    if [[ -n "$GPU_NAME" ]]; then
+        check_ok "GPU: $GPU_NAME ($GPU_MEM) — running in GPU mode"
+        if [[ -n "${TORCH_CUDA_ARCH_LIST:-}" ]]; then
+            check_ok "GPU compute arch: $TORCH_CUDA_ARCH_LIST (passed to Dockerfiles)"
+        fi
+    else
+        check_warn "nvidia-smi found but no GPU detected — falling back to CPU mode"
+    fi
+else
+    check_warn "No NVIDIA GPU detected — running in CPU mode (SAM2 will be slow for long videos)"
+fi
+
+# NVIDIA Container Toolkit
+if docker run --rm --gpus all nvidia/cuda:12.0.0-base-ubuntu22.04 nvidia-smi &>/dev/null 2>&1; then
+    check_ok "NVIDIA Container Toolkit working"
+else
+    if command -v nvidia-smi &>/dev/null; then
+        check_warn "NVIDIA Container Toolkit not configured — GPU won't be available inside containers. See: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html"
+    fi
+fi
+
+# Disk space (need ≥ 30 GB free)
+DISK_FREE_GB=$(disk_free_gb)
+if [[ "$DISK_FREE_GB" -ge 30 ]]; then
+    check_ok "Disk: ${DISK_FREE_GB} GB free"
+elif [[ "$DISK_FREE_GB" -ge 15 ]]; then
+    check_warn "Disk: ${DISK_FREE_GB} GB free (30 GB recommended — may be tight)"
+else
+    check_fail "Disk: ${DISK_FREE_GB} GB free — need at least 30 GB for images and models"
+fi
+
+# RAM (need ≥ 16 GB)
+RAM_GB=0
+if [[ -f /proc/meminfo ]]; then
+    RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+    RAM_GB=$((RAM_KB / 1024 / 1024))
+elif command -v sysctl &>/dev/null; then
+    RAM_GB=$(( $(sysctl -n hw.memsize 2>/dev/null || echo 0) / 1024 / 1024 / 1024 ))
+fi
+if [[ "$RAM_GB" -ge 16 ]]; then
+    check_ok "RAM: ${RAM_GB} GB"
+elif [[ "$RAM_GB" -ge 8 ]]; then
+    check_warn "RAM: ${RAM_GB} GB (16 GB recommended for chunked processing)"
+else
+    check_warn "RAM: ${RAM_GB} GB (low — use small chunk sizes)"
+fi
+
+# Docker Desktop memory allocation
+DOCKER_MEM_GB=$(docker info --format '{{.MemTotal}}' 2>/dev/null \
+    | "$PY" -c "import sys; v=sys.stdin.read().strip(); print(int(v)//1073741824 if v.isdigit() else 0)" 2>/dev/null || echo "0")
+if [[ "$DOCKER_MEM_GB" -gt 0 && "$DOCKER_MEM_GB" -lt 6 ]]; then
+    check_warn "Docker has only ${DOCKER_MEM_GB} GB memory allocated — builds may OOM. Go to Docker Desktop → Settings → Resources and set Memory to 8+ GB."
+fi
+
+if [[ "$ERRORS" -gt 0 ]]; then
+    echo ""
+    fail "Found $ERRORS critical issue(s) above. Fix them before continuing."
+    exit 1
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
+section "2 / 4  Build images"
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ── auth mode ──────────────────────────────────────────────────────────────────
+COMPOSE_PROFILES=""
+if [[ "$WITH_AUTH" == "true" ]]; then
+    info "Auth mode: Keycloak enabled (--with-auth)"
+    sedi 's/^MASK_ANYONE_PLATFORM_MODE=.*/MASK_ANYONE_PLATFORM_MODE=server/' app.env
+    COMPOSE_PROFILES="--profile auth"
+else
+    info "Auth mode: local (no login required) — pass --with-auth to enable Keycloak"
+    sedi 's/^MASK_ANYONE_PLATFORM_MODE=.*/MASK_ANYONE_PLATFORM_MODE=local/' app.env
+fi
+
+# ── SAM2 checkpoint selection ───────────────────────────────────────────────────
+if [[ "$SKIP_BUILD" != "true" && -z "$SAM2_MODELS" ]]; then
+    echo ""
+    echo -e "  ${BOLD}SAM2 model checkpoints${RESET} — choose what to bake into the image:"
+    echo -e "    ${CYAN}1)${RESET} small only        (~185 MB)  — fast, good for most videos  ${BOLD}[default]${RESET}"
+    echo -e "    ${CYAN}2)${RESET} small + large     (~1.1 GB)  — best quality"
+    echo -e "    ${CYAN}3)${RESET} all four          (~1.5 GB)  — tiny, small, base_plus, large"
+    echo ""
+    echo -ne "  Enter choice [1]: "
+    read -r SAM2_CHOICE </dev/tty
+    case "${SAM2_CHOICE:-1}" in
+        2) SAM2_MODELS="small,large" ;;
+        3) SAM2_MODELS="tiny,small,base_plus,large" ;;
+        *) SAM2_MODELS="small" ;;
+    esac
+    echo ""
+fi
+[[ -z "$SAM2_MODELS" ]] && SAM2_MODELS="small"
+
+if [[ "$SKIP_BUILD" == "true" ]]; then
+    info "Skipping build (--skip-build)"
+else
+    info "Building Docker images (this takes 20–60 min on first run)..."
+    info "SAM2 checkpoints selected: ${SAM2_MODELS}. RTMPose will download ~1 GB."
+    echo ""
+
+    BUILD_SVCS=(nginx postgres pgadmin yarn python worker sam2 rtmpose openpose)
+    [[ "$WITH_AUTH" == "true" ]] && BUILD_SVCS+=(keycloak)
+    BUILD_TOTAL=${#BUILD_SVCS[@]}
+    BUILD_IDX=0
+    BUILD_ERRORS=0
+
+    for SVC in "${BUILD_SVCS[@]}"; do
+        BUILD_IDX=$((BUILD_IDX + 1))
+        build_svc "$SVC" "$BUILD_IDX" "$BUILD_TOTAL" || BUILD_ERRORS=$((BUILD_ERRORS + 1))
+    done
+
+    if [[ "$BUILD_ERRORS" -gt 0 ]]; then
+        fail "$BUILD_ERRORS image(s) failed to build — see output above."
+        exit 1
+    fi
+    check_ok "All images built"
+fi
+
+# ── ensure no critical images are missing (even with --skip-build) ─────────────
+CORE_SVCS=(python worker sam2 yarn nginx postgres pgadmin rtmpose openpose)
+[[ "$WITH_AUTH" == "true" ]] && CORE_SVCS+=(keycloak)
+NEED_BUILD=()
+for SVC in "${CORE_SVCS[@]}"; do
+    IMG="maskanyone-${SVC}:latest"
+    if ! docker image inspect "$IMG" &>/dev/null 2>&1; then
+        NEED_BUILD+=("$SVC")
+    fi
+done
+if [[ ${#NEED_BUILD[@]} -gt 0 ]]; then
+    warn "Missing images: ${NEED_BUILD[*]} — building them now..."
+    NB_TOTAL=${#NEED_BUILD[@]}
+    NB_IDX=0
+    for SVC in "${NEED_BUILD[@]}"; do
+        NB_IDX=$((NB_IDX + 1))
+        build_svc "$SVC" "$NB_IDX" "$NB_TOTAL" || exit 1
+    done
+    check_ok "Missing images built"
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
+section "3 / 4  Start services"
+# ═══════════════════════════════════════════════════════════════════════════════
+
+info "Installing frontend dependencies..."
+docker compose $COMPOSE_BASE run --rm yarn yarn install --silent 2>&1 | grep -v "^warning" || true
+check_ok "Frontend dependencies installed"
+
+info "Starting database..."
+docker compose $COMPOSE_BASE up -d postgres
+info "Waiting for PostgreSQL to be ready..."
+for i in $(seq 1 30); do
+    if docker compose $COMPOSE_BASE exec -T postgres pg_isready -U dev &>/dev/null 2>&1; then
+        check_ok "PostgreSQL ready"
+        break
+    fi
+    sleep 2
+    if [[ "$i" -eq 30 ]]; then
+        check_fail "PostgreSQL did not become ready in time"
+        exit 1
+    fi
+done
+
+info "Starting all services..."
+UP_OUT=$(docker compose $COMPOSE_BASE $COMPOSE_PROFILES up -d --no-build 2>&1) || true
+if echo "$UP_OUT" | grep -qi "error\|failed"; then
+    warn "Some services had issues starting:"
+    echo "$UP_OUT" | grep -i "error\|failed" | while read -r line; do warn "  $line"; done
+    WARNINGS=$((WARNINGS+1))
+else
+    check_ok "All services started"
+fi
+
+# Restart python and worker after postgres is confirmed ready.
+# On a cold start they race postgres and crash; restart ensures a clean connect.
+info "Restarting backend and worker against live database..."
+docker compose $COMPOSE_BASE restart python worker &>/dev/null || true
+check_ok "Backend and worker restarted"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+section "4 / 4  Service scout"
+# ═══════════════════════════════════════════════════════════════════════════════
+
+info "Waiting for backend to be ready (up to 5 min)..."
+BACKEND_UP=false
+for i in $(seq 1 60); do
+    STATUS=$(curl -4sk --max-time 5 -o /dev/null -w "%{http_code}" https://localhost/api/platform/mode 2>/dev/null || echo "000")
+    if [[ "$STATUS" == "200" ]]; then
+        check_ok "Backend reachable"
+        BACKEND_UP=true
+        break
+    fi
+    echo -ne "  ${CYAN}→${RESET}  Still starting... (${i}/60)\r"
+    sleep 5
+done
+echo ""
+if [[ "$BACKEND_UP" == "false" ]]; then
+    check_warn "Backend not reachable yet — try opening https://localhost in a minute"
+fi
+
+# ── seed sample videos (only if library is empty) ──────────────────────────────
+if [[ "$BACKEND_UP" == "true" ]]; then
+    VIDEO_COUNT=$(curl -4sk --max-time 5 "https://localhost/api/videos" 2>/dev/null \
+        | "$PY" -c "import sys,json; print(len(json.load(sys.stdin).get('videos',[])))" 2>/dev/null || echo "1")
+    if [[ "$VIDEO_COUNT" == "0" ]]; then
+        info "Seeding sample videos from MaskedPiper paper..."
+        SAMPLE_BASE="https://raw.githubusercontent.com/WimPouw/TowardsMultimodalOpenScience/main/Input_Videos"
+        SEED_OK=0
+        for SAMPLE_NAME in "sample.mp4" "ted_kid.mp4"; do
+            SAMPLE_URL="${SAMPLE_BASE}/${SAMPLE_NAME}"
+            SAMPLE_TMP="/tmp/maskanyone_seed_${SAMPLE_NAME}"
+            if curl -fsSL "$SAMPLE_URL" -o "$SAMPLE_TMP" 2>/dev/null; then
+                UPLOAD_ID=$("$PY" -c "import uuid; print(uuid.uuid4())" 2>/dev/null || echo "")
+                UPLOAD_NAME="${SAMPLE_NAME%.mp4}"
+                if [[ -n "$UPLOAD_ID" ]]; then
+                    curl -4sk -X POST "https://localhost/api/videos/upload/request" \
+                        -H "Content-Type: application/json" \
+                        -d "{\"video_id\":\"${UPLOAD_ID}\",\"video_name\":\"${UPLOAD_NAME}\"}" \
+                        &>/dev/null || true
+                    curl -4sk -X POST "https://localhost/api/videos/upload/${UPLOAD_ID}" \
+                        -H "Content-Type: application/octet-stream" \
+                        --data-binary "@${SAMPLE_TMP}" &>/dev/null || true
+                    curl -4sk -X POST "https://localhost/api/videos/upload/finalize" \
+                        -H "Content-Type: application/json" \
+                        -d "{\"video_id\":\"${UPLOAD_ID}\"}" &>/dev/null || true
+                    SEED_OK=$((SEED_OK+1))
+                fi
+                rm -f "$SAMPLE_TMP"
+            fi
+        done
+        [[ "$SEED_OK" -gt 0 ]] && check_ok "Sample videos seeded ($SEED_OK)" || warn "Could not seed sample videos (network issue?)"
+    else
+        info "Library not empty — skipping sample video seed"
+    fi
+fi
+
+# Query /platform/resources
+RESOURCES=$(curl -4sk --max-time 10 https://localhost/api/platform/resources 2>/dev/null || echo "{}")
+
+GPU=$(echo "$RESOURCES" | "$PY" -c "import sys,json; d=json.load(sys.stdin); g=d.get('gpu'); print(f\"{g['name']} ({g['vram_gb']} GB VRAM)\" if g else 'Not detected')" 2>/dev/null || echo "unknown")
+RAM=$(echo "$RESOURCES" | "$PY" -c "import sys,json; d=json.load(sys.stdin); print(f\"{d.get('ram_total_gb','?')} GB\")" 2>/dev/null || echo "?")
+DISK=$(echo "$RESOURCES" | "$PY" -c "import sys,json; d=json.load(sys.stdin); print(f\"{d.get('disk_free_gb','?')} GB free\")" 2>/dev/null || echo "?")
+
+if [[ "$GPU" == "Not detected" ]]; then
+    check_warn "GPU: $GPU — chunked processing recommended for videos > 2 min"
+else
+    check_ok "GPU: $GPU"
+fi
+check_ok "RAM: $RAM"
+check_ok "Disk: $DISK"
+
+# Per-service health
+for SERVICE in sam2 rtmpose openpose; do
+    UP=$(echo "$RESOURCES" | "$PY" -c "import sys,json; d=json.load(sys.stdin); print(d.get('services',{}).get('$SERVICE', False))" 2>/dev/null || echo "False")
+    if [[ "$UP" == "True" ]]; then
+        check_ok "$SERVICE: Online"
+    else
+        check_warn "$SERVICE: Offline"
+        WARNINGS=$((WARNINGS+1))
+    fi
+done
+
+# ── summary ────────────────────────────────────────────────────────────────────
+echo ""
+echo -e "${BOLD}────────────────────────────────────────────${RESET}"
+if [[ "$WARNINGS" -eq 0 ]]; then
+    echo -e "  ${GREEN}${BOLD}All checks passed. MaskAnyone is ready.${RESET}"
+else
+    echo -e "  ${YELLOW}${BOLD}Setup complete with $WARNINGS warning(s) — see above.${RESET}"
+fi
+echo ""
+echo -e "  Open ${CYAN}https://localhost${RESET} in your browser."
+echo -e "  ${YELLOW}Note: your browser will warn about a self-signed certificate — click 'Advanced' and proceed.${RESET}"
+if [[ "$WARNINGS" -gt 0 && "$GPU" == "Not detected" ]]; then
+    echo -e "  ${YELLOW}Tip: No GPU detected. Use 30–60 s chunk sizes for videos longer than 2 min.${RESET}"
+fi
+echo ""

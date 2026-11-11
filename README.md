@@ -7,6 +7,34 @@ MaskAnyone is a **de-identification toolbox for videos** that allows you to remo
 
 MaskAnyone is a docker-packaged modern web app that is built with React, MaterialUI, FastAPI and PostgreSQL. It is designed to be easily extensible with new algorithms and to be scalable with multiple docker workers. It is also designed to be easily usable by non-technical users.
 
+## What's new on this branch
+
+### Long video support (chunked streaming)
+Videos of any length can now be processed without running out of memory. The masking editor automatically recommends a chunk size based on video duration:
+- < 30 s → single pass (no chunking)
+- 30–120 s → 30 s chunks
+- \> 120 s → 60 s chunks
+
+Each chunk is segmented, posed, and rendered sequentially. Only one chunk's masks are ever held in RAM at once. Boundary masks from the last frame of each chunk are fed as prompts into the next chunk to ensure continuity.
+
+### SAM2 model selection
+Choose between four SAM2 model sizes directly in the masking editor:
+- **Tiny** — fastest, lowest memory
+- **Small** — default, good balance (was the only option before)
+- **Base+** — higher quality
+- **Large** — best quality, most memory
+
+All four model checkpoints are now bundled in the SAM2 Docker image.
+
+### Object detection prompts
+The "Detect Objects" button in the masking editor runs YOLO object detection on the current frame and auto-places prompts — useful for non-person targets.
+
+### Video trim & FPS conversion
+Videos can now be trimmed (with a preview slider) or converted to a different frame rate directly from the video list, without leaving the app.
+
+### RTMPose integration
+RTMPose is now available as a pose overlay strategy alongside MediaPipe and OpenPose.
+
 ## Demo
 
 https://github.com/user-attachments/assets/92dac144-9f15-4665-8d19-5e978d4bf4ba
@@ -16,6 +44,42 @@ Good examples that showcase what can be achieved with this approach are availabl
 We have evaluated this approach against other approaches on various videos which can be found here, both as originals and masked versions: https://drive.google.com/drive/folders/1DGelFxPJhnXD_2FKoIDC76uJNvXT3ccC?usp=sharing.
 
 ## Getting Started
+
+### Quick setup (recommended)
+
+The `setup.sh` script checks prerequisites, builds images, starts services, and scouts your environment — all in one step:
+
+```bash
+git clone https://github.com/MaskAnyone/MaskAnyone.git -b samhack
+cd MaskAnyone
+bash setup.sh
+```
+
+This runs in **local mode** (no login required) by default. To enable multi-user authentication via Keycloak:
+
+```bash
+bash setup.sh --with-auth
+```
+
+It will report GPU availability, RAM, disk space, and whether each service (SAM2, RTMPose, OpenPose) came online. On subsequent runs you can skip the build step:
+
+```bash
+bash setup.sh --skip-build
+```
+
+### Upgrading from a previous version
+
+If you already have MaskAnyone running and are switching to this branch:
+
+```bash
+git checkout samhack
+docker compose build sam2 rtmpose   # sam2 now bundles all 4 model sizes; rtmpose is new
+docker compose up -d
+```
+
+Your postgres data and uploaded videos are preserved. No port changes.
+
+> **Note:** The SAM2 build now downloads ~3 GB of additional model checkpoints (Tiny, Base+, Large). This is a one-time cost.
 
 ### Installation
 
@@ -80,6 +144,13 @@ docker compose up
 ```
 to get the live output of the applicaiton and see where it might crash.
 Alternatively you can use `docker compose logs -f` if you already started the application using the detached (`-d`) flag.
+
+For a quick health check of a running install, run:
+```bash
+bash setup.sh doctor
+```
+
+See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for known issues (GPU compatibility, OpenPose on new hardware, Windows Python PATH quirks, etc.).
 
 ### Database
 

@@ -107,7 +107,7 @@ class PoseRenderer3D extends React.Component<PoseRenderer3DProps, {}> {
 
         for (const connectionFrom of Object.keys(skeletonConnections)) {
             // @ts-ignore
-            for (const connectionTo of skeletonConnections[connectionFrom]) {
+            for (const _ of skeletonConnections[connectionFrom]) { // eslint-disable-line @typescript-eslint/no-unused-vars
                 const geo = new THREE.BufferGeometry();
                 const line = new THREE.Line(geo, lineMaterial);
                 this.scene.add(line);

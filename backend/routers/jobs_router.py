@@ -33,6 +33,29 @@ def delete_job(job_id, token_payload: dict = Depends(JWTBearer())):
     job_manager.delete_job(job_id)
 
 
+@router.post("/{job_id}/cancel")
+def cancel_job(job_id, token_payload: dict = Depends(JWTBearer())):
+    """Request cancellation of a running or open job.
+
+    Sets status='cancelled'. The row stays in the DB so the user can still see it
+    in their history. Workers poll this status at phase boundaries and abort
+    cleanly on cancellation.
+    """
+    user_id = token_payload["sub"]
+    job = job_manager.get_job(job_id)
+
+    if job.user_id != user_id:
+        raise Exception(f'Job {job_id} does not belong to user {user_id}')
+
+    if job.status in ('finished', 'failed', 'cancelled'):
+        # Idempotent: no-op on terminal states, but return the current state so
+        # the UI can refresh without treating it as an error.
+        return {"status": job.status}
+
+    job_manager.mark_job_as_cancelled(job_id)
+    return {"status": "cancelled"}
+
+
 @router.post("/create")
 def create_job(run_params: RunParams, token_payload: dict = Depends(JWTBearer())):
     user_id = token_payload["sub"]

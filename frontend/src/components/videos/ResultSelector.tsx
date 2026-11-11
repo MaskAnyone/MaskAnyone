@@ -1,4 +1,4 @@
-import {FormControl, FormControlLabel, Radio, RadioGroup} from "@mui/material";
+import {FormControl, RadioGroup} from "@mui/material";
 import {ResultVideo} from "../../state/types/ResultVideo";
 
 export enum ResultViews {

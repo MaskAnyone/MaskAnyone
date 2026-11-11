@@ -1,4 +1,4 @@
-import { call, fork, put, take, delay, select } from 'redux-saga/effects';
+import { call, fork, put, take, delay } from 'redux-saga/effects';
 import { Action } from 'redux-actions';
 import Command from "../../actions/command";
 import Api from "../../../api";
@@ -6,6 +6,7 @@ import Event from "../../actions/event";
 import { ApiFetchJobsResponse } from "../../../api/types";
 import { FetchJobListPayload } from "../../actions/jobCommand";
 import { Job } from "../../types/Job";
+import { parseOptionalUtcTimestamp, parseUtcTimestamp } from "../../../util/parseUtcTimestamp";
 
 let pollingRunning = false;
 
@@ -36,10 +37,11 @@ const onFetchJobList = function* (payload: FetchJobListPayload) {
             type: job.type,
             status: job.status,
             data: job.data,
-            createdAt: new Date(job.created_at),
-            startedAt: job.started_at ? new Date(job.started_at) : undefined,
-            finishedAt: job.finished_at ? new Date(job.finished_at) : undefined,
+            createdAt: parseUtcTimestamp(job.created_at),
+            startedAt: parseOptionalUtcTimestamp(job.started_at),
+            finishedAt: parseOptionalUtcTimestamp(job.finished_at),
             progress: job.progress,
+            phase: job.phase,
         }));
 
         yield put(Event.Job.jobListFetched({ jobList }));

@@ -55,7 +55,8 @@ CREATE TABLE public.jobs (
     started_at timestamp without time zone,
     finished_at timestamp without time zone,
     progress integer DEFAULT 0 NOT NULL,
-    user_id uuid NOT NULL
+    user_id uuid NOT NULL,
+    phase character varying
 );
 
 

@@ -5,6 +5,11 @@ services:
     ports:
       - "443:443"
     restart: "on-failure"
+    depends_on:
+      python:
+        condition: service_healthy
+      yarn:
+        condition: service_started
 
   python:
     build:
@@ -18,7 +23,21 @@ services:
       - ./backend:/app
       - ./data/backend:/var/lib/maskanyone/data
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "--tries=1", "--timeout=2", "http://localhost:8000/platform/mode"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${MASKANYONE_GPU_ID:-0}"]
+              capabilities: [ gpu ]
 
   postgres:
     build:
@@ -28,6 +47,12 @@ services:
     volumes:
       - ./docker/postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
       - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d prototype"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
 
   pgadmin:
     build:
@@ -41,18 +66,23 @@ services:
       PGADMIN_CONFIG_SERVER_MODE: "False"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   yarn:
     build:
       context: ./docker/yarn
     command: "yarn start"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
     volumes:
       - ./frontend:/app
 
   keycloak:
     build:
       context: ./docker/keycloak
+    profiles: [auth]
     environment:
       KEYCLOAK_ADMIN: dev
       KEYCLOAK_ADMIN_PASSWORD: dev
@@ -60,7 +90,8 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   worker:
     build:
@@ -68,11 +99,25 @@ services:
     command: "python worker.py"
     env_file:
       - ./app.env
+    environment:
+      - MALLOC_ARENA_MAX=2
+      # h264_nvenc uses the GPU hardware encoder; override to libx264 on CPU-only hosts.
+      - WORKER_VIDEO_ENCODER=h264_nvenc
+      # NVENC only needs the 'video' capability, not full CUDA compute.
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
     volumes:
       - ./worker:/app
     depends_on:
-      - python
+      python:
+        condition: service_healthy
     restart: on-failure
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${MASKANYONE_GPU_ID:-0}"]
+              capabilities: [gpu, video]
 
   sam2:
     build:
@@ -118,3 +163,13 @@ services:
     #   - /dev/nvidiactl:/dev/nvidiactl
     #   - /dev/nvidia-uvm:/dev/nvidia-uvm
     #   - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+
+  rtmpose:
+    build:
+      context: ./docker/rtmpose
+    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+    env_file:
+      - ./app.env
+    volumes:
+      - ./rtmpose:/app
+    restart: on-failure

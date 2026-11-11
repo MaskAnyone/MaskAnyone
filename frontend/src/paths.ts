@@ -10,6 +10,7 @@ const Paths = {
     presets: '/presets',
     workers: '/workers',
     about: '/about',
+    tutorial: '/tutorial',
 
     makeVideoDetailsUrl: (videoId: string) => Paths.videoDetails
         .replace(':videoId', videoId),

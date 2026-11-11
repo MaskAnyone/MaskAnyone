@@ -1,6 +1,7 @@
 import { Canvas } from "@react-three/fiber"
 import { Character } from "./BlendshapeCharacter"
 import { Color } from "three"
+import { useTheme } from "@mui/material"
 
 interface BlendshapesRenderer3DProps {
     blendshapes: any;
@@ -8,10 +9,13 @@ interface BlendshapesRenderer3DProps {
 }
 
 const BlendshapesRenderer3D = (props: BlendshapesRenderer3DProps) => {
+    const theme = useTheme();
+    const canvasBg = theme.palette.mode === 'dark' ? '#2d2d2d' : '#e8e8e8';
+
     return (
         <Canvas
             camera={{ fov: 10 }} shadows
-            style={{ backgroundColor: '#FAD972', height: 350 }}
+            style={{ backgroundColor: canvasBg, height: 350 }}
         >
             <ambientLight intensity={0.5} />
             <pointLight position={[10, 10, 10]} color={new Color(1, 1, 0)} intensity={0.5} castShadow />

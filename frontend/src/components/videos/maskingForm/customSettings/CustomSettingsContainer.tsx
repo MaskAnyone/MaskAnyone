@@ -93,7 +93,7 @@ const CustomSettingsContainer = (props: RunSettingsContainerProps) => {
         <DialogActions sx={styles.dialogActions}>
             {activeStep > 0 && <Button onClick={() => handleBack()}>Go back</Button>}
             {activeStep < steps.length - 1 && <Button variant="contained" sx={{ marginLeft: "25px" }} onClick={() => handleNext()}>Next</Button>}
-            {activeStep == steps.length - 1 && <Button variant="contained" color="secondary" startIcon={<ShieldLogoIcon />} onClick={() => props.onRunClicked()} sx={{ marginLeft: "25px" }}>Mask Video</Button>}
+            {activeStep === steps.length - 1 && <Button variant="contained" color="secondary" startIcon={<ShieldLogoIcon />} onClick={() => props.onRunClicked()} sx={{ marginLeft: "25px" }}>Mask Video</Button>}
         </DialogActions>
     </>)
 }

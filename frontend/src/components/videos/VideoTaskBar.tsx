@@ -1,8 +1,10 @@
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton } from "@mui/material";
 import VideoRunParamsDialog from "./VideoRunParamsDialog";
+import VideoTrimDialog from "./VideoTrimDialog";
 import React, { useState } from "react";
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ContentCutIcon from '@mui/icons-material/ContentCut';
 import DownloadMenu from "./videoTaskBar/DownloadMenu";
 import ShieldLogoIcon from "../common/ShieldLogoIcon";
 import Paths from "../../paths";
@@ -10,7 +12,6 @@ import {useNavigate} from "react-router";
 import Selector from "../../state/selector";
 import { useDispatch, useSelector } from "react-redux";
 import { ReduxState } from "../../state/reducer";
-import Api from "../../api";
 import Command from "../../state/actions/command";
 
 const styles = {
@@ -33,6 +34,10 @@ const VideoTaskBar = (props: VideoTaskBarProps) => {
     const [videoRunParamsOpen, setVideoRunParamsOpen] = useState<boolean>(false);
     const [downloadAnchorEl, setDownloadAnchorEl] = useState<null | HTMLElement>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
+    const [trimDialogOpen, setTrimDialogOpen] = useState<boolean>(false);
+
+    const videoList = useSelector(Selector.Video.videoList);
+    const currentVideo = videoList.find(v => v.id === props.videoId);
 
     const resultVideoLists = useSelector(Selector.Video.resultVideoLists);
     const resultVideos = resultVideoLists[props.videoId] || [];
@@ -80,6 +85,14 @@ const VideoTaskBar = (props: VideoTaskBarProps) => {
                     sx={{ marginLeft: 1 }}
                     color={'secondary'}
                     startIcon={<ShieldLogoIcon />}
+                />
+                <Button
+                    variant={'contained'}
+                    onClick={() => setTrimDialogOpen(true)}
+                    children={'Trim'}
+                    sx={{ marginLeft: 1 }}
+                    color={'secondary'}
+                    startIcon={<ContentCutIcon />}
                 />
                 {Boolean(props.resultVideoId && resultVideoJob) && (
                     <Button
@@ -133,6 +146,15 @@ const VideoTaskBar = (props: VideoTaskBarProps) => {
                 </Button>
             </DialogActions>
         </Dialog>
+        {currentVideo && (
+            <VideoTrimDialog
+                open={trimDialogOpen}
+                onClose={() => setTrimDialogOpen(false)}
+                videoId={props.videoId}
+                videoName={currentVideo.name}
+                videoDuration={currentVideo.videoInfo.duration}
+            />
+        )}
     </>);
 };
 

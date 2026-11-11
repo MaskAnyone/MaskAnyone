@@ -1,5 +1,4 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material";
-import { useState } from "react";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { ResultVideo } from "../../../state/types/ResultVideo";
 import Selector from "../../../state/selector";
 import { useSelector } from "react-redux";
@@ -12,9 +11,6 @@ interface ResultRunParamsDialogProps {
 }
 
 const ResultRunParamsDialog = (props: ResultRunParamsDialogProps) => {
-    const [name, setName] = useState<string | null>(null);
-    const [description, setDescription] = useState<string | null>(null);
-
     const selectJobById = Selector.Job.makeSelectJobById();
     const job = useSelector((state: ReduxState) => selectJobById(state, props.result?.jobId || ''));
 
