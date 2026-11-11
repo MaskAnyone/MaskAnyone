@@ -21,21 +21,56 @@ from typing import Any
 
 MIN_MASK_PIXELS = 200
 
+# Keypoint groups in dict-shaped pose data. The QA checks every group present.
+#
+# What each overlay strategy actually fills (see
+# Sam2PoseMasker._compute_openpose_pose_data, which builds the OpenPose options):
+#
+#   strategy            OpenPose options               pose_keypoints     face_keypoints  hands
+#   ------------------  -----------------------------  -----------------  --------------  -----
+#   openpose            BODY_25,  face=False           25 body            None            None
+#   openpose_body25b    BODY_25B, face=False           25 body            None            None
+#   openpose_face       BODY_25,  face=True            25 body            70 face         None
+#   openpose_body_135   BODY_135, face=False           135: body 0-24,    None            None
+#                                                      hands 25-64,
+#                                                      face 65-134
+#   rtmpose_*           (RTMPose service)              17 body (COCO) or  —               —
+#                                                      animal keypoints
+#
+# Notes:
+# - BODY_135 is a single model whose 135 points already include hands and face,
+#   all inside pose_keypoints. That is why the QA covers BODY_135 hands/face
+#   even though its separate face/hand groups are None.
+# - The separate OpenPose hand detector (left/right_hand_keypoints) is never
+#   enabled: hand=False for every strategy. Both groups are listed anyway so
+#   the QA covers them if a hand option is added later.
+# - Groups that are None (not requested or not detected) are skipped.
+# - MediaPipe strategies (mp_pose, mp_face, mp_hand) produce plain lists, not
+#   dicts, and are handled separately in _extract_keypoints.
+KEYPOINT_GROUPS = ('pose_keypoints', 'face_keypoints', 'left_hand_keypoints', 'right_hand_keypoints')
+
 
 def _extract_keypoints(keypoint_data: Any) -> list:
     """Normalise postprocessed pose data for one frame into a list of keypoints.
 
     Each keypoint is (x, y) or None (dropped by PosePostprocessor as low-confidence).
     Handles the three shapes used in this codebase:
-      - dict {'pose_keypoints': [(x, y) | None, ...]}  (rtmpose / openpose)
-      - list [(x, y) | None, ...]                      (mediapipe variants)
-      - None                                           (no detection)
+      - dict {'pose_keypoints': [...], 'face_keypoints': [...] | None, ...}
+                                                   (rtmpose / openpose)
+      - list [(x, y) | None, ...]                  (mediapipe variants)
+      - None                                       (no detection)
+
+    For dicts, every keypoint group is included, not just the body: an
+    uncovered face point (openpose_face) is the most important leak to catch.
+    Groups that are None (not requested / not detected) are skipped.
     """
     if keypoint_data is None:
         return []
     if isinstance(keypoint_data, dict):
-        kps = keypoint_data.get('pose_keypoints') or []
-        return list(kps)
+        kps = []
+        for group in KEYPOINT_GROUPS:
+            kps.extend(keypoint_data.get(group) or [])
+        return kps
     if isinstance(keypoint_data, list):
         return keypoint_data
     return []
