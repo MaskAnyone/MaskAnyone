@@ -453,8 +453,19 @@ class Sam2PoseMasker:
         finally:
             shutil.rmtree(tmp_dir, ignore_errors=True)
 
-    def _write_qa_report(self, report: dict) -> None:
+    def _write_qa_report(self, report: dict | None) -> None:
         if self._qa_path is None:
+            return
+        if report is None:
+            # QA failed mid-run. Write nothing, and remove any report left over
+            # from an earlier job on the same video (the path is reused), so a
+            # stale verdict is never uploaded for this result.
+            print("[qa] no QA report for this job (collector failed).", flush=True)
+            try:
+                if os.path.exists(self._qa_path):
+                    os.remove(self._qa_path)
+            except OSError as e:
+                print(f"[qa] failed to remove stale QA report: {e}", flush=True)
             return
         try:
             with open(self._qa_path, 'w') as f:

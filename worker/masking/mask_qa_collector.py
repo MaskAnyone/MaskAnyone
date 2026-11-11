@@ -51,6 +51,7 @@ class MaskQaCollector:
         self._missing_mask_count = 0
         self._uncovered_kp_count = 0
         self._frames_recorded = 0
+        self._failed = False
 
     def record_frame(
         self,
@@ -64,7 +65,26 @@ class MaskQaCollector:
         masks_for_frame: {obj_id: np.array(1, H, W)} or None when SAM2 has no mask
                          for this frame (renderer treats this as "no mask drawn").
         pose_for_frame_per_obj: {obj_id: keypoint_data}  per object for this frame.
+
+        QA is advisory and must never fail the masking job. If inspecting a frame
+        raises, the collector logs it once and disables itself; finalize() then
+        returns None so no (partial, possibly falsely green) report is written.
         """
+        if self._failed:
+            return
+        try:
+            self._record_frame(frame_idx, masks_for_frame, pose_for_frame_per_obj, fps)
+        except Exception as e:
+            self._failed = True
+            print(f"[qa] disabled after error on frame {frame_idx}: {e!r}", flush=True)
+
+    def _record_frame(
+        self,
+        frame_idx: int,
+        masks_for_frame: dict | None,
+        pose_for_frame_per_obj: dict,
+        fps: float,
+    ) -> None:
         self._frames_recorded += 1
         t = frame_idx / fps if fps > 0 else 0.0
 
@@ -119,7 +139,11 @@ class MaskQaCollector:
                     'score': None,  # postprocessed keypoints carry no score
                 })
 
-    def finalize(self, total_frames: int, fps: float) -> dict:
+    def finalize(self, total_frames: int, fps: float) -> dict | None:
+        """Build the QA report, or None if the collector failed mid-run."""
+        if self._failed:
+            return None
+
         clean = max(0, self._frames_recorded - len(self._suspect_frames))
         coverage = (clean / self._frames_recorded * 100.0) if self._frames_recorded else 100.0
 
