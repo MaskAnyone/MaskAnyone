@@ -49,15 +49,18 @@ FROM pytorch/pytorch:2.8.0-cuda12.8-cudnn9-runtime
 
 WORKDIR /workspace
 
+COPY --from=builder /opt/conda/lib/python3.11/site-packages /opt/conda/lib/python3.11/site-packages
+COPY --from=builder /workspace/sam2 /workspace/sam2
+
+# Must run after the site-packages COPY above. Otherwise the COPY overwrites packages
+# upgraded here with the builder's older versions (e.g. typing_extensions), leaving
+# new pydantic beside an old typing_extensions: "cannot import name 'sentinel'".
 RUN pip install --upgrade --no-cache-dir \
     fastapi \
     uvicorn[standard] \
     python-multipart \
     opencv-python-headless \
     decord
-
-COPY --from=builder /opt/conda/lib/python3.11/site-packages /opt/conda/lib/python3.11/site-packages
-COPY --from=builder /workspace/sam2 /workspace/sam2
 
 COPY ./sam2_patched_misc.py /workspace/sam2/sam2/utils/misc.py
 
