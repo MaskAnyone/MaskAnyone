@@ -3,10 +3,10 @@
 Collects two cheap signals using data we already have on hand for each
 rendered frame:
 
-  1. mask_area_px — sum of the rendered mask. A high-confidence pose with a
+  1. mask_area_px — sum of the rendered mask. A confident pose with a
      ~empty mask suggests segmentation broke for that frame.
 
-  2. uncovered keypoints — high-confidence pose keypoints that fall outside
+  2. uncovered keypoints — confident pose keypoints that fall outside
      the rendered mask polygon. Strong leak signal: we found the person's
      face/limb but didn't cover it.
 
@@ -19,17 +19,17 @@ from __future__ import annotations
 from typing import Any
 
 
-KEYPOINT_SCORE_THRESHOLD = 0.5
 MIN_MASK_PIXELS = 200
 
 
 def _extract_keypoints(keypoint_data: Any) -> list:
-    """Normalise pose data for one frame into a list of [x, y, score?] entries.
+    """Normalise postprocessed pose data for one frame into a list of keypoints.
 
+    Each keypoint is (x, y) or None (dropped by PosePostprocessor as low-confidence).
     Handles the three shapes used in this codebase:
-      - dict {'pose_keypoints': [[x, y, s], ...]}  (rtmpose / openpose)
-      - list [[x, y, s], ...]                      (mediapipe variants)
-      - None                                       (no detection)
+      - dict {'pose_keypoints': [(x, y) | None, ...]}  (rtmpose / openpose)
+      - list [(x, y) | None, ...]                      (mediapipe variants)
+      - None                                           (no detection)
     """
     if keypoint_data is None:
         return []
@@ -44,10 +44,8 @@ def _extract_keypoints(keypoint_data: Any) -> list:
 class MaskQaCollector:
     def __init__(
         self,
-        keypoint_score_threshold: float = KEYPOINT_SCORE_THRESHOLD,
         min_mask_pixels: int = MIN_MASK_PIXELS,
     ):
-        self._kp_threshold = keypoint_score_threshold
         self._min_mask_pixels = min_mask_pixels
         self._suspect_frames: list[dict] = []
         self._missing_mask_count = 0
@@ -72,11 +70,16 @@ class MaskQaCollector:
 
         for obj_id, keypoint_data in pose_for_frame_per_obj.items():
             kps = _extract_keypoints(keypoint_data)
-            high_conf_kps = [
+            # PosePostprocessor already applied the confidence threshold: dropped
+            # keypoints are None and survivors are bare (x, y) with no score.
+            # Anything left is treated as confident — no second threshold here.
+            confident_kps = [
                 kp for kp in kps
-                if len(kp) >= 3 and kp[2] >= self._kp_threshold and (kp[0] >= 1 or kp[1] >= 1)
+                if kp is not None and len(kp) >= 2
+                and kp[0] is not None and kp[1] is not None
+                and (kp[0] >= 1 or kp[1] >= 1)
             ]
-            if not high_conf_kps:
+            if not confident_kps:
                 continue  # nothing to verify against — skip
 
             mask = None
@@ -95,24 +98,24 @@ class MaskQaCollector:
                 continue
 
             h, w = mask.shape[:2]
-            worst_kp = None  # (score, x, y) of the highest-confidence kp outside the mask
-            for kp in high_conf_kps:
+            has_uncovered = False
+            for kp in confident_kps:
                 x = int(kp[0])
                 y = int(kp[1])
                 if not (0 <= x < w and 0 <= y < h):
                     continue  # off-frame — not a leak
                 if not (mask[y, x] > 0):
-                    if worst_kp is None or kp[2] > worst_kp[0]:
-                        worst_kp = (float(kp[2]), x, y)
+                    has_uncovered = True
+                    break
 
-            if worst_kp is not None:
+            if has_uncovered:
                 self._uncovered_kp_count += 1
                 self._suspect_frames.append({
                     'idx': int(frame_idx),
                     't': round(t, 3),
                     'reason': 'uncovered_keypoint',
                     'obj_id': int(obj_id),
-                    'score': round(worst_kp[0], 3),
+                    'score': None,  # postprocessed keypoints carry no score
                 })
 
     def finalize(self, total_frames: int, fps: float) -> dict:
@@ -131,7 +134,6 @@ class MaskQaCollector:
             'frames_recorded': int(self._frames_recorded),
             'fps': float(fps) if fps else 0.0,
             'thresholds': {
-                'keypoint_score_min': self._kp_threshold,
                 'min_mask_pixels': self._min_mask_pixels,
             },
             'summary': {
