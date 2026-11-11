@@ -297,14 +297,31 @@ class PoseRenderer:
             pointB = tuple(map(int, keypoint_data[partB][:2]))
             cv2.line(rgb_image, pointA, pointB, (0, 255, 0), 2)
 
+    @staticmethod
+    def _to_normalized_landmark_list(keypoint_data, image_width, image_height):
+        """Convert postprocessed (x, y) | None keypoints to a MediaPipe landmark list.
+
+        MediaPipe connections (face mesh, hand) reference landmarks by index, so a
+        None keypoint cannot simply be dropped. Instead it becomes a placeholder
+        with visibility=0: draw_landmarks skips landmarks with visibility below
+        its threshold (0.5), and any connection touching one.
+        """
+        landmarks = []
+        for landmark in keypoint_data:
+            if landmark is None:
+                landmarks.append(landmark_pb2.NormalizedLandmark(x=0.0, y=0.0, z=0.5, visibility=0.0))
+            else:
+                landmarks.append(landmark_pb2.NormalizedLandmark(
+                    x=landmark[0] / image_width, y=landmark[1] / image_height, z=0.5))
+
+        landmark_list = landmark_pb2.NormalizedLandmarkList()
+        landmark_list.landmark.extend(landmarks)
+        return landmark_list
+
     def _render_mp_face_overlay(self, rgb_image, keypoint_data):
         image_height, image_width, _ = rgb_image.shape
 
-        face_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
-        face_landmarks_proto.landmark.extend([
-            landmark_pb2.NormalizedLandmark(x=landmark[0] / image_width, y=landmark[1] / image_height, z=0.5) for
-            landmark in keypoint_data
-        ])
+        face_landmarks_proto = self._to_normalized_landmark_list(keypoint_data, image_width, image_height)
 
         solutions.drawing_utils.draw_landmarks(
             image=rgb_image,
@@ -331,11 +348,7 @@ class PoseRenderer:
     def _render_mp_hand_overlay(self, rgb_image, keypoint_data):
         image_height, image_width, _ = rgb_image.shape
 
-        hand_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
-        hand_landmarks_proto.landmark.extend([
-            landmark_pb2.NormalizedLandmark(x=landmark[0] / image_width, y=landmark[1] / image_height, z=0.5) for
-            landmark in keypoint_data
-        ])
+        hand_landmarks_proto = self._to_normalized_landmark_list(keypoint_data, image_width, image_height)
         solutions.drawing_utils.draw_landmarks(
             rgb_image,
             hand_landmarks_proto,

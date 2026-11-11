@@ -248,13 +248,24 @@ class PosePostprocessor:
 
     def _postprocess_mp_face(self, pose_data_dict, frame_count, estimation_input_bounding_boxes, obj_id, pose_data):
         for idx in range(frame_count):
-            relevant_start_frame = max(
-                frame for frame in estimation_input_bounding_boxes[obj_id].keys() if frame <= idx)
+            bbox_start_frames = [frame for frame in estimation_input_bounding_boxes[obj_id].keys() if frame <= idx]
+
+            if len(bbox_start_frames) < 1:
+                # Before this object's first bounding box (e.g. prompt not on frame 0).
+                pose_data_dict[obj_id][idx] = None
+                continue
+
+            relevant_start_frame = max(bbox_start_frames)
 
             bbox = estimation_input_bounding_boxes[obj_id][relevant_start_frame]
             xmin, ymin, xmax, ymax = bbox
 
             current_face = pose_data[idx]
+
+            if current_face is None:
+                # MediaPipe found no face in this frame.
+                pose_data_dict[obj_id][idx] = None
+                continue
 
             adjusted_face = []
             for keypoint in current_face:
@@ -269,8 +280,14 @@ class PosePostprocessor:
 
     def _postprocess_mp_hand(self, pose_data_dict, frame_count, estimation_input_bounding_boxes, obj_id, pose_data):
         for idx in range(frame_count):
-            relevant_start_frame = max(
-                frame for frame in estimation_input_bounding_boxes[obj_id].keys() if frame <= idx)
+            bbox_start_frames = [frame for frame in estimation_input_bounding_boxes[obj_id].keys() if frame <= idx]
+
+            if len(bbox_start_frames) < 1:
+                # Before this object's first bounding box (e.g. prompt not on frame 0).
+                pose_data_dict[obj_id][idx] = None
+                continue
+
+            relevant_start_frame = max(bbox_start_frames)
 
             bbox = estimation_input_bounding_boxes[obj_id][relevant_start_frame]
             xmin, ymin, xmax, ymax = bbox
@@ -278,6 +295,8 @@ class PosePostprocessor:
             current_hand = pose_data[idx]
 
             if current_hand is None:
+                # MediaPipe found no hand in this frame.
+                pose_data_dict[obj_id][idx] = None
                 continue
 
             adjusted_hand = []
