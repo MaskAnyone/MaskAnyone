@@ -20,6 +20,9 @@ from masking.exceptions import JobCancelled
 
 DEBUG = False
 APPLY_CLAHE = False
+# Sub-video crops smaller than this (width or height) are skipped: pose
+# estimation on them is meaningless, and below 2 px OpenCV cannot write them.
+MIN_SUBVIDEO_SIDE_PX = 16
 
 
 class Sam2PoseMasker:
@@ -151,12 +154,15 @@ class Sam2PoseMasker:
         video_capture, frame_width, frame_height, sample_rate = self._open_video()
         video_writer = self._initialize_video_writer(frame_width, frame_height, sample_rate)
 
+        # One mask renderer per prompted object, independent of pose data: an
+        # object whose sub-videos were all skipped (tiny crops) has no pose
+        # entry but must still be masked.
         mask_renderers = {
             obj_id: MaskRenderer(
                 video_masking_data['hidingStrategies'][obj_id - 1],
                 {'level': 4, 'object_borders': True, 'averageColor': True}
             )
-            for obj_id in pose_data_dict.keys()
+            for obj_id in range(1, len(video_masking_data['hidingStrategies']) + 1)
         }
 
         # Motion traces are opt-in via `motionTraces` in the masking config.
@@ -784,10 +790,25 @@ class Sam2PoseMasker:
 
                 end_frame = sorted_frames[i + 1] - 1 if i < len(sorted_frames) - 1 else last_mask_frame
 
+                # A mask that collapses to a few stray pixels (e.g. SAM2 lost the
+                # person) yields a tiny bbox. OpenCV cannot open a writer below 2 px
+                # and writes no file, and pose estimation on such a crop is
+                # meaningless anyway. Skip it: these frames get no pose (None),
+                # which every downstream stage handles.
+                if width < MIN_SUBVIDEO_SIDE_PX or height < MIN_SUBVIDEO_SIDE_PX:
+                    print(f"[sub_videos] skipping object {obj_id} frames {start_frame}-{end_frame}: "
+                          f"crop {width}x{height}px is below {MIN_SUBVIDEO_SIDE_PX}px", flush=True)
+                    continue
+
                 os.makedirs(subvideo_output_dir, exist_ok=True)
                 output_filename = f"{subvideo_output_dir}/object_{obj_id}_frame_{start_frame}.mp4"
 
-                out = cv2.VideoWriter(output_filename, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+                out = cv2.VideoWriter(output_filename, cv2.VideoWriter_fourcc(*'mp4v'), fps, (int(width), int(height)))
+                if not out.isOpened():
+                    out.release()
+                    print(f"[sub_videos] skipping object {obj_id} frames {start_frame}-{end_frame}: "
+                          f"could not open video writer for {width}x{height}px crop", flush=True)
+                    continue
 
                 video_capture.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
                 clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
