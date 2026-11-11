@@ -117,12 +117,10 @@ const WorkersPage = () => {
 };
 
 // Helper function to format the last activity timestamp in a relative way
-const formatRelativeTime = (lastActivity: any) => {
-    const userTimezoneOffset = new Date().getTimezoneOffset() * 60 * 1000;
-    const activityTime = new Date(lastActivity);
-    const now = new Date();
-    // @ts-ignore
-    const diff = now - activityTime + userTimezoneOffset;
+// lastActivity is already parsed as UTC (parseUtcTimestamp), so no manual
+// timezone-offset correction is needed here.
+const formatRelativeTime = (lastActivity: Date) => {
+    const diff = new Date().getTime() - lastActivity.getTime();
 
     if (diff < 1000) {
         return 'Just now';
@@ -136,7 +134,7 @@ const formatRelativeTime = (lastActivity: any) => {
         const hours = Math.floor(diff / 3600000);
         return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
     } else {
-        return activityTime.toLocaleString();
+        return lastActivity.toLocaleString();
     }
 };
 
