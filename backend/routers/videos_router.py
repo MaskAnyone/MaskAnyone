@@ -1,5 +1,3 @@
-import csv
-import io
 import json
 import logging
 import os
@@ -7,6 +5,7 @@ import os
 import cv2
 from fastapi import APIRouter, Request, Response, HTTPException, Depends
 from fastapi.responses import FileResponse, StreamingResponse
+from starlette.background import BackgroundTask
 
 from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 from utils.path_validation import validate_resource_id
@@ -21,6 +20,11 @@ from utils.result_naming import (
     resolve_names_for_video,
     result_stem,
     video_stem,
+)
+from utils.result_archive import (
+    build_result_archive,
+    build_video_results_archive,
+    mp_kinematics_csv_chunks,
 )
 from models import (
     RunParams,
@@ -511,54 +515,14 @@ def download_mp_kinematics_csv(video_id: str, result_video_id: str, mp_kinematic
         result_mp_kinematics_manager.fetch_result_mp_kinematics_entry(mp_kinematics_id)
     )
 
-    json_data = result_mp_kinematics.data
-
-    max_poses = max((len(entry['data']['landmarks']) for entry in json_data if entry['data']['landmarks']), default=0)
-    max_landmarks_per_pose = max((max((len(pose) for pose in entry['data']['landmarks'])) for entry in json_data if entry['data']['landmarks']), default=0)
-    max_world_landmarks_per_pose = max((max((len(pose) for pose in entry['data']['world_landmarks'])) for entry in json_data if entry['data']['world_landmarks']), default=0)
-
-    logger.debug(f"CSV export: {max_poses} poses, {max_landmarks_per_pose} landmarks, {max_world_landmarks_per_pose} world landmarks")
-
-    columns = ['timestamp']
-    for pose in range(max_poses):
-        for lm in range(max_landmarks_per_pose):
-            columns += [f'pose_{pose}_landmark_{lm}_x', f'pose_{pose}_landmark_{lm}_y', f'pose_{pose}_landmark_{lm}_z', f'pose_{pose}_landmark_{lm}_visibility', f'pose_{pose}_landmark_{lm}_presence']
-        for wlm in range(max_world_landmarks_per_pose):
-            columns += [f'pose_{pose}_world_landmark_{wlm}_x', f'pose_{pose}_world_landmark_{wlm}_y', f'pose_{pose}_world_landmark_{wlm}_z', f'pose_{pose}_world_landmark_{wlm}_visibility', f'pose_{pose}_world_landmark_{wlm}_presence']
-
-    def iterfile():
-        buffer = io.StringIO()
-        writer = csv.writer(buffer)
-        writer.writerow(columns)
-        buffer.seek(0)
-        yield buffer.getvalue()
-        buffer.truncate(0)
-        buffer.seek(0)
-
-        for entry in json_data:
-            row = [entry['timestamp']]
-            for pose in entry['data']['landmarks']:
-                for lm in pose:
-                    row += [lm.get('x', ''), lm.get('y', ''), lm.get('z', ''), lm.get('visibility', ''), lm.get('presence', '')]
-                row += [''] * (max_landmarks_per_pose - len(pose)) * 5
-            row += [''] * ((max_poses - len(entry['data']['landmarks'])) * max_landmarks_per_pose * 5)
-
-            for pose in entry['data']['world_landmarks']:
-                for wlm in pose:
-                    row += [wlm.get('x', ''), wlm.get('y', ''), wlm.get('z', ''), wlm.get('visibility', ''), wlm.get('presence', '')]
-                row += [''] * (max_world_landmarks_per_pose - len(pose)) * 5
-            row += [''] * ((max_poses - len(entry['data']['world_landmarks'])) * max_world_landmarks_per_pose * 5)
-
-            writer.writerow(row)
-            buffer.seek(0)
-            yield buffer.getvalue()
-            buffer.truncate(0)
-            buffer.seek(0)
-
     stem = _result_file_stem(video_id, result_video_id)
     file_name = f"{stem}_kinematics-{result_mp_kinematics.type}.csv"
 
-    return StreamingResponse(iterfile(), media_type="text/csv", headers={"Content-Disposition": content_disposition(file_name)})
+    return StreamingResponse(
+        mp_kinematics_csv_chunks(result_mp_kinematics.data),
+        media_type="text/csv",
+        headers={"Content-Disposition": content_disposition(file_name)},
+    )
 
 
 @router.get("/{video_id}/results/{result_video_id}/blendshapes/{blendshapes_id}/download")
@@ -618,3 +582,54 @@ def download_extra_file(video_id: str, result_video_id: str, extra_file_id: str,
 
     return response
 
+
+@router.get("/{video_id}/results/{result_video_id}/download/zip")
+def download_result_archive(video_id: str, result_video_id: str, token_payload: dict = Depends(JWTBearer())):
+    """One result as a zip: masked video, data files, masking config, README."""
+    validate_resource_id(video_id)
+    validate_resource_id(result_video_id)
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+
+    _result_file_stem(video_id, result_video_id)  # 404 if not on this video
+    archive_path, file_name = build_result_archive(video_id, result_video_id, _archive_sources())
+    return _archive_response(archive_path, file_name)
+
+
+@router.get("/{video_id}/results-zip")
+def download_video_results_archive(video_id: str, token_payload: dict = Depends(JWTBearer())):
+    """All results of a video as one zip, one folder per result."""
+    validate_resource_id(video_id)
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+
+    archive_path, file_name = build_video_results_archive(video_id, _archive_sources())
+    return _archive_response(archive_path, file_name)
+
+
+def _archive_sources() -> dict:
+    return {
+        "video_manager": video_manager,
+        "result_video_manager": result_video_manager,
+        "job_manager": job_manager,
+        "result_mp_kinematics_manager": result_mp_kinematics_manager,
+        "result_blendshapes_manager": result_blendshapes_manager,
+        "result_audio_files_manager": result_audio_files_manager,
+        "result_extra_files_manager": result_extra_files_manager,
+    }
+
+
+def _archive_response(archive_path: str, file_name: str) -> FileResponse:
+    return FileResponse(
+        path=archive_path,
+        filename=file_name,
+        media_type="application/zip",
+        background=BackgroundTask(_remove_file, archive_path),
+    )
+
+
+def _remove_file(path: str) -> None:
+    try:
+        os.remove(path)
+    except OSError as e:
+        logger.warning(f"Could not remove temporary archive {path}: {e}")

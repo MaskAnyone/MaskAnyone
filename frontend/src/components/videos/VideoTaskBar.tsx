@@ -116,6 +116,7 @@ const VideoTaskBar = (props: VideoTaskBarProps) => {
                 <DownloadMenu
                     videoId={props.videoId}
                     resultVideoId={props.resultVideoId}
+                    hasResults={resultVideos.length > 0}
                     anchorEl={downloadAnchorEl}
                     onClose={() => setDownloadAnchorEl(null)}
                 />
