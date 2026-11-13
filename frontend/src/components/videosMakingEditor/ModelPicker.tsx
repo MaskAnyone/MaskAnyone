@@ -11,6 +11,8 @@ interface ModelOption {
 
 interface ModelGroup {
     label: string;
+    // Shown before the option label on the closed picker, e.g. "RTMPose M".
+    family?: string;
     options: ModelOption[];
 }
 
@@ -23,6 +25,7 @@ const MODEL_GROUPS: ModelGroup[] = [
     },
     {
         label: 'Human — RTMPose',
+        family: 'RTMPose',
         options: [
             { value: 'rtmpose_s', label: 'S', hint: 'Fastest, least accurate. Good for quick previews.' },
             { value: 'rtmpose_m', label: 'M', hint: 'Balanced speed and accuracy. Recommended default for humans.' },
@@ -30,17 +33,8 @@ const MODEL_GROUPS: ModelGroup[] = [
         ],
     },
     {
-        label: 'Animal — in development',
-        options: [
-            { value: 'rtmpose_ap10k', label: 'AP-10K', hint: 'In development — not yet tested or tuned. HRNet-W32 on AP-10K (54 species).', disabled: true },
-            { value: 'rtmpose_ap10k_w48', label: 'AP-10K W48', hint: 'In development — not yet tested or tuned. Larger HRNet-W48 backbone.', disabled: true },
-            { value: 'rtmpose_ap10k_rtm', label: 'AP-10K RTMPose ★', hint: 'In development — not yet tested or tuned. RTMPose backbone on AP-10K.', disabled: true },
-            { value: 'rtmpose_animalpose', label: 'AnimalPose', hint: 'In development — not yet tested or tuned. Trained on cat/dog/horse/sheep/cow.', disabled: true },
-            { value: 'rtmpose_ak_mammal', label: 'Animal Kingdom (mammal)', hint: 'In development — not yet tested or tuned. Mammal-specific Animal Kingdom model.', disabled: true },
-        ],
-    },
-    {
         label: 'Human — MediaPipe',
+        family: 'MediaPipe',
         options: [
             { value: 'mp_pose', label: 'Pose', hint: 'Full-body pose. Fast, CPU-friendly, good for single person.' },
             { value: 'mp_face', label: 'Face', hint: 'Face mesh — 468 facial landmarks.' },
@@ -49,6 +43,7 @@ const MODEL_GROUPS: ModelGroup[] = [
     },
     {
         label: 'Human — OpenPose',
+        family: 'OpenPose',
         options: [
             { value: 'openpose', label: 'Body', hint: 'Classic BODY_25 keypoints. Good multi-person support.' },
             { value: 'openpose_body25b', label: 'BODY_25B', hint: 'Improved 25-keypoint model with better foot detection.' },
@@ -58,7 +53,14 @@ const MODEL_GROUPS: ModelGroup[] = [
     },
 ];
 
-const ALL_OPTIONS = MODEL_GROUPS.flatMap(g => g.options);
+// Animal models (AP-10K, AnimalPose, Animal Kingdom) were removed from the
+// picker: they did not work well enough. The worker still maps their
+// rtmpose_* values, so they can be re-added here once they are usable.
+
+const ALL_OPTIONS = MODEL_GROUPS.flatMap(g => g.options.map(o => ({
+    ...o,
+    buttonLabel: g.family ? `${g.family} ${o.label}` : o.label,
+})));
 
 interface ModelPickerProps {
     value: string;
@@ -79,7 +81,7 @@ const ModelPicker = ({ value, onChange }: ModelPickerProps) => {
                 onClick={e => setAnchor(e.currentTarget)}
                 sx={{ textTransform: 'none', minWidth: 130, justifyContent: 'space-between' }}
             >
-                {selected.label}
+                {selected.buttonLabel}
             </Button>
 
             <Popover
