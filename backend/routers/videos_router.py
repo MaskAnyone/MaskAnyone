@@ -15,6 +15,7 @@ from utils.preview_image_utils import aspect_preserving_resize_and_crop
 from utils.video_utils import extract_video_info_from_capture
 from utils.ffmpeg_converter import FFmpegConverter
 from utils.video_compatibility_checker import VideoCompatibilityChecker
+from utils.result_naming import resolve_names_for_video
 from models import (
     RunParams,
     RequestVideoUploadParams,
@@ -30,6 +31,7 @@ from db.result_mp_kinematics_manager import ResultMpKinematicsManager
 from db.result_blendshapes_manager import ResultBlendshapesManager
 from db.result_audio_files_manager import ResultAudioFilesManager
 from db.result_extra_files_manager import ResultExtraFilesManager
+from db.job_manager import JobManager
 from db.db_connection import DBConnection
 from auth.jwt_bearer import JWTBearer
 
@@ -42,6 +44,7 @@ result_mp_kinematics_manager = ResultMpKinematicsManager(db_connection)
 result_blendshapes_manager = ResultBlendshapesManager(db_connection)
 result_audio_files_manager = ResultAudioFilesManager(db_connection)
 result_extra_files_manager = ResultExtraFilesManager(db_connection)
+job_manager = JobManager(db_connection)
 ffmpeg_converter = FFmpegConverter()
 
 router = APIRouter(
@@ -328,6 +331,9 @@ def get_results_for_video(video_id: str, token_payload: dict = Depends(JWTBearer
     video_manager.assert_user_has_video(video_id, user_id)
 
     result_videos = result_video_manager.fetch_result_videos(video_id)
+    names = resolve_names_for_video(video_id, result_video_manager, job_manager)
+    for result_video in result_videos:
+        result_video.name = names.get(str(result_video.id), result_video.name)
 
     return {"result_videos": result_videos}
 

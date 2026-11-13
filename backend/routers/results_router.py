@@ -16,6 +16,9 @@ from auth.jwt_bearer import JWTBearer
 from config import RESULT_BASE_PATH
 from models import RenameVideoParams
 from utils.path_validation import validate_resource_id
+from utils.result_naming import resolve_names_for_video
+
+MAX_RESULT_NAME_LENGTH = 120
 
 logger = logging.getLogger(__name__)
 
@@ -39,11 +42,21 @@ def rename_result(result_video_id: str, params: RenameVideoParams, token_payload
     result_video = result_video_manager.get_result_video(result_video_id)
     video_manager.assert_user_has_video(result_video.video_id, user_id)
 
-    if result_video_manager.has_result_video_with_name(result_video.video_id, params.name):
+    new_name = " ".join(params.name.split())
+    if not new_name:
+        raise HTTPException(status_code=400, detail="Name must not be empty")
+    if len(new_name) > MAX_RESULT_NAME_LENGTH:
+        raise HTTPException(status_code=400, detail=f"Name must be at most {MAX_RESULT_NAME_LENGTH} characters")
+
+    # Compare against resolved names so legacy "Result" rows count with the
+    # generated name they are shown under.
+    names = resolve_names_for_video(str(result_video.video_id), result_video_manager, job_manager)
+    names.pop(str(result_video_id), None)
+    if new_name in names.values():
         raise HTTPException(status_code=409, detail="A result with this name already exists")
 
-    result_video_manager.rename_result_video(result_video_id, params.name)
-    return {"status": "ok"}
+    result_video_manager.rename_result_video(result_video_id, new_name)
+    return {"status": "ok", "name": new_name}
 
 
 @router.post("/{result_video_id}/delete")

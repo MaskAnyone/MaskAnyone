@@ -56,4 +56,6 @@ export type RunParams = {
     voiceMasking: {
         strategy: string;
     }
+    // Result this run refines; the backend names the new result after it.
+    refinedFrom?: string;
 };

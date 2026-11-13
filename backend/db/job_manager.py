@@ -210,6 +210,18 @@ class JobManager:
 
         return Job(*job_data_list[0])
 
+    def fetch_jobs_by_ids(self, job_ids: list[str]) -> dict[str, Job]:
+        if not job_ids:
+            return {}
+
+        job_data_list = self.__db_connection.select_all(
+            "SELECT * FROM jobs WHERE id::text = ANY(%(ids)s)",
+            {"ids": [str(job_id) for job_id in job_ids]},
+        )
+
+        jobs = [Job(*job_data) for job_data in job_data_list]
+        return {str(job.id): job for job in jobs}
+
     def delete_job(self, job_id: str) -> None:
         self.__db_connection.execute(
             "DELETE FROM jobs WHERE id=%(id)s",

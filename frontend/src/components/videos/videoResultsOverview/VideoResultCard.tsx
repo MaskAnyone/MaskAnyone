@@ -89,9 +89,26 @@ const VideoResultCard = (props: VideoResultCardProps) => {
                 )}
             </CardMedia>
             <CardContent sx={{ position: 'relative' }}>
-                <Typography gutterBottom variant="h6" component="div">
-                    {name}
-                </Typography>
+                <Tooltip title={name} placement="top" enterDelay={500}>
+                    <Typography
+                        gutterBottom
+                        variant="subtitle1"
+                        component="div"
+                        sx={{
+                            pr: 3,
+                            fontWeight: 500,
+                            lineHeight: 1.3,
+                            whiteSpace: 'normal',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            minHeight: '2.6em',
+                        }}
+                    >
+                        {name}
+                    </Typography>
+                </Tooltip>
                 <Typography variant="body2" color="text.secondary">
                     {props.resultVideo.createdAt.toLocaleString()}
                 </Typography>

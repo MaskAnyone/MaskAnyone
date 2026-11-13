@@ -69,6 +69,11 @@ const VideoMaskingEditorPage = () => {
             setOverlayStrategories((resultVideoJob.data as any)['videoMasking']['overlayStrategies']);
             setHidingStrategies((resultVideoJob.data as any)['videoMasking']['hidingStrategies'] || []);
             setMotionTraces(Boolean((resultVideoJob.data as any)['videoMasking']['motionTraces']));
+            // Restore the model and chunking settings too, so a refine runs
+            // with the same settings as the result it starts from.
+            setSamModel((resultVideoJob.data as any)['videoMasking']['samModel'] || 'sam2.1_hiera_small');
+            setChunkSizeSeconds((resultVideoJob.data as any)['videoMasking']['chunkSizeSeconds'] ?? null);
+            setChunkOverlapSeconds((resultVideoJob.data as any)['videoMasking']['chunkOverlapSeconds'] ?? 2);
         } else {
             Api.fetchPosePrompt(videoId, currentFrame).then(posePrompts => {
                 setPosePrompts(posePrompts);
@@ -274,6 +279,8 @@ const VideoMaskingEditorPage = () => {
                 voiceMasking: {
                     strategy: 'remove',
                 },
+                // Refines are named "<source name> · v2", "· v3", ... by the backend.
+                ...(resultVideoId ? { refinedFrom: resultVideoId } : {}),
             },
         }));
     };

@@ -20,6 +20,7 @@ from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 from utils.path_validation import validate_resource_id
 from utils.request_utils import range_requests_response
 from utils.video_utils import extract_video_info_from_capture
+from utils.result_naming import new_result_name, resolve_names_for_video
 
 logger = logging.getLogger(__name__)
 
@@ -139,8 +140,12 @@ async def upload_result_video(
     video_info = extract_video_info_from_capture(video_path, capture)
     capture.release()
 
+    existing_names = resolve_names_for_video(video_id, result_video_manager, job_manager)
+    existing_names.pop(result_video_id, None)
+    name = new_result_name(job.type, job.data, existing_names)
+
     result_video_manager.create_result_video(
-        result_video_id, video_id, job.id, "Result", video_info
+        result_video_id, video_id, job.id, name, video_info
     )
 
 

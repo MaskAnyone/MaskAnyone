@@ -10,6 +10,8 @@ import CreatePresetDialog from "../presets/CreatePresetDialog";
 import Command from "../../state/actions/command";
 import ResultRunParamsDialog from "./videoResultsOverview/ResultRunParamsDialog";
 import DeleteResultVideoDialog from "./videoResultsOverview/DeleteResultVideoDialog";
+import RenameResultVideoDialog from "./videoResultsOverview/RenameResultVideoDialog";
+import Api from "../../api";
 
 interface VideoResultsProps {
     videoId: string;
@@ -26,6 +28,7 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
     const [activeResultVideoId, setActiveResultVideoId] = useState<string>();
     const [createResultRunParamsDialogOpen, setCreateResultRunParamsDialogOpen] = useState<boolean>(false);
     const [deleteResultVideoDialogOpen, setDeleteResultVideoDialogOpen] = useState<boolean>(false);
+    const [renameResultVideoDialogOpen, setRenameResultVideoDialogOpen] = useState<boolean>(false);
 
     const resultVideos = resultVideoLists[props.videoId] || [];
 
@@ -46,6 +49,24 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
     const openDeleteResultVideoDialog = () => {
         setVideoResultAnchorEl(null);
         setDeleteResultVideoDialogOpen(true);
+    };
+
+    const openRenameResultVideoDialog = () => {
+        setVideoResultAnchorEl(null);
+        setRenameResultVideoDialogOpen(true);
+    };
+
+    const renameResultVideo = async (newName: string) => {
+        if (!activeResultVideoId) {
+            return;
+        }
+        try {
+            await Api.renameResultVideo(activeResultVideoId, newName);
+        } catch (e: any) {
+            throw new Error(e?.response?.data?.detail || 'Could not rename the result.');
+        }
+        setRenameResultVideoDialogOpen(false);
+        dispatch(Command.Video.fetchResultsList({ videoId: props.videoId }));
     };
 
     const createPreset = (name: string, description: string) => {
@@ -106,6 +127,7 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
                 anchorEl={videoResultAnchorEl}
                 onClose={() => setVideoResultAnchorEl(null)}
                 onShowRunParams={openShowRunParamsDialog}
+                onRename={openRenameResultVideoDialog}
                 onDelete={openDeleteResultVideoDialog}
             />
 
@@ -118,6 +140,12 @@ const VideoResultsOverview = (props: VideoResultsProps) => {
                 result={resultVideos.find(resultVideo => resultVideo.videoResultId === activeResultVideoId)}
                 open={createResultRunParamsDialogOpen}
                 onClose={() => setCreateResultRunParamsDialogOpen(false)}
+            />
+            <RenameResultVideoDialog
+                open={renameResultVideoDialogOpen}
+                currentName={resultVideos.find(resultVideo => resultVideo.videoResultId === activeResultVideoId)?.name || ''}
+                onCancel={() => setRenameResultVideoDialogOpen(false)}
+                onConfirm={renameResultVideo}
             />
             <DeleteResultVideoDialog
                 open={Boolean(deleteResultVideoDialogOpen)}
