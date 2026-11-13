@@ -18,6 +18,17 @@ class VideoManager:
 
         return [Video(*video_data) for video_data in video_data_list]
 
+    def get_video(self, video_id: str) -> Video:
+        video_data_list = self.__db_connection.select_all(
+            "SELECT * FROM videos WHERE id=%(id)s",
+            {"id": video_id},
+        )
+
+        if len(video_data_list) < 1:
+            raise HTTPException(status_code=404, detail=f"Video {video_id} not found")
+
+        return Video(*video_data_list[0])
+
     def has_video_with_name(self, video_name: str, user_id: str) -> bool:
         result = self.__db_connection.select_all(
             "SELECT id FROM videos WHERE name=%(name)s AND user_id=%(user_id)s",

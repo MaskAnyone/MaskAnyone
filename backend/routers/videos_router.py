@@ -15,7 +15,13 @@ from utils.preview_image_utils import aspect_preserving_resize_and_crop
 from utils.video_utils import extract_video_info_from_capture
 from utils.ffmpeg_converter import FFmpegConverter
 from utils.video_compatibility_checker import VideoCompatibilityChecker
-from utils.result_naming import resolve_names_for_video
+from utils.result_naming import (
+    content_disposition,
+    extra_file_name,
+    resolve_names_for_video,
+    result_stem,
+    video_stem,
+)
 from models import (
     RunParams,
     RequestVideoUploadParams,
@@ -81,7 +87,8 @@ def download_video(video_id: str, token_payload: dict = Depends(JWTBearer())):
     video_manager.assert_user_has_video(video_id, user_id)
 
     video_path = os.path.join(VIDEOS_BASE_PATH, f"{video_id}.mp4")
-    return FileResponse(path=video_path, filename=f"{video_id}.mp4", media_type="video/mp4")
+    video = video_manager.get_video(video_id)
+    return FileResponse(path=video_path, filename=f"{video_stem(video.name)}.mp4", media_type="video/mp4")
 
 
 @router.get("/{video_id}/preview")
@@ -338,6 +345,15 @@ def get_results_for_video(video_id: str, token_payload: dict = Depends(JWTBearer
     return {"result_videos": result_videos}
 
 
+def _result_file_stem(video_id: str, result_video_id: str) -> str:
+    """Download file stem for a result; 404 if the result is not on this video."""
+    names = resolve_names_for_video(video_id, result_video_manager, job_manager)
+    if result_video_id not in names:
+        raise HTTPException(status_code=404, detail="Result not found for this video")
+    video = video_manager.get_video(video_id)
+    return result_stem(video.name, names[result_video_id])
+
+
 @router.get("/{video_id}/results/{result_video_id}")
 def get_result_video_stream(video_id: str, result_video_id: str, request: Request, token_payload: dict = Depends(JWTBearer())):
     validate_resource_id(video_id)
@@ -367,7 +383,8 @@ def download_result_video(video_id: str, result_video_id: str, token_payload: di
     if not os.path.exists(video_path):
         raise HTTPException(status_code=404, detail="Requested result video not found.")
 
-    return FileResponse(path=video_path, filename=f"{result_video_id}.mp4", media_type="video/mp4")
+    stem = _result_file_stem(video_id, result_video_id)
+    return FileResponse(path=video_path, filename=f"{stem}.mp4", media_type="video/mp4")
 
 
 @router.get("/{video_id}/results/{result_video_id}/preview")
@@ -472,11 +489,11 @@ def download_mp_kinematics_json(video_id: str, result_video_id: str, mp_kinemati
     user_id = token_payload["sub"]
     video_manager.assert_user_has_video(video_id, user_id)
 
-    file_name = f"{result_video_id}_mp-kinematics.json"
-
     result_mp_kinematics = (
         result_mp_kinematics_manager.fetch_result_mp_kinematics_entry(mp_kinematics_id)
     )
+    stem = _result_file_stem(video_id, result_video_id)
+    file_name = f"{stem}_kinematics-{result_mp_kinematics.type}.json"
 
     response.headers["Content-Disposition"] = f'attachment; filename="{file_name}"'
     return result_mp_kinematics.data
@@ -538,7 +555,10 @@ def download_mp_kinematics_csv(video_id: str, result_video_id: str, mp_kinematic
             buffer.truncate(0)
             buffer.seek(0)
 
-    return StreamingResponse(iterfile(), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=kinematics_data.csv"})
+    stem = _result_file_stem(video_id, result_video_id)
+    file_name = f"{stem}_kinematics-{result_mp_kinematics.type}.csv"
+
+    return StreamingResponse(iterfile(), media_type="text/csv", headers={"Content-Disposition": content_disposition(file_name)})
 
 
 @router.get("/{video_id}/results/{result_video_id}/blendshapes/{blendshapes_id}/download")
@@ -549,7 +569,7 @@ def download_blendshapes(video_id: str, result_video_id: str, blendshapes_id: st
     user_id = token_payload["sub"]
     video_manager.assert_user_has_video(video_id, user_id)
 
-    file_name = f"{result_video_id}_blendshapes.json"
+    file_name = f"{_result_file_stem(video_id, result_video_id)}_blendshapes.json"
 
     result_blendshapes = result_blendshapes_manager.fetch_result_blendshapes_entry(
         blendshapes_id
@@ -567,7 +587,7 @@ def download_audio_file(video_id: str, result_video_id: str, audio_file_id: str,
     user_id = token_payload["sub"]
     video_manager.assert_user_has_video(video_id, user_id)
 
-    file_name = f"{result_video_id}_masked_voice.mp3"
+    file_name = f"{_result_file_stem(video_id, result_video_id)}_voice.mp3"
 
     result_audio_file = result_audio_files_manager.fetch_result_audio_files_entry(
         audio_file_id
@@ -591,9 +611,10 @@ def download_extra_file(video_id: str, result_video_id: str, extra_file_id: str,
         extra_file_id
     )
 
-    file_name = f"{result_video_id}_extrafile.{result_extra_file.ending}"
+    file_name = extra_file_name(_result_file_stem(video_id, result_video_id), result_extra_file.ending)
 
     response = Response(content=bytes(result_extra_file.data))
     response.headers["Content-Disposition"] = f'attachment; filename="{file_name}"'
 
     return response
+
