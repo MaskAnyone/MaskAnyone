@@ -18,7 +18,7 @@ from db.result_extra_files_manager import ResultExtraFilesManager
 from db.db_connection import DBConnection
 from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 from utils.path_validation import validate_resource_id
-from utils.request_utils import range_requests_response
+from utils.request_utils import range_requests_response, stream_request_to_file
 from utils.video_utils import extract_video_info_from_capture
 from utils.result_naming import new_result_name, resolve_names_for_video
 
@@ -130,9 +130,7 @@ async def upload_result_video(
 
     video_path = os.path.join(result_dir, f"{result_video_id}.mp4")
 
-    video_content = await request.body()
-    with open(video_path, "wb") as f:
-        f.write(video_content)
+    await stream_request_to_file(request, video_path)
 
     job = job_manager.fetch_job_by_result_video_id(result_video_id)
 

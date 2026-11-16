@@ -71,3 +71,34 @@ def range_requests_response(request: Request, file_path: str, content_type: str)
         headers=headers,
         status_code=status_code,
     )
+
+
+async def stream_request_to_file(
+    request: Request, file_path: str, max_bytes: int | None = None
+) -> int:
+    """Stream a raw request body to disk chunk by chunk instead of buffering it in RAM.
+
+    Writes to a temporary ``.part`` file and only moves it into place once the whole
+    body arrived, so a dropped connection or oversized upload never leaves a truncated
+    file behind. Raises 413 if ``max_bytes`` is exceeded. Returns the bytes written.
+    """
+    temp_path = f"{file_path}.part"
+    written = 0
+
+    try:
+        with open(temp_path, "wb") as f:
+            async for chunk in request.stream():
+                written += len(chunk)
+                if max_bytes is not None and written > max_bytes:
+                    raise HTTPException(
+                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                        detail=f"Upload exceeds the maximum size of {max_bytes} bytes",
+                    )
+                f.write(chunk)
+        os.replace(temp_path, file_path)
+    except BaseException:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        raise
+
+    return written
