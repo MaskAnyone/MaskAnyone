@@ -60,7 +60,7 @@ const UploadDropzone = (props: UploadDropzoneProps) => {
         <Dropzone
             onDropAccepted={props.onSelectFiles}
             onDropRejected={props.onRejectFiles}
-            maxSize={Config.upload.maxSize} accept={Config.upload.accept}
+            accept={Config.upload.accept}
         >
             {({getRootProps, getInputProps}) => (
                 <Paper variant={'outlined'} square={true} sx={styles.dropzoneRoot}>
@@ -73,7 +73,7 @@ const UploadDropzone = (props: UploadDropzoneProps) => {
                                     Drag files here, or click to select files
                                 </Typography>
                                 <Typography variant={'body2'} color={'text.secondary'} sx={styles.dropzoneHint}>
-                                    Only MP4 videos are supported right now. Maximum size: {formatFileSize(Config.upload.maxSize)} per file.
+                                    Only MP4 videos are supported right now.
                                 </Typography>
                             </Box>
                         )}

@@ -137,13 +137,14 @@ const Api = {
             method: 'post',
         });
     },
-    requestVideoUpload: async (videoId: string, videoName: string): Promise<void> => {
+    requestVideoUpload: async (videoId: string, videoName: string, fileSize: number): Promise<void> => {
         await sendApiRequest({
             url: 'videos/upload/request',
             method: 'post',
             data: {
                 video_id: videoId,
                 video_name: videoName,
+                file_size: fileSize,
             },
         });
     },

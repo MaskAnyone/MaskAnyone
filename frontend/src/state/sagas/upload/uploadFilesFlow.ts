@@ -7,7 +7,6 @@ import Config from "../../../config";
 import {UploadVideosPayload} from "../../actions/uploadCommand";
 import Api from "../../../api";
 import axios from "axios";
-import {formatFileSize} from "../../../util/formatFileSize";
 
 interface FileUpload {
     file: File;
@@ -35,12 +34,14 @@ const formatVideoName = (fileName: string): string => {
 
 const describeUploadError = (error: unknown): string => {
     if (axios.isAxiosError(error)) {
-        if (error.response?.status === 413) {
-            return `the server rejected the file as too large (limit ${formatFileSize(Config.upload.maxSize)}).`;
-        }
+        // The backend's message is user-facing (e.g. it states the upload size limit).
         const detail = (error.response?.data as { detail?: unknown } | undefined)?.detail;
         if (typeof detail === 'string') {
             return detail;
+        }
+        if (error.response?.status === 413) {
+            // Rejected by nginx before reaching the backend, so there is no detail.
+            return 'the file is too large for the server.';
         }
         if (!error.response) {
             return 'the connection to the server was lost.';
@@ -54,7 +55,7 @@ const onUploadVideo = function*(file: FileUpload) {
     let pendingVideoCreated = false;
 
     try {
-        yield call(Api.requestVideoUpload, file.id, formatVideoName(file.file.name));
+        yield call(Api.requestVideoUpload, file.id, formatVideoName(file.file.name), file.file.size);
         pendingVideoCreated = true;
 
         // Pass the File directly — axios streams it from disk, fires upload progress
