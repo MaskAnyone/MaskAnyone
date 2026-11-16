@@ -1,4 +1,4 @@
-import Dropzone from 'react-dropzone';
+import Dropzone, {FileRejection} from 'react-dropzone';
 import {Box, IconButton, List, ListItem, ListItemText, Paper, Typography} from '@mui/material';
 import UploadProgress from './UploadProgress';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -31,6 +31,10 @@ const styles = {
         paddingTop: '24px',
         textAlign: 'center',
     },
+    dropzoneHint: {
+        paddingTop: 1,
+        textAlign: 'center',
+    },
     stagedFilesListItemText: {
         paddingLeft: 2,
     },
@@ -40,6 +44,7 @@ interface UploadDropzoneProps {
     stagedFiles: Array<{file: File, id: string}>;
     uploadRunning: boolean;
     onSelectFiles: (files: File[]) => void;
+    onRejectFiles: (rejections: FileRejection[]) => void;
     onCancelFile: (fileId: string) => void;
 }
 
@@ -52,7 +57,11 @@ const UploadDropzone = (props: UploadDropzoneProps) => {
     };
 
     return (
-        <Dropzone onDrop={props.onSelectFiles} maxSize={Config.upload.maxSize} accept={Config.upload.accept}>
+        <Dropzone
+            onDropAccepted={props.onSelectFiles}
+            onDropRejected={props.onRejectFiles}
+            maxSize={Config.upload.maxSize} accept={Config.upload.accept}
+        >
             {({getRootProps, getInputProps}) => (
                 <Paper variant={'outlined'} square={true} sx={styles.dropzoneRoot}>
                     <div {...getRootProps()} style={styles.dropzoneWrapper}>
@@ -62,6 +71,9 @@ const UploadDropzone = (props: UploadDropzoneProps) => {
                                 <img src={Assets.illustrations.upload} alt={'Upload'} width={220} />
                                 <Typography sx={styles.dropzoneInfo}>
                                     Drag files here, or click to select files
+                                </Typography>
+                                <Typography variant={'body2'} color={'text.secondary'} sx={styles.dropzoneHint}>
+                                    Only MP4 videos are supported right now. Maximum size: {formatFileSize(Config.upload.maxSize)} per file.
                                 </Typography>
                             </Box>
                         )}

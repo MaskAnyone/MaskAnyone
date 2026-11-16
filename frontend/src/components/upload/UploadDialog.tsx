@@ -9,6 +9,9 @@ import Selector from "../../state/selector";
 import LoaderButton from "./LoaderButton";
 import {usePrevious} from "../../util/usePrevious";
 import Command from "../../state/actions/command";
+import {ErrorCode, FileRejection} from 'react-dropzone';
+import Config from "../../config";
+import {formatFileSize} from "../../util/formatFileSize";
 
 const styles = {
     tagBarWrapper: {
@@ -43,6 +46,29 @@ const UploadDialog = (props: UploadDialogProps) => {
             ...stagedFiles,
             ...validNewFiles.map(file => ({ file, id: uuidv4() })),
         ]);
+    };
+
+    const describeRejection = (rejection: FileRejection): string => {
+        const {file, errors} = rejection;
+        const codes = errors.map(error => error.code);
+
+        if (codes.includes(ErrorCode.FileInvalidType)) {
+            return `"${file.name}" is not an MP4 file. Only MP4 videos are supported right now.`;
+        }
+        if (codes.includes(ErrorCode.FileTooLarge)) {
+            return `"${file.name}" is ${formatFileSize(file.size)}, which is over the `
+                + `${formatFileSize(Config.upload.maxSize)} limit.`;
+        }
+        return `"${file.name}" cannot be uploaded: ${errors.map(error => error.message).join(', ')}`;
+    };
+
+    const handleRejectedFiles = (rejections: FileRejection[]): void => {
+        for (const rejection of rejections) {
+            dispatch(Command.Notification.enqueueNotification({
+                severity: 'error',
+                message: describeRejection(rejection),
+            }));
+        }
     };
 
     const cancelStagedFile = (fileId: string): void => {
@@ -95,6 +121,7 @@ const UploadDialog = (props: UploadDialogProps) => {
                     stagedFiles={stagedFiles}
                     uploadRunning={uploadRunning}
                     onSelectFiles={handleSelectedFiles}
+                    onRejectFiles={handleRejectedFiles}
                     onCancelFile={cancelStagedFile}
                 />
             </DialogContent>
