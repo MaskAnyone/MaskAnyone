@@ -2,7 +2,7 @@ import {Action, handleActions} from 'redux-actions';
 import Event from "../actions/event";
 import {
     UploadDialogClosedPayload,
-    UploadDialogOpenedPayload, VideoUploadFinishedPayload,
+    UploadDialogOpenedPayload, VideoUploadFailedPayload, VideoUploadFinishedPayload,
     VideoUploadProgressChangedPayload,
     VideoUploadStartedPayload
 } from "../actions/uploadEvent";
@@ -51,6 +51,14 @@ export const uploadReducer = handleActions<UploadState, any>(
             };
         },
         [Event.Upload.videoUploadFinished.toString()]: (state, action: Action<VideoUploadFinishedPayload>): UploadState => {
+            const { [action.payload.videoId]: _, ...newUploadProgress } = state.uploadProgress;
+
+            return {
+                ...state,
+                uploadProgress: newUploadProgress,
+            };
+        },
+        [Event.Upload.videoUploadFailed.toString()]: (state, action: Action<VideoUploadFailedPayload>): UploadState => {
             const { [action.payload.videoId]: _, ...newUploadProgress } = state.uploadProgress;
 
             return {

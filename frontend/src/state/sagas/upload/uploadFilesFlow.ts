@@ -6,6 +6,8 @@ import Event from "../../actions/event";
 import Config from "../../../config";
 import {UploadVideosPayload} from "../../actions/uploadCommand";
 import Api from "../../../api";
+import axios from "axios";
+import {formatFileSize} from "../../../util/formatFileSize";
 
 interface FileUpload {
     file: File;
@@ -31,22 +33,63 @@ const formatVideoName = (fileName: string): string => {
     return `${nameWithoutExt} - ${date} ${time}`;
 };
 
+const describeUploadError = (error: unknown): string => {
+    if (axios.isAxiosError(error)) {
+        if (error.response?.status === 413) {
+            return `the server rejected the file as too large (limit ${formatFileSize(Config.upload.maxSize)}).`;
+        }
+        const detail = (error.response?.data as { detail?: unknown } | undefined)?.detail;
+        if (typeof detail === 'string') {
+            return detail;
+        }
+        if (!error.response) {
+            return 'the connection to the server was lost.';
+        }
+        return `the server responded with status ${error.response.status}.`;
+    }
+    return error instanceof Error ? error.message : String(error);
+};
+
 const onUploadVideo = function*(file: FileUpload) {
-    yield call(Api.requestVideoUpload, file.id, formatVideoName(file.file.name));
+    let pendingVideoCreated = false;
 
-    // Pass the File directly — axios streams it from disk, fires upload progress
-    // events from byte 0, and avoids loading the whole file into the JS heap
-    // (which previously doubled browser RAM and silently blocked for ~5–15 s
-    // on multi-hundred-MB files).
-    yield call(Api.uploadVideo, file.id, file.file, percentage => {
-        uploadProgressChannel.put(
-            Event.Upload.videoUploadProgressChanged({ videoId: file.id, progress: percentage }),
-        );
-    });
+    try {
+        yield call(Api.requestVideoUpload, file.id, formatVideoName(file.file.name));
+        pendingVideoCreated = true;
 
-    yield call(Api.finalizeVideoUpload, file.id);
+        // Pass the File directly — axios streams it from disk, fires upload progress
+        // events from byte 0, and avoids loading the whole file into the JS heap
+        // (which previously doubled browser RAM and silently blocked for ~5–15 s
+        // on multi-hundred-MB files).
+        yield call(Api.uploadVideo, file.id, file.file, percentage => {
+            uploadProgressChannel.put(
+                Event.Upload.videoUploadProgressChanged({ videoId: file.id, progress: percentage }),
+            );
+        });
 
-    yield put(Event.Upload.videoUploadFinished({ videoId: file.id }));
+        yield call(Api.finalizeVideoUpload, file.id);
+
+        yield put(Event.Upload.videoUploadFinished({ videoId: file.id }));
+    } catch (error) {
+        const message = describeUploadError(error);
+        console.error(`Upload of "${file.file.name}" failed`, error);
+
+        // Remove the half-created video (DB row + partial file) so it doesn't linger as "pending".
+        if (pendingVideoCreated) {
+            try {
+                yield call(Api.deleteVideo, file.id);
+            } catch (cleanupError) {
+                console.error(`Cleanup of failed upload "${file.file.name}" failed`, cleanupError);
+            }
+        }
+
+        yield put(Event.Upload.videoUploadFailed({ videoId: file.id, error: message }));
+        yield put(Command.Notification.enqueueNotification({
+            severity: 'error',
+            message: `Upload of "${file.file.name}" failed: ${message}`,
+        }));
+    }
+
     yield put(Command.Video.fetchVideoList({}));
 };
 
