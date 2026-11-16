@@ -73,6 +73,23 @@ def range_requests_response(request: Request, file_path: str, content_type: str)
     )
 
 
+def format_file_size(num_bytes: int) -> str:
+    """Human-readable decimal size (matches the frontend's formatFileSize)."""
+    for factor, unit in ((1_000_000_000_000, "TB"), (1_000_000_000, "GB"), (1_000_000, "MB"), (1_000, "KB")):
+        if num_bytes >= factor:
+            return f"{num_bytes / factor:.1f} {unit}"
+    return f"{num_bytes} B"
+
+
+def upload_too_large(size: int | None, max_bytes: int) -> HTTPException:
+    """413 error whose message states the limit, shown to the user as-is by the frontend."""
+    size_part = f"the file is {format_file_size(size)}, which is" if size is not None else "the file is"
+    return HTTPException(
+        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+        detail=f"{size_part} over the upload limit of {format_file_size(max_bytes)}.",
+    )
+
+
 async def stream_request_to_file(
     request: Request, file_path: str, max_bytes: int | None = None
 ) -> int:
@@ -90,10 +107,7 @@ async def stream_request_to_file(
             async for chunk in request.stream():
                 written += len(chunk)
                 if max_bytes is not None and written > max_bytes:
-                    raise HTTPException(
-                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                        detail=f"Upload exceeds the maximum size of {max_bytes} bytes",
-                    )
+                    raise upload_too_large(None, max_bytes)
                 f.write(chunk)
         os.replace(temp_path, file_path)
     except BaseException:

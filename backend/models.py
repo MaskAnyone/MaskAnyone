@@ -30,6 +30,7 @@ class RunParams(BaseModel):
 class RequestVideoUploadParams(BaseModel):
     video_id: str
     video_name: str
+    file_size: int
 
 
 class FinalizeVideoUploadParams(BaseModel):

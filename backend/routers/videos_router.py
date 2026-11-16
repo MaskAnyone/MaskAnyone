@@ -7,9 +7,9 @@ from fastapi import APIRouter, Request, Response, HTTPException, Depends
 from fastapi.responses import FileResponse, StreamingResponse
 from starlette.background import BackgroundTask
 
-from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
+from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH, MAX_VIDEO_UPLOAD_BYTES
 from utils.path_validation import validate_resource_id
-from utils.request_utils import range_requests_response
+from utils.request_utils import range_requests_response, stream_request_to_file, upload_too_large
 from utils.preview_image_utils import aspect_preserving_resize_and_crop
 from utils.video_utils import extract_video_info_from_capture
 from utils.ffmpeg_converter import FFmpegConverter
@@ -147,6 +147,11 @@ def request_video_upload(params: RequestVideoUploadParams, token_payload: dict =
             status_code=400, detail="A video with this name exists already"
         )
 
+    # Pre-flight size check so oversized files are rejected before any bytes are sent.
+    # upload_video enforces the limit again while streaming, since the client could lie.
+    if params.file_size > MAX_VIDEO_UPLOAD_BYTES:
+        raise upload_too_large(params.file_size, MAX_VIDEO_UPLOAD_BYTES)
+
     video_manager.add_pending_video(params.video_id, params.video_name, user_id)
 
     return {}
@@ -197,9 +202,11 @@ async def upload_video(video_id: str, request: Request, token_payload: dict = De
 
     video_path = os.path.join(VIDEOS_BASE_PATH, f"{video_id}.mp4")
 
-    video_content = await request.body()
-    with open(video_path, "wb") as f:
-        f.write(video_content)
+    content_length = request.headers.get("content-length")
+    if content_length and content_length.isdigit() and int(content_length) > MAX_VIDEO_UPLOAD_BYTES:
+        raise upload_too_large(int(content_length), MAX_VIDEO_UPLOAD_BYTES)
+
+    await stream_request_to_file(request, video_path, max_bytes=MAX_VIDEO_UPLOAD_BYTES)
 
 
 @router.post("/{video_id}/delete")
