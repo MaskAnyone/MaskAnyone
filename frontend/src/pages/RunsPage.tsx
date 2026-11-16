@@ -15,7 +15,7 @@ import {Chip, IconButton, keyframes, LinearProgress, Link as MuiLink, Tooltip} f
 import {useDispatch, useSelector} from "react-redux";
 import Selector from "../state/selector";
 import {Job} from "../state/types/Job";
-import {Link} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import Paths from "../paths";
 import DeleteIcon from '@mui/icons-material/Delete';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -27,6 +27,7 @@ const statusColors: { [status: string]: "default"|"info"|"success"|"error"|"warn
     'running': 'info',
     'finished': 'success',
     'failed': 'error',
+    'cancelled': 'warning',
 };
 
 const jobTypeLabels: Record<string, string> = {
@@ -238,6 +239,9 @@ const JobDurationCell = ({ job, videoInfo }: { job: Job; videoInfo: VideoInfo | 
 
     return (
         <Box component="div" sx={{ width: 100 }}>
+            {elapsed === null && (
+                <Typography variant="body2" color="text.secondary">—</Typography>
+            )}
             {elapsed !== null && (
                 <Typography variant="body2" sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '0.8125rem', whiteSpace: 'nowrap' }}>
                     {formatDuration(elapsed)}
@@ -247,6 +251,11 @@ const JobDurationCell = ({ job, videoInfo }: { job: Job; videoInfo: VideoInfo | 
                 {remaining !== null && job.status === 'running' && (
                     <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
                         ~{formatDuration(remaining)} left
+                    </Typography>
+                )}
+                {(job.status === 'failed' || job.status === 'cancelled') && (
+                    <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                        {job.status === 'failed' ? 'Stopped (failed)' : 'Stopped (cancelled)'}
                     </Typography>
                 )}
                 {job.status === 'finished' && job.startedAt && job.finishedAt && (
@@ -314,6 +323,9 @@ const JobProgressCell = ({ job }: { job: Job }) => {
     }
 
     const phase = getProgressPhase(job.progress, job.status, job.phase);
+    // Failed and cancelled bars stay at the progress where the job stopped,
+    // drawn in red / grey so they don't read as a finished run.
+    const barColor = job.status === 'failed' ? 'error' : job.status === 'cancelled' ? 'inherit' : 'primary';
     const isSegmenting = job.status === 'running' && job.progress > 5 && job.progress <= 30;
 
     return (
@@ -322,8 +334,10 @@ const JobProgressCell = ({ job }: { job: Job }) => {
                 <LinearProgress
                     variant="determinate"
                     value={job.progress}
+                    color={barColor}
                     sx={{
                         flex: 1,
+                        ...(job.status === 'cancelled' ? { color: 'text.disabled' } : {}),
                         height: 6,
                         borderRadius: 3,
                         backgroundColor: 'action.hover',
@@ -359,7 +373,7 @@ const JobProgressCell = ({ job }: { job: Job }) => {
                         </Typography>
                     </Tooltip>
                 )}
-                {(job.status === 'finished' || job.status === 'failed') && (
+                {(job.status === 'finished' || job.status === 'failed' || job.status === 'cancelled') && (
                     <Typography variant="caption" sx={{ display: 'block', color: phase.color, fontFamily: '"IBM Plex Mono", monospace', fontSize: '0.6875rem' }}>
                         {phase.label}
                     </Typography>
@@ -371,6 +385,7 @@ const JobProgressCell = ({ job }: { job: Job }) => {
 
 const RunsPage = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const jobs = useSelector(Selector.Job.jobList);
   const videos = useSelector(Selector.Video.videoList);
   const [order, setOrder] = React.useState<Order>('desc');
@@ -404,12 +419,40 @@ const RunsPage = () => {
   const emptyRows =
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - jobs.length) : 0;
 
-  const visibleRows = React.useMemo(
-    () => [...jobs]
-        .sort(getComparator(order, orderBy) as unknown as (a: Job, b: Job) => number)
-        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
-    [order, orderBy, page, rowsPerPage, jobs],
+  const videoNameById = React.useMemo(
+    () => Object.fromEntries(videos.map(video => [video.id, video.name])),
+    [videos],
   );
+  const videoLabel = (job: Job) => videoNameById[job.videoId] ?? job.videoId.slice(0, 8);
+
+  const visibleRows = React.useMemo(() => {
+    // The Video column shows names, so sort by name rather than by id.
+    const compare = orderBy === 'videoId'
+      ? (a: Job, b: Job) => {
+          const result = videoLabel(a).localeCompare(videoLabel(b), undefined, { sensitivity: 'base', numeric: true });
+          return order === 'asc' ? result : -result;
+        }
+      : getComparator(order, orderBy) as unknown as (a: Job, b: Job) => number;
+    return [...jobs]
+      .sort(compare)
+      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order, orderBy, page, rowsPerPage, jobs, videoNameById]);
+
+  // 6. After deletions the current page can be past the end; step back.
+  React.useEffect(() => {
+    const lastPage = Math.max(0, Math.ceil(jobs.length / rowsPerPage) - 1);
+    if (page > lastPage) {
+      setPage(lastPage);
+    }
+  }, [jobs.length, rowsPerPage, page]);
+
+  // 4. Row click: a finished run opens its result, anything else the video.
+  const openRow = (job: Job) => {
+    navigate(job.status === 'finished' && job.resultVideoId
+      ? Paths.makeResultVideoDetailsUrl(job.videoId, job.resultVideoId)
+      : Paths.makeVideoDetailsUrl(job.videoId));
+  };
 
   return (
     <Box component="div" sx={{ width: '100%' }}>
@@ -442,13 +485,14 @@ const RunsPage = () => {
                     tabIndex={-1}
                     key={row.id}
                     sx={{ cursor: 'pointer' }}
+                    onClick={() => openRow(row)}
                   >
                     <TableCell>
                       <Chip label={row.status} color={statusColors[row.status]} size="small" />
                     </TableCell>
                     <TableCell>
-                      <MuiLink component={Link} to={Paths.makeVideoDetailsUrl(row.videoId)}>
-                        {videos.find(video => video.id === row.videoId)?.name ?? row.videoId.slice(0, 8)}
+                      <MuiLink component={Link} to={Paths.makeVideoDetailsUrl(row.videoId)} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                        {videoLabel(row)}
                       </MuiLink>
                     </TableCell>
                     <TableCell>
@@ -471,7 +515,7 @@ const RunsPage = () => {
                         })()}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       {(row.status === 'open' || row.status === 'running') && (
                         <Tooltip title="Stop the worker at the next checkpoint. The job stays visible here with status 'cancelled'.">
                           <IconButton

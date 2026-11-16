@@ -55,6 +55,7 @@ export interface ApiFetchJobsResponse {
     jobs: {
         id: string;
         video_id: string;
+        result_video_id: string;
         type: string;
         status: 'open' | 'running' | 'finished' | 'failed' | 'cancelled';
         data: object;

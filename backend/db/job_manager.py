@@ -181,8 +181,10 @@ class JobManager:
     def mark_job_as_failed(self, job_id: str) -> None:
         # Guard: don't clobber a cancelled job with 'failed' if a worker exits via
         # JobCancelled → worker_process's exception handler.
+        # Progress is left where the job stopped, so the UI shows how far it got
+        # (it used to be set to 100, which looked like a finished job).
         self.__db_connection.execute(
-            "UPDATE jobs SET status=%(status)s, finished_at=current_timestamp, progress=100 "
+            "UPDATE jobs SET status=%(status)s, finished_at=current_timestamp "
             "WHERE id=%(id)s AND status <> 'cancelled'",
             {"status": "failed", "id": job_id},
         )

@@ -2,6 +2,7 @@
 export interface Job {
     id: string;
     videoId: string;
+    resultVideoId: string;
     type: string;
     status: 'open'|'running'|'finished'|'failed'|'cancelled';
     data: object;

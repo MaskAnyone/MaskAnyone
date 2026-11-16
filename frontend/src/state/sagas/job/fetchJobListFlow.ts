@@ -34,6 +34,7 @@ const onFetchJobList = function* (payload: FetchJobListPayload) {
         const jobList: Job[] = response.jobs.map(job => ({
             id: job.id,
             videoId: job.video_id,
+            resultVideoId: job.result_video_id,
             type: job.type,
             status: job.status,
             data: job.data,
