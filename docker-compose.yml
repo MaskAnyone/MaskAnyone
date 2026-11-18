@@ -1,4 +1,9 @@
 
+# Base setup: runs on any machine, no GPU needed (Basic masking with MediaPipe).
+# On a machine with an NVIDIA GPU, add docker-compose-gpu.yml on top:
+#   docker compose -f docker-compose.yml -f docker-compose-gpu.yml ...
+# That adds the GPU requests and the SAM2 and OpenPose services (Advanced masking).
+# setup.sh picks the right files automatically.
 services:
   nginx:
     build: ./docker/nginx
@@ -31,13 +36,6 @@ services:
       timeout: 3s
       retries: 20
       start_period: 10s
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ["${MASKANYONE_GPU_ID:-0}"]
-              capabilities: [ gpu ]
 
   postgres:
     build:
@@ -101,75 +99,13 @@ services:
       - ./app.env
     environment:
       - MALLOC_ARENA_MAX=2
-      # h264_nvenc uses the GPU hardware encoder; override to libx264 on CPU-only hosts.
-      - WORKER_VIDEO_ENCODER=h264_nvenc
-      # NVENC only needs the 'video' capability, not full CUDA compute.
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+      # CPU video encoder; docker-compose-gpu.yml switches to h264_nvenc (GPU encoder).
+      - WORKER_VIDEO_ENCODER=libx264
     volumes:
       - ./worker:/app
     depends_on:
       python:
         condition: service_healthy
     restart: on-failure
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ["${MASKANYONE_GPU_ID:-0}"]
-              capabilities: [gpu, video]
 
-  sam2:
-    build:
-      context: ./docker/sam2
-    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
-    env_file:
-      - ./app.env
-    volumes:
-      - ./sam2:/app
-    restart: on-failure
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ["${MASKANYONE_GPU_ID:-0}"]
-              capabilities: [ gpu ]
-    # devices: # use in case the new resource reservation with GPU IDs is not working, uses GPU 0 by default
-    #   - /dev/nvidia0:/dev/nvidia0
-    #   - /dev/nvidiactl:/dev/nvidiactl
-    #   - /dev/nvidia-uvm:/dev/nvidia-uvm
-    #   - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
-
-  openpose:
-    build:
-      context: ./docker/openpose
-    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
-    env_file:
-      - ./app.env
-    volumes:
-      - ./openpose:/app
-      - ./docker/openpose/models:/models
-    restart: on-failure
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ["${MASKANYONE_GPU_ID:-0}"]
-              capabilities: [ gpu ]
-    # devices: # use in case the new resource reservation with GPU IDs is not working, uses GPU 0 by default
-    #   - /dev/nvidia0:/dev/nvidia0
-    #   - /dev/nvidiactl:/dev/nvidiactl
-    #   - /dev/nvidia-uvm:/dev/nvidia-uvm
-    #   - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
-
-  rtmpose:
-    build:
-      context: ./docker/rtmpose
-    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
-    env_file:
-      - ./app.env
-    volumes:
-      - ./rtmpose:/app
-    restart: on-failure
+  # sam2, openpose and rtmpose (currently disabled) are defined in docker-compose-gpu.yml.

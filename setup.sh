@@ -55,15 +55,23 @@ else
 fi
 
 # Detect GPU early — used to choose compose files and in the service scout.
-# COMPOSE_GPU_OVERRIDE is appended to every docker compose invocation.
+# COMPOSE_BASE (set below) is passed to every docker compose invocation.
 HAS_GPU=false
 if command -v nvidia-smi &>/dev/null && nvidia-smi --query-gpu=name --format=csv,noheader &>/dev/null 2>&1; then
     HAS_GPU=true
 fi
+# docker-compose.yml is the base (runs anywhere, no SAM2/OpenPose).
+# docker-compose-gpu.yml adds GPU access plus the SAM2 and OpenPose services.
+# GPU_SVCS lists the services that only exist in GPU mode; a plain string (not an
+# array) so it expands to nothing in CPU mode without tripping `set -u` on bash 3.2.
 if [[ "$HAS_GPU" == "true" ]]; then
-    COMPOSE_BASE="-f docker-compose.yml"
+    COMPOSE_BASE="-f docker-compose.yml -f docker-compose-gpu.yml"
+    # RTMPose disabled while in development; original line:
+    # GPU_SVCS="sam2 rtmpose openpose"
+    GPU_SVCS="sam2 openpose"
 else
-    COMPOSE_BASE="-f docker-compose.yml -f docker-compose-cpu.yml"
+    COMPOSE_BASE="-f docker-compose.yml"
+    GPU_SVCS=""
 fi
 
 # Detect the GPU's compute capability and inject into the build.
@@ -144,13 +152,8 @@ if [[ "$CLEAN_ALL" == "true" || "$CLEAN" == "true" ]]; then
         echo ""
     fi
 
-    # Detect compose base for teardown
-    if [[ "$HAS_GPU" == "true" ]]; then
-        COMPOSE_BASE="-f docker-compose.yml"
-    else
-        COMPOSE_BASE="-f docker-compose.yml -f docker-compose-cpu.yml"
-    fi
-
+    # COMPOSE_BASE (set above) matches this machine; --remove-orphans also removes
+    # containers from the other mode (e.g. sam2 left over from a GPU install).
     info "Stopping containers..."
     docker compose $COMPOSE_BASE down --remove-orphans 2>/dev/null || true
     check_ok "Containers stopped"
@@ -206,7 +209,10 @@ if [[ "$DOCTOR" == "true" ]]; then
     ok "Docker daemon running"
 
     section "Expected images"
-    EXPECTED_IMAGES=(nginx postgres pgadmin yarn python worker sam2 rtmpose openpose)
+    # RTMPose disabled while in development; original line:
+    # EXPECTED_IMAGES=(nginx postgres pgadmin yarn python worker sam2 rtmpose openpose)
+    # sam2 and openpose come from GPU_SVCS (GPU mode only).
+    EXPECTED_IMAGES=(nginx postgres pgadmin yarn python worker $GPU_SVCS)
     MISSING_IMAGES=()
     for SVC in "${EXPECTED_IMAGES[@]}"; do
         if docker image inspect "maskanyone-${SVC}:latest" &>/dev/null; then
@@ -221,7 +227,9 @@ if [[ "$DOCTOR" == "true" ]]; then
     fi
 
     section "Running containers"
-    EXPECTED_CONTAINERS=(nginx postgres pgadmin yarn python worker sam2 rtmpose openpose)
+    # RTMPose disabled while in development; original line:
+    # EXPECTED_CONTAINERS=(nginx postgres pgadmin yarn python worker sam2 rtmpose openpose)
+    EXPECTED_CONTAINERS=(nginx postgres pgadmin yarn python worker $GPU_SVCS)
     STOPPED=()
     for SVC in "${EXPECTED_CONTAINERS[@]}"; do
         STATE=$(docker inspect -f '{{.State.Status}}' "maskanyone-${SVC}-1" 2>/dev/null || echo "missing")
@@ -233,7 +241,7 @@ if [[ "$DOCTOR" == "true" ]]; then
         esac
     done
     if [[ ${#STOPPED[@]} -gt 0 ]]; then
-        fixhint "docker compose up -d ${STOPPED[*]}"
+        fixhint "docker compose $COMPOSE_BASE up -d ${STOPPED[*]}"
     fi
 
     section "Backend reachable"
@@ -242,7 +250,7 @@ if [[ "$DOCTOR" == "true" ]]; then
         ok "https://localhost/api/platform/mode → 200"
     else
         fail "https://localhost/api/platform/mode → $STATUS"
-        fixhint "docker compose restart python nginx    # restart backend + proxy"
+        fixhint "docker compose $COMPOSE_BASE restart python nginx    # restart backend + proxy"
     fi
 
     # GPU arch compatibility check — the exact class of bug we hit with SAM2.
@@ -270,7 +278,7 @@ if [[ "$DOCTOR" == "true" ]]; then
                 ok "$SVC compiled for your GPU (cap $GPU_CAP)"
             else
                 fail "$SVC NOT compiled for your GPU (cap $GPU_CAP). Supports: $SUPPORTED"
-                fixhint "docker compose build --no-cache --build-arg TORCH_CUDA_ARCH_LIST=${GPU_CAP}+PTX $SVC && docker compose up -d $SVC"
+                fixhint "docker compose $COMPOSE_BASE build --no-cache --build-arg TORCH_CUDA_ARCH_LIST=${GPU_CAP}+PTX $SVC && docker compose $COMPOSE_BASE up -d $SVC"
             fi
         done
     else
@@ -281,12 +289,15 @@ if [[ "$DOCTOR" == "true" ]]; then
     RESOURCES=$(curl -4sk --max-time 10 https://localhost/api/platform/resources 2>/dev/null || echo "{}")
     # Substring match on the JSON is good enough — the backend's format is stable
     # and this works without depending on Python being in PATH.
-    for SVC in sam2 rtmpose openpose; do
+    # RTMPose disabled while in development; original line:
+    # for SVC in sam2 rtmpose openpose; do
+    [[ -z "$GPU_SVCS" ]] && info "CPU mode: SAM2 and OpenPose are not installed — skipping"
+    for SVC in $GPU_SVCS; do
         if echo "$RESOURCES" | grep -q "\"$SVC\":[[:space:]]*true"; then
             ok "$SVC: Online"
         else
             fail "$SVC: Offline"
-            fixhint "docker logs --tail 40 maskanyone-${SVC}-1    # inspect crash, then: docker compose restart $SVC"
+            fixhint "docker logs --tail 40 maskanyone-${SVC}-1    # inspect crash, then: docker compose $COMPOSE_BASE restart $SVC"
         fi
     done
 
@@ -355,7 +366,7 @@ if [[ "$HAS_GPU" == "true" ]]; then
         check_warn "nvidia-smi found but no GPU detected — falling back to CPU mode"
     fi
 else
-    check_warn "No NVIDIA GPU detected — running in CPU mode (SAM2 will be slow for long videos)"
+    check_warn "No NVIDIA GPU detected — running in CPU mode: Basic masking (MediaPipe) only, Advanced masking (SAM2) needs an NVIDIA GPU"
 fi
 
 # NVIDIA Container Toolkit
@@ -421,8 +432,11 @@ else
     sedi 's/^MASK_ANYONE_PLATFORM_MODE=.*/MASK_ANYONE_PLATFORM_MODE=local/' app.env
 fi
 
-# ── SAM2 checkpoint selection ───────────────────────────────────────────────────
-if [[ "$SKIP_BUILD" != "true" && -z "$SAM2_MODELS" ]]; then
+# ── SAM2 checkpoint selection (GPU mode only; CPU mode does not build SAM2) ────────
+if [[ "$HAS_GPU" != "true" && -n "$SAM2_MODELS" ]]; then
+    info "No NVIDIA GPU: SAM2 is not installed, so --sam2-models is ignored"
+fi
+if [[ "$HAS_GPU" == "true" && "$SKIP_BUILD" != "true" && -z "$SAM2_MODELS" ]]; then
     echo ""
     echo -e "  ${BOLD}SAM2 model checkpoints${RESET} — choose what to bake into the image:"
     echo -e "    ${CYAN}1)${RESET} small only        (~185 MB)  — fast, good for most videos  ${BOLD}[default]${RESET}"
@@ -444,10 +458,17 @@ if [[ "$SKIP_BUILD" == "true" ]]; then
     info "Skipping build (--skip-build)"
 else
     info "Building Docker images (this takes 20–60 min on first run)..."
-    info "SAM2 checkpoints selected: ${SAM2_MODELS}. RTMPose will download ~1 GB."
+    # RTMPose disabled while in development; original lines:
+    # info "SAM2 checkpoints selected: ${SAM2_MODELS}. RTMPose will download ~1 GB."
+    if [[ "$HAS_GPU" == "true" ]]; then
+        info "SAM2 checkpoints selected: ${SAM2_MODELS}."
+    else
+        info "CPU mode: skipping SAM2 and OpenPose (they need an NVIDIA GPU)."
+    fi
     echo ""
 
-    BUILD_SVCS=(nginx postgres pgadmin yarn python worker sam2 rtmpose openpose)
+    # BUILD_SVCS=(nginx postgres pgadmin yarn python worker sam2 rtmpose openpose)
+    BUILD_SVCS=(nginx postgres pgadmin yarn python worker $GPU_SVCS)
     [[ "$WITH_AUTH" == "true" ]] && BUILD_SVCS+=(keycloak)
     BUILD_TOTAL=${#BUILD_SVCS[@]}
     BUILD_IDX=0
@@ -466,7 +487,9 @@ else
 fi
 
 # ── ensure no critical images are missing (even with --skip-build) ─────────────
-CORE_SVCS=(python worker sam2 yarn nginx postgres pgadmin rtmpose openpose)
+# RTMPose disabled while in development; original line:
+# CORE_SVCS=(python worker sam2 yarn nginx postgres pgadmin rtmpose openpose)
+CORE_SVCS=(python worker yarn nginx postgres pgadmin $GPU_SVCS)
 [[ "$WITH_AUTH" == "true" ]] && CORE_SVCS+=(keycloak)
 NEED_BUILD=()
 for SVC in "${CORE_SVCS[@]}"; do
@@ -560,18 +583,24 @@ if [[ "$BACKEND_UP" == "true" ]]; then
             if curl -fsSL "$SAMPLE_URL" -o "$SAMPLE_TMP" 2>/dev/null; then
                 UPLOAD_ID=$("$PY" -c "import uuid; print(uuid.uuid4())" 2>/dev/null || echo "")
                 UPLOAD_NAME="${SAMPLE_NAME%.mp4}"
-                if [[ -n "$UPLOAD_ID" ]]; then
-                    curl -4sk -X POST "https://localhost/api/videos/upload/request" \
+                # The backend requires the file size up front (upload limit pre-check).
+                SAMPLE_SIZE=$(wc -c < "$SAMPLE_TMP" | tr -d ' ')
+                # --fail makes curl return non-zero on HTTP errors, so a video only
+                # counts as seeded when all three upload steps succeeded.
+                if [[ -n "$UPLOAD_ID" ]] \
+                    && curl -4sk --fail -o /dev/null -X POST "https://localhost/api/videos/upload/request" \
                         -H "Content-Type: application/json" \
-                        -d "{\"video_id\":\"${UPLOAD_ID}\",\"video_name\":\"${UPLOAD_NAME}\"}" \
-                        &>/dev/null || true
-                    curl -4sk -X POST "https://localhost/api/videos/upload/${UPLOAD_ID}" \
+                        -d "{\"video_id\":\"${UPLOAD_ID}\",\"video_name\":\"${UPLOAD_NAME}\",\"file_size\":${SAMPLE_SIZE}}" \
+                        2>/dev/null \
+                    && curl -4sk --fail -o /dev/null -X POST "https://localhost/api/videos/upload/${UPLOAD_ID}" \
                         -H "Content-Type: application/octet-stream" \
-                        --data-binary "@${SAMPLE_TMP}" &>/dev/null || true
-                    curl -4sk -X POST "https://localhost/api/videos/upload/finalize" \
+                        --data-binary "@${SAMPLE_TMP}" 2>/dev/null \
+                    && curl -4sk --fail -o /dev/null -X POST "https://localhost/api/videos/upload/finalize" \
                         -H "Content-Type: application/json" \
-                        -d "{\"video_id\":\"${UPLOAD_ID}\"}" &>/dev/null || true
+                        -d "{\"video_id\":\"${UPLOAD_ID}\"}" 2>/dev/null; then
                     SEED_OK=$((SEED_OK+1))
+                else
+                    warn "Could not upload sample video ${UPLOAD_NAME}"
                 fi
                 rm -f "$SAMPLE_TMP"
             fi
@@ -590,7 +619,7 @@ RAM=$(echo "$RESOURCES" | "$PY" -c "import sys,json; d=json.load(sys.stdin); pri
 DISK=$(echo "$RESOURCES" | "$PY" -c "import sys,json; d=json.load(sys.stdin); print(f\"{d.get('disk_free_gb','?')} GB free\")" 2>/dev/null || echo "?")
 
 if [[ "$GPU" == "Not detected" ]]; then
-    check_warn "GPU: $GPU — chunked processing recommended for videos > 2 min"
+    check_warn "GPU: $GPU — CPU mode: Basic masking (MediaPipe) only"
 else
     check_ok "GPU: $GPU"
 fi
@@ -598,7 +627,9 @@ check_ok "RAM: $RAM"
 check_ok "Disk: $DISK"
 
 # Per-service health
-for SERVICE in sam2 rtmpose openpose; do
+# RTMPose disabled while in development; original line:
+# for SERVICE in sam2 rtmpose openpose; do
+for SERVICE in $GPU_SVCS; do
     UP=$(echo "$RESOURCES" | "$PY" -c "import sys,json; d=json.load(sys.stdin); print(d.get('services',{}).get('$SERVICE', False))" 2>/dev/null || echo "False")
     if [[ "$UP" == "True" ]]; then
         check_ok "$SERVICE: Online"
@@ -620,6 +651,6 @@ echo ""
 echo -e "  Open ${CYAN}https://localhost${RESET} in your browser."
 echo -e "  ${YELLOW}Note: your browser will warn about a self-signed certificate — click 'Advanced' and proceed.${RESET}"
 if [[ "$WARNINGS" -gt 0 && "$GPU" == "Not detected" ]]; then
-    echo -e "  ${YELLOW}Tip: No GPU detected. Use 30–60 s chunk sizes for videos longer than 2 min.${RESET}"
+    echo -e "  ${YELLOW}Tip: No GPU detected. Use 'Basic Masking' in the app; 'Advanced Masking' (SAM2) needs an NVIDIA GPU.${RESET}"
 fi
 echo ""
