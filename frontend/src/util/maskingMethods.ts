@@ -259,7 +259,7 @@ export const voiceMaskingMethods: any = {
     },
     switch: {
         name: "Switch",
-        description: "Mask the original speaker by replacing their voice with the voice of another person",
+        description: "Change the voice so the speaker cannot be recognised; speech stays understandable",
         imagePath: '/images/voice_masking_strategy/switch.svg',
         parameterSchema: rvcSchema,
         defaultValues: {

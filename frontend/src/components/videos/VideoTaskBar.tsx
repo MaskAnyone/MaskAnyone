@@ -74,14 +74,14 @@ const VideoTaskBar = (props: VideoTaskBarProps) => {
                 <Button
                     variant={'contained'}
                     onClick={() => setVideoRunParamsOpen(true)}
-                    children={'Mask Video'}
+                    children={'Basic Masking'}
                     color={'secondary'}
                     startIcon={<ShieldLogoIcon />}
                 />
                 <Button
                     variant={'contained'}
                     onClick={openVideoMaskingEditor}
-                    children={'New Masking Process'}
+                    children={'Advanced Masking'}
                     sx={{ marginLeft: 1 }}
                     color={'secondary'}
                     startIcon={<ShieldLogoIcon />}

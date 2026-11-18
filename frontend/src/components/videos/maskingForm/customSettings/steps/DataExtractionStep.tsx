@@ -1,31 +1,41 @@
-import { Box, Typography } from "@mui/material";
-import CheckableCard from "../../../../common/CheckableCard";
+import { Box, Card, CardContent, CardMedia, Chip, Link, Typography } from "@mui/material";
 import {StepProps} from "./StepProps";
 
-const DataExctactionStep = (_props: StepProps) => {
-    const handleSkeletonChanged = () => {
-        // @todo not in use;
-    }
+const ANNY_URL = 'https://github.com/naver/anny';
+const CARD_WIDTH = 220;
 
+// 3D body model extraction is in development. This step only announces it;
+// it adds nothing to the run params, so "Mask Video" here runs the masking as usual.
+const DataExctactionStep = (_props: StepProps) => {
     return (
         <>
-            <Box component={'div'} sx={{ marginBottom: 3.5 }}>
+            <Box component={'div'} sx={{ marginBottom: 3.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Typography variant="h6">
-                    Do you want to export additional data?
-                </Typography >
-                <Typography variant={'body2'}>
-                    If besides masking the video you also want to work with the kinematic information, you can extract them here. Please beware that this can slow down the masking process.
+                    3D Body Model
                 </Typography>
+                <Chip label="In development" size="small" color="warning" variant="outlined" />
             </Box>
-            <Box component="div" sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '24px' }} mt={1}>
-                <CheckableCard
-                    title={"3D Skeleton"}
-                    description={"Will create a 3D Skeleton that can be rendered directly in the Browser"}
-                    imagePath={'/images/model_extraction/skeleton.png'}
-                    checked={false}
-                    onSelect={() => handleSkeletonChanged()}
-                />
-            </Box >
+            {/* Vertical card (image on top, text below) with the width set inline on a
+                plain wrapper, so no parent layout or stylesheet can stretch it. */}
+            <div style={{ width: CARD_WIDTH, maxWidth: '100%' }}>
+                <Card sx={{ boxShadow: 3 }}>
+                    <CardMedia
+                        component={'img'}
+                        image={'/images/model_extraction/anny_interative_demo.jpg'}
+                        alt=""
+                        sx={{ width: '100%', height: CARD_WIDTH, objectFit: 'cover', opacity: 0.5 }}
+                    />
+                    <CardContent>
+                        <Typography variant={'body1'} fontWeight={'bold'}>
+                            3D body model
+                        </Typography>
+                        <Typography variant={'body2'} color={'text.secondary'} sx={{ marginTop: 1 }}>
+                            In development, based on{' '}
+                            <Link href={ANNY_URL} target="_blank" rel="noopener noreferrer" fontWeight={'bold'}>Anny</Link>.
+                        </Typography>
+                    </CardContent>
+                </Card>
+            </div>
         </>
     )
 }
