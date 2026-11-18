@@ -27,9 +27,11 @@ const MODEL_GROUPS: ModelGroup[] = [
         label: 'Human — RTMPose',
         family: 'RTMPose',
         options: [
-            { value: 'rtmpose_s', label: 'S', hint: 'Fastest, least accurate. Good for quick previews.' },
-            { value: 'rtmpose_m', label: 'M', hint: 'Balanced speed and accuracy. Recommended default for humans.' },
-            { value: 'rtmpose_l', label: 'L', hint: 'Most accurate for humans, slowest of the three.' },
+            // Disabled while RTMPose is in development. Remove `disabled` to re-enable;
+            // the backend and worker still support these values.
+            { value: 'rtmpose_s', label: 'S', hint: 'Fastest, least accurate. Good for quick previews.', disabled: true },
+            { value: 'rtmpose_m', label: 'M', hint: 'Balanced speed and accuracy. Recommended default for humans.', disabled: true },
+            { value: 'rtmpose_l', label: 'L', hint: 'Most accurate for humans, slowest of the three.', disabled: true },
         ],
     },
     {
@@ -56,6 +58,8 @@ const MODEL_GROUPS: ModelGroup[] = [
 // Animal models (AP-10K, AnimalPose, Animal Kingdom) were removed from the
 // picker: they did not work well enough. The worker still maps their
 // rtmpose_* values, so they can be re-added here once they are usable.
+
+const DISABLED_HINT = 'In development. Not available yet.';
 
 const ALL_OPTIONS = MODEL_GROUPS.flatMap(g => g.options.map(o => ({
     ...o,
@@ -98,7 +102,7 @@ const ModelPicker = ({ value, onChange }: ModelPickerProps) => {
                             </Typography>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                                 {group.options.map(opt => (
-                                    <Tooltip key={opt.value} title={opt.hint} placement="top" arrow>
+                                    <Tooltip key={opt.value} title={opt.disabled ? DISABLED_HINT : opt.hint} placement="top" arrow>
                                         {/* wrapper div lets the Tooltip fire even when the Chip is disabled */}
                                         <span>
                                             <Chip
