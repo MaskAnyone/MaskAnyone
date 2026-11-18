@@ -8,102 +8,96 @@ Most problems can be diagnosed with:
 bash setup.sh doctor
 ```
 
-It checks Docker, images, containers, the backend, GPU arch compatibility, and per-service health — and prints the exact command to run for each issue found. Try this before digging in by hand.
+It checks Docker, the images, the containers, the backend, your GPU and each service, and prints the command to run for each problem it finds. It changes nothing on its own.
 
 ---
 
-## Known issues
+## Common problems
 
-### 1. `AxiosError: Request failed with status code 500` when running SAM2 on a new GPU
+### 1. Browser warns about an invalid certificate at https://localhost
 
-**Symptom:** The frontend shows a 500 error when you click "Segment" in the masking editor. `docker logs maskanyone-sam2-1` contains:
+**This is expected.** MaskAnyone uses a self-signed certificate. Click "Advanced" → "Proceed to localhost". The connection is still encrypted; the certificate is just not signed by a public authority.
 
-```
-CUDA error: no kernel image is available for execution on the device
-```
+### 2. Browser shows "502 Bad Gateway"
 
-**Root cause:** SAM2's `Dockerfile` uses a PyTorch version that was compiled without kernels for your GPU's compute capability. This bites any GPU newer than what the image was built for — most commonly NVIDIA Blackwell (RTX 5090, compute capability `sm_120`), since PyTorch only added `sm_120` in version 2.8 with CUDA 12.8.
+The backend is still starting up, which can take a minute after `setup.sh` finishes or after a restart. Wait about 30 seconds and refresh. If it persists, run `bash setup.sh doctor`.
 
-**Fix:** The current `Dockerfile` is already on PyTorch 2.8 + CUDA 12.8 and `setup.sh` auto-detects your GPU's compute capability and passes it as `TORCH_CUDA_ARCH_LIST` to the build. If you still hit it on an older clone:
+### 3. Port 443 already in use
+
+Something else on your machine (another web server, or another Docker container) is using port 443, so MaskAnyone cannot start. The simplest fix is to stop that program while you use MaskAnyone.
+
+If you cannot stop it, you can move MaskAnyone to another port: change the port mapping `"443:443"` of the `nginx` service in `docker-compose.yml`, for example to `"8443:443"`. The app is then served at `https://localhost:8443` instead of `https://localhost`.
+
+### 4. Advanced masking does not work without an NVIDIA GPU
+
+**This is expected.** Without an NVIDIA GPU (including all Macs), MaskAnyone installs in CPU mode: SAM2 and OpenPose are not installed, so **Advanced Masking** cannot run. Use **Basic Masking** (MediaPipe), which works on any machine.
+
+If you do have an NVIDIA GPU but `setup.sh` reports CPU mode, check that `nvidia-smi` works in your terminal (on Linux, also install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)), then run `bash setup.sh` again.
+
+### 5. OpenPose fails on RTX 50-series GPUs
+
+OpenPose works on NVIDIA RTX 20-, 30- and 40-series GPUs, but not on RTX 50-series (Blackwell). Pose estimation with OpenPose then fails with an error like `no kernel image is available for execution on the device`.
+
+**What to do:** choose **MediaPipe** as the pose overlay in the Advanced masking editor. SAM2 masking itself works normally on these GPUs.
+
+### 6. Advanced masking fails with a 500 error on a new GPU
+
+**Symptom:** **Test Prompt** in the Advanced masking editor shows a 500 error, or Advanced masking runs fail, and `docker logs maskanyone-sam2-1` contains `no kernel image is available for execution on the device`.
+
+**Cause:** the SAM2 image was built for a different GPU, usually because it was built before you changed GPUs or with an older version of MaskAnyone.
+
+**What to do:** rebuild the images. Your videos and results are kept.
 
 ```bash
 bash setup.sh --clean
 bash setup.sh
 ```
 
-**To confirm the fix worked:**
+### 7. `setup.sh` fails with `$'\r': command not found` (Windows)
+
+The script has Windows line endings, which bash cannot read. This can happen with older clones or when the file was saved by an editor that uses Windows line endings. In Git Bash, inside the `MaskAnyone` folder, check the file out again:
 
 ```bash
-docker run --rm --gpus all maskanyone-sam2 python -c \
-  "import torch; print(torch.cuda.get_arch_list()); print(torch.cuda.get_device_name(0))"
+rm setup.sh
+git checkout setup.sh
 ```
 
-You should see your GPU's `sm_XX` in the arch list.
+### 8. `setup.sh` stops with `syntax error near unexpected token '('`
 
-### 2. OpenPose crashes at runtime on newer GPUs
+The script was changed while it was running, for example by a `git pull` in another terminal. Do not update or edit `setup.sh` while it runs. The images built so far are kept; finish with:
 
-**Symptom:** Pose estimation via OpenPose fails with a CUDA kernel error:
-
-```
-F0421 ... im2col.cu:61] Check failed: error == cudaSuccess (209 vs. 0)
-no kernel image is available for execution on the device
+```bash
+bash setup.sh --skip-build
 ```
 
-**Root cause:** [`docker/openpose/Dockerfile`](docker/openpose/Dockerfile) compiles OpenPose with `cmake -DCUDA_ARCH_BIN="75"` against CUDA 11.7, which targets Turing (sm_75) only. It will not produce working kernels for Ampere (sm_80+), Ada (sm_89), or Blackwell (sm_120).
+### 9. Summary shows "GPU: unknown", "RAM: ?" or services as "Offline" although the app works
 
-**Workaround (recommended):** Pick **MediaPipe** or **RTMPose** as the pose overlay strategy in the masking editor. Both give good results on any hardware. RTMPose in particular matches or exceeds OpenPose on standard benchmarks.
-
-**Why it's not fixed yet:** Upgrading to CUDA 12+ fails during the Caffe build with `nvcc fatal: Unsupported gpu architecture 'compute_35'`. OpenPose's bundled Caffe fork hardcodes Kepler (compute_35) in its "known archs" list via `Caffe_known_gpu_archs`, and CUDA 12 dropped compute_35. Setting `-DCUDA_ARCH_NAME=Manual` on OpenPose's top-level cmake doesn't help — OpenPose pulls Caffe via `ExternalProject_Add` so the flag isn't forwarded. A real fix needs one of:
-- Adding a `PATCH_COMMAND` to OpenPose's Caffe ExternalProject that strips obsolete arches from `cmake/Cuda.cmake` before build
-- Pre-cloning a patched Caffe fork and pointing OpenPose at it via `BUILD_CAFFE=OFF` + `Caffe_INCLUDE_DIRS`/`Caffe_LIBS`
-- Forking OpenPose's Caffe to modernize arch support
-
-Estimated effort: 2–4 hours, risky. Not prioritized because the workaround above covers the same use cases.
-
-### 3. `setup.sh --clean` does nothing / `--skip-build` rebuilds everything
-
-**Symptom:** `--clean` claims success but `docker images` still shows the MaskAnyone images; `--skip-build` rebuilds every image on every run.
-
-**Root cause:** Old versions of `setup.sh` assumed the docker-compose project name was `src`, so they looked for images named `maskanyone-src-*`. The actual project name (driven by the directory name `MaskAnyone`) is `maskanyone`, so the images are `maskanyone-*`.
-
-**Fix:** Pull the latest `setup.sh` — this is fixed.
-
-### 4. Scout reports "GPU: unknown" / services as "Offline" even when everything works
-
-**Symptom:** `setup.sh` completes but the final summary shows `GPU: unknown`, `RAM: ?`, `Disk: ?`, and warns that SAM2 / RTMPose / OpenPose are offline — even though the app works fine at https://localhost.
-
-**Root cause:** The scout parses the `/api/platform/resources` JSON with `python3`, which on Windows often resolves to the Microsoft Store launcher stub instead of a real Python. The stub exits non-zero, the parse fails silently, and everything shows as unknown.
-
-**Fix:** Latest `setup.sh` auto-detects a working Python (`python3` → `python` → `py`) and falls back to pure-bash checks for simple booleans. If the problem persists, install a real Python (Anaconda, or `python.org`) and make sure `python -c 'print(1)'` actually runs in your terminal.
-
-### 5. `setup.sh` exits mid-run with `syntax error near unexpected token '('`
-
-**Root cause:** The script was edited (usually by git pull, or by you) while it was already running. Bash re-reads the script file as it executes, so any mid-run edit shifts line offsets and corrupts the parse.
-
-**Fix:** Don't edit `setup.sh` while it's running. The images that were built before the crash are still valid — just re-run `bash setup.sh --skip-build` to finish starting services.
-
-### 6. Browser warns about an invalid certificate at https://localhost
-
-**This is expected.** MaskAnyone's nginx uses a self-signed cert. Click "Advanced" → "Proceed to localhost (unsafe)" — the connection is still encrypted, it's just not signed by a public CA.
+`setup.sh` needs a working Python to read the system information. On Windows, `python3` is often only a placeholder that opens the Microsoft Store. Install Python (from [python.org](https://www.python.org/downloads/) or Anaconda) and check that `python -c "print(1)"` prints `1` in your terminal. The app itself is not affected.
 
 ---
 
-## Environment requirements
+## Requirements
 
-- **Docker Desktop** running (Windows/Mac) or Docker daemon active (Linux)
-- **NVIDIA Container Toolkit** installed if you want GPU acceleration. `docker run --rm --gpus all nvidia/cuda:12.0.0-base-ubuntu22.04 nvidia-smi` should print your GPU.
-- **≥ 30 GB free disk** (for images and model checkpoints, ~10 GB base + 4 GB SAM2 checkpoints + overhead)
-- **≥ 16 GB RAM** recommended, 8 GB absolute minimum with small chunk sizes
+- **Docker Desktop** running (Windows, macOS) or the Docker service running (Linux)
+- For GPU support: an NVIDIA GPU with an up-to-date driver; on Linux also the NVIDIA Container Toolkit. `docker run --rm --gpus all nvidia/cuda:12.0.0-base-ubuntu22.04 nvidia-smi` should print your GPU.
+- **At least 30 GB free disk space**
+- **16 GB RAM** recommended; 8 GB works with smaller chunk sizes
 
 ---
 
-## Collecting logs for a bug report
+## Report a new problem
 
-Every run of `setup.sh` writes a timestamped log to `logs/setup-<timestamp>.log`. When filing an issue, please attach the most recent one plus the output of:
+If your problem is not listed here, please [open an issue on GitHub](https://github.com/MaskAnyone/MaskAnyone/issues) and describe what you did and what happened. It helps a lot to attach:
+
+- the most recent log from the `logs/` folder (`setup.sh` writes one per run, `logs/setup-<timestamp>.log`)
+- the output of these commands:
 
 ```bash
 bash setup.sh doctor
 docker ps -a
 docker logs --tail 200 maskanyone-python-1
-docker logs --tail 200 maskanyone-sam2-1
+docker logs --tail 200 maskanyone-worker-1
+docker logs --tail 200 maskanyone-sam2-1     # GPU installs only
 ```
+
+Please check the logs for anything private (file names, paths) before posting them.
