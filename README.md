@@ -95,7 +95,7 @@ Without a GPU, SAM2 and OpenPose are not built or started at all, which saves a 
 
 For example, with a GPU in local mode, `docker compose up -d` becomes `docker compose -f docker-compose.yml -f docker-compose-gpu.yml up -d`.
 
-`setup.sh` picks the right files by itself; with the automated install you only need the base command to stop MaskAnyone.
+With the automated install you do not need these: `setup.sh` picks the right files by itself, also for starting (`bash setup.sh --skip-build`) and stopping (`bash setup.sh stop`).
 
 </details>
 
@@ -119,6 +119,7 @@ On a fresh install, two sample videos are added to your library so you can try M
 | `--with-auth` | **Server mode**: login with user accounts via Keycloak |
 | `--sam2-models=small,large` | Choose the SAM2 model sizes without being asked (`tiny`, `small`, `base_plus`, `large`). GPU only; ignored without a GPU |
 | `--skip-build` | Use the existing images, skip the build |
+| `stop` | Stop MaskAnyone; keeps images, videos and results |
 | `doctor` | Check a running install and suggest fixes; changes nothing |
 | `--clean` | Stop the containers and remove the images; keeps your videos and results |
 | `--clean-all` | Remove everything, **including all videos, results and the database** (asks for confirmation) |
@@ -127,10 +128,10 @@ On a fresh install, two sample videos are added to your library so you can try M
 
 ```bash
 bash setup.sh --skip-build   # start, with the same checks as the install
-docker compose down          # stop (with your base command)
+bash setup.sh stop           # stop
 ```
 
-In server mode, add `--with-auth` to the start command, otherwise it switches back to local mode. To stop, use the base command for your setup from [Docker Compose files and base commands](#install), for example `docker compose -f docker-compose.yml -f docker-compose-gpu.yml down` with a GPU.
+In server mode, add `--with-auth` to the start command, otherwise it switches back to local mode.
 
 </details>
 
