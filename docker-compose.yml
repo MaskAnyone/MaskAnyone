@@ -1,10 +1,20 @@
 
+# Base setup: runs on any machine, no GPU needed (Basic masking with MediaPipe).
+# On a machine with an NVIDIA GPU, add docker-compose-gpu.yml on top:
+#   docker compose -f docker-compose.yml -f docker-compose-gpu.yml ...
+# That adds the GPU requests and the SAM2 and OpenPose services (Advanced masking).
+# setup.sh picks the right files automatically.
 services:
   nginx:
     build: ./docker/nginx
     ports:
       - "443:443"
     restart: "on-failure"
+    depends_on:
+      python:
+        condition: service_healthy
+      yarn:
+        condition: service_started
 
   python:
     build:
@@ -18,7 +28,14 @@ services:
       - ./backend:/app
       - ./data/backend:/var/lib/maskanyone/data
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "--tries=1", "--timeout=2", "http://localhost:8000/platform/mode"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
 
   postgres:
     build:
@@ -28,6 +45,12 @@ services:
     volumes:
       - ./docker/postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
       - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d prototype"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
 
   pgadmin:
     build:
@@ -41,18 +64,23 @@ services:
       PGADMIN_CONFIG_SERVER_MODE: "False"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   yarn:
     build:
       context: ./docker/yarn
     command: "yarn start"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
     volumes:
       - ./frontend:/app
 
   keycloak:
     build:
       context: ./docker/keycloak
+    profiles: [auth]
     environment:
       KEYCLOAK_ADMIN: dev
       KEYCLOAK_ADMIN_PASSWORD: dev
@@ -60,7 +88,8 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   worker:
     build:
@@ -68,53 +97,15 @@ services:
     command: "python worker.py"
     env_file:
       - ./app.env
+    environment:
+      - MALLOC_ARENA_MAX=2
+      # CPU video encoder; docker-compose-gpu.yml switches to h264_nvenc (GPU encoder).
+      - WORKER_VIDEO_ENCODER=libx264
     volumes:
       - ./worker:/app
     depends_on:
-      - python
+      python:
+        condition: service_healthy
     restart: on-failure
 
-  sam2:
-    build:
-      context: ./docker/sam2
-    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
-    env_file:
-      - ./app.env
-    volumes:
-      - ./sam2:/app
-    restart: on-failure
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ["${MASKANYONE_GPU_ID:-0}"]
-              capabilities: [ gpu ]
-    # devices: # use in case the new resource reservation with GPU IDs is not working, uses GPU 0 by default
-    #   - /dev/nvidia0:/dev/nvidia0
-    #   - /dev/nvidiactl:/dev/nvidiactl
-    #   - /dev/nvidia-uvm:/dev/nvidia-uvm
-    #   - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
-
-  openpose:
-    build:
-      context: ./docker/openpose
-    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
-    env_file:
-      - ./app.env
-    volumes:
-      - ./openpose:/app
-      - ./docker/openpose/models:/models
-    restart: on-failure
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ["${MASKANYONE_GPU_ID:-0}"]
-              capabilities: [ gpu ]
-    # devices: # use in case the new resource reservation with GPU IDs is not working, uses GPU 0 by default
-    #   - /dev/nvidia0:/dev/nvidia0
-    #   - /dev/nvidiactl:/dev/nvidiactl
-    #   - /dev/nvidia-uvm:/dev/nvidia-uvm
-    #   - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+  # sam2, openpose and rtmpose (currently disabled) are defined in docker-compose-gpu.yml.

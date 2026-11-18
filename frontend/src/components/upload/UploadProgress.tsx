@@ -3,14 +3,14 @@ import PublishIcon from '@mui/icons-material/Publish';
 
 const styles = {
     circularProgressBottom: {
-        color: '#dfdfdf',
+        color: 'action.disabledBackground',
     },
     circularProgressTop: {
         position: 'absolute',
         left: 0,
     },
     waitingForUploadIcon: {
-        color: '#bfbfbf',
+        color: 'action.disabled',
     },
 };
 

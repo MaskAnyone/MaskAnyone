@@ -37,6 +37,12 @@ export interface VideoDeletedPayload {
     videoId: string;
 }
 
+export interface VideoTrimStartedPayload {}
+
+export interface VideoTrimFinishedPayload {}
+
+export interface VideoTrimFailedPayload {}
+
 const VideoEvent = {
     videoListFetched: createVideoEvent<VideoListFetchedPayload>('VIDEO_LIST_FETCHED'),
     resultsListFetched: createVideoEvent<ResultsListFetchedPayload>('RESULTS_LIST_FETCHED'),
@@ -45,6 +51,9 @@ const VideoEvent = {
     mpKinematicsFetched: createVideoEvent<MpKinematicsFetchedPayload>('MP_KINEMATICS_FETCHED'),
     resultVideoDeleted: createVideoEvent<ResultVideoDeletedPayload>('RESULT_VIDEO_DELETED'),
     videoDeleted: createVideoEvent<VideoDeletedPayload>('VIDEO_DELETED'),
+    videoTrimStarted: createVideoEvent<VideoTrimStartedPayload>('VIDEO_TRIM_STARTED'),
+    videoTrimFinished: createVideoEvent<VideoTrimFinishedPayload>('VIDEO_TRIM_FINISHED'),
+    videoTrimFailed: createVideoEvent<VideoTrimFailedPayload>('VIDEO_TRIM_FAILED'),
 };
 
 export default VideoEvent;

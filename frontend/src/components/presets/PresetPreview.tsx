@@ -24,8 +24,8 @@ const PresetPreview = (props: PresetPreviewProps) => {
                 title={props.preset.name}
                 description={props.preset.description}
             />
-            <IconButton sx={{ position: 'absolute', top: 4, right: 0 }} onClick={openPresetPreviewMenu}>
-                <MoreVertIcon sx={{ color: 'white', mixBlendMode: 'difference'}} />
+            <IconButton sx={{ position: 'absolute', top: 4, right: 0, backgroundColor: 'rgba(0,0,0,0.4)', '&:hover': { backgroundColor: 'rgba(0,0,0,0.6)' } }} onClick={openPresetPreviewMenu} aria-label="Preset options">
+                <MoreVertIcon sx={{ color: 'white' }} />
             </IconButton>
         </SideBySideCard>
     );

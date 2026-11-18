@@ -70,16 +70,19 @@ const DoubleVideo = (props: DoubleVideoProps) => {
 
         dispatch(Command.Video.fetchBlendshapes({ resultVideoId: props.resultVideoId }));
         dispatch(Command.Video.fetchMpKinematics({ resultVideoId: props.resultVideoId }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.resultVideoId]);
 
     useEffect(() => {
         resetVideos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.videoId, props.resultVideoId]);
 
     useEffect(() => {
         if (video2Ref.current) {
             video2Ref.current.seekTo(played);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [video2Ref.current]);
 
     const displaySelectedView = () => {
@@ -128,6 +131,7 @@ const DoubleVideo = (props: DoubleVideoProps) => {
         if (video2Ref.current) {
             video2Ref.current.seekTo(played);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [played]);
 
     const updatePlayedSeconds = (newPlayedSeconds: number) => {

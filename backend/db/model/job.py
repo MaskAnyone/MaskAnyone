@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
@@ -14,3 +15,4 @@ class Job:
     finished_at: str
     progress: int
     user_id: str
+    phase: Optional[str] = None

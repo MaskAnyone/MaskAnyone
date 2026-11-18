@@ -22,6 +22,7 @@ const Notifier = () => {
             setTimeout(() => setOpen(true), 70);
             setTimeout(closeNotification, notification.autoHideDuration);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [notification]);
 
     return (

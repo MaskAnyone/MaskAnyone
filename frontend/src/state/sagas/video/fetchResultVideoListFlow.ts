@@ -6,6 +6,7 @@ import Api from "../../../api";
 import Event from "../../actions/event";
 import { ApiFetchResultVideosResponse } from "../../../api/types";
 import { ResultVideo } from "../../types/ResultVideo";
+import { parseUtcTimestamp } from "../../../util/parseUtcTimestamp";
 
 const onFetchResultsList = function* (payload: FetchResultsListPayload) {
     try {
@@ -15,7 +16,7 @@ const onFetchResultsList = function* (payload: FetchResultsListPayload) {
             videoResultId: result_video.id,
             originalVideoId: result_video.video_id,
             jobId: result_video.job_id,
-            createdAt: new Date(result_video.created_at),
+            createdAt: parseUtcTimestamp(result_video.created_at),
 
             // jobInfo: result_video.job_info,
             jobInfo: {},

@@ -20,6 +20,7 @@ const PresetsPage = () => {
 
     useEffect(() => {
         dispatch(Command.Preset.fetchPresetList({}));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const openPresetPreviewMenu = (anchorEl: HTMLElement, presetId: string) => {

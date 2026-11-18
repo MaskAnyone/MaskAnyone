@@ -5,39 +5,23 @@ import Event from "../../actions/event";
 import {EnqueueNotificationPayload} from "../../actions/notificationCommand";
 import Command from "../../actions/command";
 
-const onEnqueueErrorSnackbar = function*(message: string, autoHideDuration: number = 4000) {
-    yield put(Event.Notification.notificationEnqueued({
-        id: uuidv4(),
-        severity: 'error',
-        message: message,
-        autoHideDuration,
-    }));
+const DEFAULT_DURATIONS: Record<string, number> = {
+    error: 8000,
+    warning: 6000,
+    success: 4000,
+    info: 4000,
 };
 
-const onEnqueueSuccessSnackbar = function*(message: string, autoHideDuration: number = 4000) {
+const onEnqueueSnackbar = function*(
+    severity: 'error' | 'warning' | 'success' | 'info',
+    message: string,
+    autoHideDuration?: number,
+) {
     yield put(Event.Notification.notificationEnqueued({
         id: uuidv4(),
-        severity: 'success',
-        message: message,
-        autoHideDuration,
-    }));
-};
-
-const onEnqueueWarningSnackbar = function*(message: string, autoHideDuration: number = 4000) {
-    yield put(Event.Notification.notificationEnqueued({
-        id: uuidv4(),
-        severity: 'warning',
-        message: message,
-        autoHideDuration,
-    }));
-};
-
-const onEnqueueInfoSnackbar = function*(message: string, autoHideDuration: number = 4000) {
-    yield put(Event.Notification.notificationEnqueued({
-        id: uuidv4(),
-        severity: 'info',
-        message: message,
-        autoHideDuration,
+        severity,
+        message,
+        autoHideDuration: autoHideDuration ?? DEFAULT_DURATIONS[severity],
     }));
 };
 
@@ -47,19 +31,11 @@ export function* enqueueNotificationFlow() {
             Command.Notification.enqueueNotification.toString(),
         );
 
-        switch (action.payload.severity) {
-            case 'error':
-                yield fork(onEnqueueErrorSnackbar, action.payload.message, action.payload.autoHideDuration);
-                break;
-            case 'success':
-                yield fork(onEnqueueSuccessSnackbar, action.payload.message, action.payload.autoHideDuration);
-                break;
-            case 'warning':
-                yield fork(onEnqueueWarningSnackbar, action.payload.message, action.payload.autoHideDuration);
-                break;
-            case 'info':
-                yield fork(onEnqueueInfoSnackbar, action.payload.message, action.payload.autoHideDuration);
-                break;
-        }
+        yield fork(
+            onEnqueueSnackbar,
+            action.payload.severity,
+            action.payload.message,
+            action.payload.autoHideDuration,
+        );
     }
 }

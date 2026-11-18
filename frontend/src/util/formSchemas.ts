@@ -205,8 +205,7 @@ export const blurFormSchemaBG: RJSFSchema = {
       title: 'Subject Detection',
       enum: ['silhouette', 'boundingbox'],
       default: 'silhouette',
-      description: '!Only required if no subject masking is used for other video parts! \
-        Bounding box lays a bounding box over the subject for hiding, while silhouette hides the subject within its exact contours only.'
+      description: '!Only required if no subject masking is used for other video parts! Bounding box lays a bounding box over the subject for hiding, while silhouette hides the subject within its exact contours only.'
     },
     kernelSize: { type: 'integer', title: 'Kernel Size', default: 23, description: 'The Kernelsize for a Gaussion Filter' },
   },
@@ -250,8 +249,7 @@ export const blackoutFormSchemaBG: RJSFSchema = {
       title: 'Subject Detection',
       enum: ['silhouette', 'boundingbox'],
       default: 'silhouette',
-      description: '!Only required if no subject masking is used for other video parts! \
-        Bounding box lays a bounding box over the subject for hiding, while silhouette hides the subject within its exact contours only.'
+      description: '!Only required if no subject masking is used for other video parts! Bounding box lays a bounding box over the subject for hiding, while silhouette hides the subject within its exact contours only.'
     },
     color: { type: 'number', title: 'Masking color', default: 0, description: 'From 0 (black) to 255 white' },
   },

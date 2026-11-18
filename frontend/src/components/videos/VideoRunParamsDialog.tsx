@@ -24,7 +24,7 @@ const VideoRunParamsDialog = (props: VideoRunParamsDialogProps) => {
         <Dialog open={props.open} onClose={props.onClose} fullWidth={true} sx={styles.dialog}>
             <DialogTitle>
                 <Box component={'div'} display="flex" alignItems="center">
-                    <Box component={'div'} flexGrow={1}>Mask Video</Box>
+                    <Box component={'div'} flexGrow={1}>Basic Masking</Box>
                     <Box component={'div'}>
                         <IconButton onClick={props.onClose} sx={{ margin: -0.75 }}>
                             <CloseIcon />

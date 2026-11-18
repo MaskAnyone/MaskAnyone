@@ -6,6 +6,7 @@ import Event from "../../actions/event";
 import {ApiFetchWorkersResponse} from "../../../api/types";
 import {FetchWorkerListPayload} from "../../actions/workerCommand";
 import {Worker} from "../../types/Worker";
+import {parseUtcTimestamp} from "../../../util/parseUtcTimestamp";
 
 
 const onFetchWorkerList = function*(payload: FetchWorkerListPayload) {
@@ -15,7 +16,7 @@ const onFetchWorkerList = function*(payload: FetchWorkerListPayload) {
         const workerList: Worker[] = response.workers.map(worker => ({
             id: worker.id,
             jobId: worker.job_id,
-            lastActivity: new Date(worker.last_activity),
+            lastActivity: parseUtcTimestamp(worker.last_activity),
             type: worker.type,
         }));
 

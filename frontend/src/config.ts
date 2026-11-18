@@ -8,7 +8,6 @@ interface ConfigType {
         baseUrl: string;
     };
     upload: {
-        maxSize: number;
         accept: Record<string, string[]>;
         concurrency: number;
     };
@@ -29,7 +28,6 @@ const Config: ConfigType = {
         baseUrl: window.location.origin + '/api',
     },
     upload: {
-        maxSize: 200_000_000, /* 200 MB */
         accept: {
             'video/mp4': ['.mp4'],
         },

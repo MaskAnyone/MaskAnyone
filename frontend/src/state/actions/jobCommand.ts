@@ -9,9 +9,14 @@ export interface DeleteJobPayload {
     id: string;
 }
 
+export interface CancelJobPayload {
+    id: string;
+}
+
 const JobCommand = {
     fetchJobList: createJobCommand<FetchJobListPayload>('FETCH_JOB_LIST'),
     deleteJob: createJobCommand<DeleteJobPayload>('DELETE_JOB'),
+    cancelJob: createJobCommand<CancelJobPayload>('CANCEL_JOB'),
 };
 
 export default JobCommand;

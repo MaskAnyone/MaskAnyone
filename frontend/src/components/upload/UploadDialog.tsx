@@ -9,6 +9,7 @@ import Selector from "../../state/selector";
 import LoaderButton from "./LoaderButton";
 import {usePrevious} from "../../util/usePrevious";
 import Command from "../../state/actions/command";
+import {ErrorCode, FileRejection} from 'react-dropzone';
 
 const styles = {
     tagBarWrapper: {
@@ -45,6 +46,25 @@ const UploadDialog = (props: UploadDialogProps) => {
         ]);
     };
 
+    const describeRejection = (rejection: FileRejection): string => {
+        const {file, errors} = rejection;
+        const codes = errors.map(error => error.code);
+
+        if (codes.includes(ErrorCode.FileInvalidType)) {
+            return `"${file.name}" is not an MP4 file. Only MP4 videos are supported right now.`;
+        }
+        return `"${file.name}" cannot be uploaded: ${errors.map(error => error.message).join(', ')}`;
+    };
+
+    const handleRejectedFiles = (rejections: FileRejection[]): void => {
+        for (const rejection of rejections) {
+            dispatch(Command.Notification.enqueueNotification({
+                severity: 'error',
+                message: describeRejection(rejection),
+            }));
+        }
+    };
+
     const cancelStagedFile = (fileId: string): void => {
         setStagedFiles(stagedFiles.filter(file => file.id !== fileId));
     };
@@ -70,10 +90,11 @@ const UploadDialog = (props: UploadDialogProps) => {
             ...stagedFiles.filter(stagedFile => Object.keys(uploadProgress).includes(stagedFile.id)),
         ]);
 
-        if (currentUploadCount < 1) {
+        if (uploadRunning && currentUploadCount < 1) {
             props.onClose();
         }
-    }, [currentUploadCount < previousUploadCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentUploadCount]);
 
     useEffect(() => {
         if (!props.open) {
@@ -94,6 +115,7 @@ const UploadDialog = (props: UploadDialogProps) => {
                     stagedFiles={stagedFiles}
                     uploadRunning={uploadRunning}
                     onSelectFiles={handleSelectedFiles}
+                    onRejectFiles={handleRejectedFiles}
                     onCancelFile={cancelStagedFile}
                 />
             </DialogContent>

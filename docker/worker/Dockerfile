@@ -22,6 +22,7 @@ RUN mkdir /worker_models \
 # When installing it with deps, it will also install all CUDA deps even if there is not GPU
 RUN pip install --no-cache-dir ultralytics==8.3.78 --no-deps
 RUN pip install --no-cache-dir psutil matplotlib pandas tqdm pyyaml
+RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 RUN wget https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11x-pose.pt -O /worker_models/yolo11x-pose.pt
 ####################

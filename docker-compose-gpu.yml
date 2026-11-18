@@ -1,0 +1,75 @@
+
+# GPU add-on: use on top of docker-compose.yml on machines with an NVIDIA GPU:
+#   docker compose -f docker-compose.yml -f docker-compose-gpu.yml ...
+# Gives the backend and worker GPU access and adds the SAM2 and OpenPose services
+# (Advanced masking). setup.sh adds this file automatically when it finds a GPU.
+services:
+  python:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${MASKANYONE_GPU_ID:-0}"]
+              capabilities: [ gpu ]
+
+  worker:
+    environment:
+      # h264_nvenc uses the GPU hardware encoder (overrides libx264 from docker-compose.yml).
+      - WORKER_VIDEO_ENCODER=h264_nvenc
+      # NVENC only needs the 'video' capability, not full CUDA compute.
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${MASKANYONE_GPU_ID:-0}"]
+              capabilities: [gpu, video]
+
+  sam2:
+    build:
+      context: ./docker/sam2
+    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+    env_file:
+      - ./app.env
+    volumes:
+      - ./sam2:/app
+    restart: on-failure
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${MASKANYONE_GPU_ID:-0}"]
+              capabilities: [ gpu ]
+
+  openpose:
+    build:
+      context: ./docker/openpose
+    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+    env_file:
+      - ./app.env
+    volumes:
+      - ./openpose:/app
+      - ./docker/openpose/models:/models
+    restart: on-failure
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${MASKANYONE_GPU_ID:-0}"]
+              capabilities: [ gpu ]
+
+  # RTMPose is disabled while in development (also hidden in the frontend model picker).
+  # To re-enable: uncomment here and the marked lines in setup.sh.
+  # rtmpose:
+  #   build:
+  #     context: ./docker/rtmpose
+  #   command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+  #   env_file:
+  #     - ./app.env
+  #   volumes:
+  #     - ./rtmpose:/app
+  #   restart: on-failure

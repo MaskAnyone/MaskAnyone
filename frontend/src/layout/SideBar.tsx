@@ -1,17 +1,22 @@
-import {Box, Button, Checkbox, Drawer, Fab, IconButton, List} from "@mui/material";
+import {Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Drawer, IconButton, List, Tooltip, useTheme} from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import Selector from "../state/selector";
 import UploadIcon from '@mui/icons-material/Upload';
 import UploadDialog from "../components/upload/UploadDialog";
 import Event from "../state/actions/event";
 import SideBarVideoItem from "./SideBarVideoItem";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router";
 import Paths from "../paths";
 import ClearIcon from '@mui/icons-material/Clear';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ShieldIcon from '@mui/icons-material/Shield';
+import Command from "../state/actions/command";
+import Api from "../api";
 
 const styles = {
     drawer: (theme: any) => ({
+        zIndex: 1100,  // Lower than AppBar (1300) so TopBar stays visible
         '& .MuiDrawer-paper': {
             width: 280,
             [theme.breakpoints.up('lg')]: {
@@ -38,17 +43,14 @@ interface SideBarProps {
 const SideBar = (props: SideBarProps) => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const { videoId: activeVideoId } = useParams<{ videoId: string }>();
     const videoList = useSelector(Selector.Video.videoList);
     const uploadDialogOpen = useSelector(Selector.Upload.dialogOpen);
     const videoJobsRecord = useSelector(Selector.Job.videoActiveJobCountRecord);
     const [selectedVideos, setSelectedVideos] = useState<string[]>([])
     const [anyChecked, setAnyChecked] = useState(false)
-
-    useEffect(() => {
-        if (anyChecked) {
-            navigate(Paths.videoRunMasking, { state: { selectedVideos } })
-        }
-    }, [anyChecked, selectedVideos])
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const theme = useTheme();
 
     const openUploadDialog = () => {
         dispatch(Event.Upload.uploadDialogOpened({}));
@@ -61,9 +63,9 @@ const SideBar = (props: SideBarProps) => {
     const selectOrUnselectVideo = (videoId: string) => {
         console.log(videoId, selectedVideos)
         if (selectedVideos.includes(videoId)) {
-            const filteredVideos = selectedVideos.filter((val) => val != videoId)
+            const filteredVideos = selectedVideos.filter((val) => val !== videoId)
             setSelectedVideos(filteredVideos)
-            if (filteredVideos.length == 0) {
+            if (filteredVideos.length === 0) {
                 setAnyChecked(false)
             }
         } else {
@@ -77,7 +79,7 @@ const SideBar = (props: SideBarProps) => {
     }
 
     const handleSelectAll = () => {
-        if (selectedVideos.length == videoList.length) {
+        if (selectedVideos.length === videoList.length) {
             setSelectedVideos([])
         } else {
             setSelectedVideos(videoList.map((video) => video.id))
@@ -89,6 +91,33 @@ const SideBar = (props: SideBarProps) => {
         setAnyChecked(false)
     }
 
+    const handleRename = async (videoId: string, newName: string) => {
+        try {
+            await Api.renameVideo(videoId, newName);
+            dispatch(Command.Video.fetchVideoList({}));
+        } catch {
+            // name conflict or other error — video list stays unchanged
+        }
+    };
+
+    const handleMaskSelected = () => {
+        navigate(Paths.videoRunMasking, { state: { selectedVideos } });
+    };
+
+    const handleBulkDelete = () => {
+        setDeleteDialogOpen(true);
+    }
+
+    const confirmBulkDelete = () => {
+        selectedVideos.forEach(videoId => {
+            dispatch(Command.Video.deleteVideo({ videoId }));
+        });
+        setSelectedVideos([]);
+        setAnyChecked(false);
+        setDeleteDialogOpen(false);
+        navigate(Paths.videos);
+    }
+
     return (
         <Drawer
             sx={styles.drawer}
@@ -97,14 +126,33 @@ const SideBar = (props: SideBarProps) => {
             variant={props.isLargeScreen ? 'persistent' : 'temporary'}
             children={(
                 <Box component="div" sx={styles.container}>
-                    <Box component="div" style={{ display: anyChecked ? "flex" : "none", justifyContent: 'space-between', borderBottom: "1px solid #e0e0e0" }}>
-                        <IconButton onClick={handleSelectCancel}>
-                            <ClearIcon />
-                        </IconButton>
-                        <Checkbox
-                            checked={selectedVideos.length === videoList.length}
-                            onClick={handleSelectAll}
-                        />
+                    <Box component="div" style={{ display: anyChecked ? "flex" : "none", alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
+                        <Tooltip title="Cancel selection">
+                            <IconButton onClick={handleSelectCancel} aria-label="Cancel selection">
+                                <ClearIcon />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Mask selected">
+                            <span>
+                                <IconButton onClick={handleMaskSelected} color="primary" disabled={selectedVideos.length === 0} aria-label="Mask selected videos">
+                                    <ShieldIcon />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                        <Tooltip title="Delete selected">
+                            <span>
+                                <IconButton onClick={handleBulkDelete} color="error" disabled={selectedVideos.length === 0} aria-label="Delete selected videos">
+                                    <DeleteIcon />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                        <Tooltip title="Select all">
+                            <Checkbox
+                                checked={selectedVideos.length === videoList.length}
+                                onClick={handleSelectAll}
+                                inputProps={{ 'aria-label': 'Select all videos' } as any}
+                            />
+                        </Tooltip>
                     </Box>
                     <List sx={{ display: 'flex', flexDirection: 'column', flex: 1, paddingBottom: 1 }} disablePadding={true}>
                         {videoList.map(video => (
@@ -113,8 +161,9 @@ const SideBar = (props: SideBarProps) => {
                                 video={video}
                                 badge={videoJobsRecord[video.id] || 0}
                                 onCheckboxClicked={handleCheckboxClicked}
+                                onRename={handleRename}
                                 checked={selectedVideos.includes(video.id)}
-                                active={selectedVideos.length == 1 && selectedVideos[0] == video.id}
+                                active={video.id === activeVideoId}
                                 anyChecked={anyChecked}
                             />
                         ))}
@@ -123,6 +172,18 @@ const SideBar = (props: SideBarProps) => {
                         Upload
                     </Button>
                     <UploadDialog open={uploadDialogOpen} onClose={closeUploadDialog} />
+                    <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+                        <DialogTitle>Delete Videos</DialogTitle>
+                        <DialogContent>
+                            <DialogContentText>
+                                Delete {selectedVideos.length} selected video{selectedVideos.length !== 1 ? 's' : ''}? This cannot be undone.
+                            </DialogContentText>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setDeleteDialogOpen(false)} color="primary">Cancel</Button>
+                            <Button onClick={confirmBulkDelete} color="error">Delete</Button>
+                        </DialogActions>
+                    </Dialog>
                 </Box >
             )}
         />

@@ -1,14 +1,11 @@
 import { HidingMethods, MaskingMethods } from "../state/types/RunParamRendering";
 import {
-    faceswapFormSchema,
     blackoutFormSchemaBG,
     blackoutFormSchemaSubject,
     blackoutFormSchemaSubjectUI,
-    blenderMocapFormSchema,
     blurFormSchemaBG,
     blurFormSchemaSubject,
     blurFormSchemaSubjectUI,
-    faceMeshFormSchema,
     inpaintFormSchemaSubject,
     inpaintFormSchemaSubjectUI,
     rvcSchema,
@@ -262,7 +259,7 @@ export const voiceMaskingMethods: any = {
     },
     switch: {
         name: "Switch",
-        description: "Mask the original speaker by replacing their voice with the voice of another person",
+        description: "Change the voice so the speaker cannot be recognised; speech stays understandable",
         imagePath: '/images/voice_masking_strategy/switch.svg',
         parameterSchema: rvcSchema,
         defaultValues: {
