@@ -2,6 +2,7 @@
 # MaskAnyone setup script
 # Usage: bash setup.sh [--skip-build] [--with-auth] [--clean] [--clean-all] [--sam2-models=LIST]
 #        bash setup.sh doctor               # diagnose a broken install, suggest fixes
+#        bash setup.sh stop                 # stop MaskAnyone (keeps images and data)
 #   --skip-build         skip docker compose build (use existing images)
 #   --with-auth          enable Keycloak authentication (default: local/no-login mode)
 #   --clean              stop containers and remove images (keeps your data/videos)
@@ -15,6 +16,7 @@ WITH_AUTH=false
 CLEAN=false
 CLEAN_ALL=false
 DOCTOR=false
+STOP=false
 SAM2_MODELS=""   # empty = prompt interactively; set via --sam2-models=...
 for arg in "$@"; do
     [[ "$arg" == "--skip-build" ]]   && SKIP_BUILD=true
@@ -22,6 +24,7 @@ for arg in "$@"; do
     [[ "$arg" == "--clean"      ]]   && CLEAN=true
     [[ "$arg" == "--clean-all"  ]]   && CLEAN_ALL=true
     [[ "$arg" == "doctor"       ]]   && DOCTOR=true
+    [[ "$arg" == "stop"         ]]   && STOP=true
     [[ "$arg" == --sam2-models=* ]]  && SAM2_MODELS="${arg#--sam2-models=}"
 done
 
@@ -125,6 +128,24 @@ check_ok()   { ok "$1"; }
 check_warn() { warn "$1"; WARNINGS=$((WARNINGS+1)); }
 check_fail() { fail "$1"; ERRORS=$((ERRORS+1)); }
 
+# ── stop mode ──────────────────────────────────────────────────────────────────
+# Stops all MaskAnyone containers with the right compose files for this machine,
+# so users don't need to remember the base command. --profile auth also stops
+# Keycloak (server mode); --remove-orphans catches containers from the other mode.
+if [[ "$STOP" == "true" ]]; then
+    echo ""
+    info "Stopping MaskAnyone..."
+    if docker compose $COMPOSE_BASE --profile auth down --remove-orphans; then
+        ok "MaskAnyone stopped. Your videos, results and images are kept."
+        echo -e "  Start again with: ${BOLD}bash setup.sh --skip-build${RESET} (add --with-auth in server mode)"
+    else
+        fail "Could not stop all containers — is Docker running?"
+        exit 1
+    fi
+    echo ""
+    exit 0
+fi
+
 # ── clean mode ─────────────────────────────────────────────────────────────────
 if [[ "$CLEAN_ALL" == "true" || "$CLEAN" == "true" ]]; then
     echo ""
@@ -155,7 +176,7 @@ if [[ "$CLEAN_ALL" == "true" || "$CLEAN" == "true" ]]; then
     # COMPOSE_BASE (set above) matches this machine; --remove-orphans also removes
     # containers from the other mode (e.g. sam2 left over from a GPU install).
     info "Stopping containers..."
-    docker compose $COMPOSE_BASE down --remove-orphans 2>/dev/null || true
+    docker compose $COMPOSE_BASE --profile auth down --remove-orphans 2>/dev/null || true
     check_ok "Containers stopped"
 
     info "Removing MaskAnyone images..."
