@@ -22,9 +22,10 @@ File names
 ----------
 Every downloaded file starts with the same stem:
 
-    <video name>_<result name>          e.g. interview01_blurring-openpose-body-25-sam2-small
+    <video name>_<result name>          e.g. interview01_p1-blur-mp-p2-fill-op25-sam2s
 
-followed by a suffix per file type (`_qa.json`, `_kinematics-body.csv`, ...).
+where known labels in the result name are shortened (see FILE_NAME_CODES), so
+multi-person names fit. Followed by a suffix per file type (`_qa.json`, `_kinematics-body.csv`, ...).
 Result names are unique per video, so stems are too.
 """
 
@@ -234,8 +235,56 @@ def video_stem(video_name: str) -> str:
     return slugify(strip_video_extension(video_name), max_length=40)
 
 
+# Short codes for file names. Display names stay long ("Blurring + MediaPipe Pose");
+# file names use these so multi-person names stay complete instead of being cut off.
+# Longer labels come first so e.g. "OpenPose BODY_25B" is not matched as "OpenPose BODY_25".
+FILE_NAME_CODES = [
+    ("OpenPose BODY_25 + Face", "op25face"),
+    ("OpenPose BODY_25B", "op25b"),
+    ("OpenPose BODY_135", "op135"),
+    ("OpenPose BODY_25", "op25"),
+    ("MediaPipe Pose", "mp"),
+    ("MediaPipe Face", "mpface"),
+    ("MediaPipe Hands", "mphand"),
+    ("RTMPose AP-10K W48", "rtmap10kw48"),
+    ("RTMPose AP-10K RTM", "rtmap10krtm"),
+    ("RTMPose AP-10K", "rtmap10k"),
+    ("RTMPose AnimalPose", "rtmanimal"),
+    ("RTMPose Animal Kingdom", "rtmak"),
+    ("RTMPose S", "rtms"),
+    ("RTMPose M", "rtmm"),
+    ("RTMPose L", "rtml"),
+    ("Transparent fill", "tfill"),
+    ("Solid fill", "fill"),
+    ("Blurring", "blur"),
+    ("Pixelation", "pixel"),
+    ("Contours", "contour"),
+    ("No hiding", "nohide"),
+    ("No masking", "nomask"),
+    ("SAM2 tiny", "sam2t"),
+    ("SAM2 small", "sam2s"),
+    ("SAM2 base+", "sam2b"),
+    ("SAM2 large", "sam2l"),
+]
+
+_MIXED = re.compile(r"Mixed strategies \((\d+) people\)")
+
+
+def file_name_label(result_name: str) -> str:
+    """Shorten the known labels in a result name for use in file names.
+
+    "P1 Blurring + MediaPipe Pose / P2 Solid fill + OpenPose BODY_25 · SAM2 small"
+    becomes "p1-blur-mp-p2-fill-op25-sam2s". Text a user typed when renaming a
+    result is kept, only known labels are shortened.
+    """
+    label = _MIXED.sub(r"mixed-\1p", result_name)
+    for long_label, code in FILE_NAME_CODES:
+        label = label.replace(long_label, code)
+    return slugify(label, max_length=80)
+
+
 def result_stem(video_name: str, result_name: str) -> str:
-    return f"{video_stem(video_name)}_{slugify(result_name)}"
+    return f"{video_stem(video_name)}_{file_name_label(result_name)}"
 
 
 EXTRA_FILE_SUFFIXES = {
